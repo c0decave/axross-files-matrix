@@ -24,6 +24,11 @@ with real file access. Written in Rust (wgpu and egui), a companion of
 - **Fly** - free flight with WASD and the mouse, or orbit and map; flights
   that keep above the roofs; teleport to islands, districts, saved spots
   (1-9) and search hits
+- **Teleport to other systems** - every connection saved in axross's
+  connection manager, of any protocol axross has a backend for (SSH/SFTP,
+  NFS, SMB, S3, WebDAV, cloud drives, phones, mail, databases, git, ...):
+  chosen in the Teleport menu, it is connected through axross, its island
+  rises at once and is walked while the camera flies there
 - **Find, inspect, open** - search by name or glob, hits as pillars of
   light; details and a preview of text, images and bytes; open in axross or
   with the system's program
@@ -58,7 +63,7 @@ with real file access. Written in Rust (wgpu and egui), a companion of
   </tr>
   <tr>
     <td><img src="docs/teleport.png" alt="The teleport menu"></td>
-    <td></td>
+    <td><img src="docs/teleport-systems.png" alt="The teleport menu with the systems of axross's connection manager"></td>
   </tr>
 </table>
 
@@ -118,6 +123,7 @@ axross-files-matrix                 # every mountpoint, axross's backends, the m
 axross-files-matrix ~/projects /srv # islands of these folders only
 axross-files-matrix --synthetic 200000   # a made-up city, to look at
 axross-files-matrix --dump-city DIR --json   # the city as JSON, no window
+axross-files-matrix -- -odd-name    # after `--` every argument is a folder
 ```
 
 `--help` lists every option. Started from a terminal it goes to the
@@ -133,16 +139,46 @@ background (`--foreground` keeps it there).
 | wheel | flight speed; in orbit: zoom |
 | right drag | look around (fly) / turn (orbit) |
 | M | capture the mouse to look (Esc lets go) |
+| Esc | let the mouse go, give a connect up, clear the choice |
 | F | free flight / orbit and map |
 | drag, Shift+drag | orbit: turn, pan |
 | click | choose (orbit: and fly there); double-click: fly there |
 | / or Ctrl+F | search (text, or a glob like `*.iso`) |
 | N / Enter | fly to the next hit (Shift: teleport) |
-| T | teleport menu: islands, districts, spots, hits |
+| T | teleport menu: other systems, islands, districts, spots, hits |
 | 1 - 9, Ctrl+1 - 9 | jump to a saved spot, save one |
 | Home | overview |
 | O / Shift+O | open in axross / with the default program |
+| L | the colour legend |
 | H / F1 | help |
+
+**Other systems.** The Teleport menu (T) lists every connection saved in
+axross's connection manager, with its protocol, host and state (not open,
+connecting, walking, open, failed with the reason); the filter at its top
+searches the systems, islands, districts, spots and hits at once. *go*
+connects one through axross's MCP server (started read-only with its
+`remote` tool group; Sources says the command line), raises its island at
+once - "connecting…" - and flies there; a connect has a time limit, and
+*cancel* (or Esc) gives it up. A failure stays on the island and in the
+menu, with *retry*. The protocols come from axross's own registry at run
+time: a family has its sign and colour (shell logins, shares, cloud stores,
+phones, mail, databases, version control), any other protocol the generic
+look. A backend that tells no sizes gets equal footprints and says so; mail
+stores, databases and slow backends are read folder by folder as you come
+near. A saved spot (Ctrl+1-9) inside a system opens it again when you jump
+to it. The matrix never asks for or keeps a password: a system that needs
+one axross has not stored says "needs unlocking in axross" and opens
+axross's connection manager (`axross --connection-manager=NAME`, 0.15.186
+and later), where it can be stored.
+
+**Opening.** *Open in axross* needs axross 0.15.186 or later (it is asked
+once whether it takes a path: `axross -- PATH`, and for a remote backend
+`axross --profile=NAME -- PATH`); an older axross is said to be too old and
+nothing else is started in its place. *Show in file manager* opens the
+file's folder and runs nothing. *Open* hands the file to the system's
+default program - for a program, a script, a desktop entry, a shortcut, an
+executable, a link, or anything on a removable medium or a network file
+system it asks first and offers the file manager instead.
 
 ### What you see
 
@@ -155,16 +191,23 @@ background (`--foreground` keeps it there).
   have more lit windows.
 - **Blocks**: a far district drawn as one block in the colour of what fills
   it most. Dashed outlines: a folder not read yet. Amber outlines: a folder
-  that could not be read.
+  that could not be read. The legend in the view's corner says all of this
+  (L hides it).
+- **Sizes**: by the space a file takes on the disk (a sparse 4 GB file is
+  small), every file with a least footprint; a setting sizes by length.
 
 ### Settings
 
 In the configuration folder (`~/.config/axross-files-matrix/settings.json`
 on Linux): read-only (the only mode in this release), the question before
-the flight, pseudo file systems, the machine's island, axross's server and
-its command, the look (labels, rain, bloom, scanlines, reduce motion), the
-mouse, updates. A file that cannot be read is set aside, not fatal. The
-walk cache lives in the cache folder (`~/.cache/axross-files-matrix/`).
+the flight, pseudo file systems and bind mounts, the machine's island,
+sizes on the disk or by length, axross's server and its command, the walk
+cache (its size and age, whether removable, network and remote islands are
+kept, a button that clears it), the look (labels, rain, bloom, scanlines,
+smooth edges, frames a second while idle, reduce motion), the mouse,
+updates. A file that cannot be read is set aside, not fatal. The walk
+cache lives in the cache folder (`~/.cache/axross-files-matrix/`), a
+folder and files only you can read.
 
 ## Building
 
@@ -172,6 +215,7 @@ walk cache lives in the cache folder (`~/.cache/axross-files-matrix/`).
 cargo build --release
 cargo test
 cargo run --release -- --benchmark    # frame times on this machine's GPU
+cargo run --release -- --benchmark 200000 --flat   # one folder of 200 000 files
 cargo run --release --example bench   # also the walk, the layout and the memory
 ```
 

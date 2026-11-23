@@ -62,7 +62,8 @@ fn dumps_a_city_as_json() {
         .iter()
         .map(|n| n["name"].as_str().unwrap().to_string())
         .collect();
-    assert!(names.contains(&"tab\\tname.txt".to_string()), "{names:?}");
+    // (exact: JSON escapes the tab itself; a script gets the name back)
+    assert!(names.contains(&"tab\tname.txt".to_string()), "{names:?}");
     let data = v["nodes"]
         .as_array()
         .unwrap()
@@ -71,6 +72,29 @@ fn dumps_a_city_as_json() {
         .unwrap();
     assert_eq!(data["path"], "docs/deep/data.bin");
     assert!(data["rect"].is_array());
+    // after `--` a name is a folder, whatever it looks like - and an
+    // option there is no option
+    std::fs::create_dir_all(dir.join("-x")).unwrap();
+    std::fs::write(dir.join("-x/inside.txt"), "y").unwrap();
+    let dashed = exe()
+        .current_dir(&dir)
+        .args(["--dump-city", "--json", "--", "-x"])
+        .output()
+        .unwrap();
+    assert!(
+        dashed.status.success(),
+        "{}",
+        String::from_utf8_lossy(&dashed.stderr)
+    );
+    let v: serde_json::Value = serde_json::from_slice(&dashed.stdout).unwrap();
+    assert_eq!(v["city"]["files"], 1);
+    let not_help = exe()
+        .args(["--dump-city"])
+        .arg(dir.join("-x"))
+        .args(["--", "--help"])
+        .output()
+        .unwrap();
+    assert!(String::from_utf8_lossy(&not_help.stdout).starts_with("city of "));
     let text = exe().arg("--dump-city").arg(&dir).output().unwrap();
     assert!(String::from_utf8_lossy(&text.stdout).starts_with("city of "));
     let missing = exe()

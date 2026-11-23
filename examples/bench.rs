@@ -111,7 +111,12 @@ fn main() {
         println!("adapter: none (CPU numbers only)");
     }
     let format = wgpu::TextureFormat::Rgba8Unorm;
-    let mut renderer = gpu.as_ref().map(|(d, _, _)| Renderer::new(d, format));
+    let msaa_ok = adapter
+        .as_ref()
+        .is_some_and(axross_files_matrix::render::msaa_supported);
+    let mut renderer = gpu
+        .as_ref()
+        .map(|(d, _, _)| Renderer::new(d, format, msaa_ok));
     for lod_label in [
         "fixed (collapse below 0.03 rad)",
         "all opened (no collapse)",
@@ -194,6 +199,7 @@ fn main() {
                         version: k as u64,
                         guard: true,
                         dt: 1.0 / 60.0,
+                        msaa: true,
                     };
                     let t = Instant::now();
                     let mut enc =

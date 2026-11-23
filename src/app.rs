@@ -9,16 +9,18 @@ use crate::cache;
 use crate::camera::{Camera, Input, Mode, look_angles};
 use crate::city::{self, FrameSet, Hit, Instance, IslandCity, LabelKind, Lod, Ring};
 use crate::hw::{self, Machine, Part};
-use crate::layout::{Placed, snapshot};
+use crate::layout::Placed;
 use crate::math::{Aabb, Frustum, Vec3, vec3};
 use crate::mcp::{self, Backend, Client};
-use crate::mounts;
+use crate::mounts::{self, MountKind};
+use crate::open::{self, Axross, Launch};
 use crate::preview::{self, Content, Preview, Where};
 use crate::render::{self, FrameData, Globals, Stats};
 use crate::search::Search;
 use crate::settings::{self, Settings, Spot};
+use crate::systems::SysState;
 use crate::theme::{self, Theme};
-use crate::tree::{Kind, Listing, NodeId, display_name};
+use crate::tree::{Kind, NodeId, display_name};
 use crate::update::{Install, UpdateMode};
 use crate::update_ui::Updater;
 use crate::walk::{self, Event, Msg, Walker};
@@ -62,6 +64,25 @@ pub struct StartOptions {
     pub step: Option<f32>,
     /// The flash guard (off only for the tests that show what it does).
     pub flash_guard: bool,
+    /// What the start asks of the system (tests: one that hangs).
+    pub probe: Option<Arc<dyn world::Probe>>,
+    /// Launches are written here instead of started (tests).
+    pub launch_log: Option<Arc<Mutex<Vec<Launch>>>>,
+    /// This axross program instead of the one on the PATH (tests).
+    pub axross: Option<PathBuf>,
+    /// This program opens files and folders instead of the system's
+    /// (tests).
+    pub opener: Option<PathBuf>,
+    /// A connected MCP client instead of looking for a server (tests).
+    pub mcp_client: Option<Arc<Client>>,
+    /// How long a system's connect may take (tests: short).
+    pub connect_timeout: Option<Duration>,
+}
+
+impl std::fmt::Debug for dyn world::Probe {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Probe")
+    }
 }
 
 impl Default for StartOptions {
@@ -82,6 +103,12 @@ impl Default for StartOptions {
             clock: None,
             step: None,
             flash_guard: true,
+            probe: None,
+            launch_log: None,
+            axross: None,
+            opener: None,
+            mcp_client: None,
+            connect_timeout: None,
         }
     }
 }
@@ -95,20 +122,109 @@ pub enum McpState {
     Failed(String),
     Connected {
         label: String,
+        /// The command line it was started with (said in Sources).
+        command: String,
         client: Arc<Client>,
-        profiles: Vec<String>,
+        /// The saved connections and protocols, or why the server cannot
+        /// list them.
+        systems: Result<mcp::Systems, String>,
     },
 }
 
 /// What the search for axross's server found: the client, how it was
 /// started, its backends and saved profiles.
-type McpFound = (Arc<Client>, String, Vec<Backend>, Vec<String>);
+type McpFound = (
+    Arc<Client>,
+    String,
+    String,
+    Vec<Backend>,
+    Result<mcp::Systems, String>,
+);
 
 enum Bg {
     Mcp(Result<McpFound, Option<String>>),
-    Backends(Arc<Client>, Result<Vec<Backend>, String>),
     Preview(u64, NodeId, Box<Preview>),
     Opened(Result<String, String>),
+    Startup(Box<world::Startup>),
+    Axross(Axross, Option<settings::AxrossProbe>),
+    OpenChecked(Box<OpenCheck>),
+    CachePruned(cache::Pruned, (u64, usize)),
+    /// A system's connect came back (its attempt: a cancelled one's late
+    /// answer is dropped).
+    SystemOpened {
+        name: String,
+        attempt: u64,
+        result: Result<mcp::Opened, String>,
+    },
+    /// The systems listed again.
+    Systems(Result<mcp::Systems, String>),
+}
+
+/// A flight waiting for its target: an island to stand, a district of it
+/// to be read (a spot inside a remote system).
+#[derive(Clone, Debug)]
+pub struct PendingFly {
+    pub island: u64,
+    /// The path from the island's root (raw names).
+    pub path: Vec<Vec<u8>>,
+    pub deadline: Instant,
+    pub what: String,
+}
+
+/// How the chosen thing is to be opened.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OpenHow {
+    Axross,
+    DefaultProgram,
+    FileManager,
+}
+
+/// A path to open with the default program, and why it needs a question
+/// first (None: it does not).
+#[derive(Clone, Debug)]
+pub struct OpenCheck {
+    pub path: PathBuf,
+    pub risk: Option<String>,
+}
+
+/// The question before opening (shown as a dialog).
+#[derive(Clone, Debug, PartialEq)]
+pub enum OpenAsk {
+    /// The default program would run or trust something.
+    Risky { path: PathBuf, why: String },
+    /// axross cannot open it: why, and the local path the default
+    /// program could open instead (if there is one).
+    NoAxross { why: String, path: Option<PathBuf> },
+    /// A system needs a password or key passphrase axross has not stored
+    /// (the matrix never asks for one).
+    Unlock { name: String },
+}
+
+struct PreviewJob {
+    island: u64,
+    node: NodeId,
+    at: Where,
+    name: String,
+    size: u64,
+    is_dir: bool,
+}
+
+/// The preview worker: one preview at a time, and of the requests waiting
+/// only the newest (choosing ten files fast reads one, not ten).
+fn preview_worker(rx: Receiver<PreviewJob>, tx: Sender<Bg>, wake: walk::Wake) {
+    while let Ok(mut job) = rx.recv() {
+        while let Ok(newer) = rx.try_recv() {
+            job = newer;
+        }
+        let p = preview::load(&job.at, &job.name, job.size, job.is_dir);
+        if tx
+            .send(Bg::Preview(job.island, job.node, Box::new(p)))
+            .is_err()
+        {
+            return;
+        }
+        wake();
+    }
 }
 
 struct PreviewView {
@@ -171,6 +287,7 @@ pub struct App {
     cache_rx: Receiver<(u64, Option<(i64, crate::tree::Tree)>)>,
     bg_tx: Sender<Bg>,
     bg_rx: Receiver<Bg>,
+    preview_jobs: Sender<PreviewJob>,
     layout: LayoutWorker,
     wake: walk::Wake,
     pub camera: Camera,
@@ -216,6 +333,39 @@ pub struct App {
     pub test_signal: f32,
     /// The window's size (kept for the next start).
     window_size: Option<[f32; 2]>,
+    /// The start's thread has not answered yet.
+    pub starting: bool,
+    /// What is known of axross (the program).
+    pub axross: Axross,
+    /// The beams need placing again (an island moved).
+    beams_dirty: bool,
+    /// The open question, if one is shown.
+    pub open_ask: Option<OpenAsk>,
+    /// The window has the keyboard (None: not known).
+    focused: bool,
+    /// Minimised or hidden.
+    hidden: bool,
+    /// The colour legend is shown.
+    pub legend_open: bool,
+    /// How much bigger the machine's island is drawn.
+    pub machine_scale: f32,
+    /// The teleport window's page of search hits.
+    hits_page: usize,
+    /// The Teleport menu's filter (across systems, islands, spots, hits).
+    pub teleport_filter: String,
+    /// The systems being opened or opened, by profile name.
+    pub live: std::collections::HashMap<String, crate::systems::Live>,
+    attempts: u64,
+    /// A flight waiting for its target.
+    pub pending_fly: Option<PendingFly>,
+    /// The axross on the PATH opens its connection manager from the
+    /// command line.
+    axross_manager: bool,
+    /// A system to open again once the systems are listed again.
+    retry_after_refresh: Option<String>,
+    /// The cache folder's size and files (once pruned).
+    cache_usage: Option<(u64, usize)>,
+    cache_clearing: bool,
 }
 
 fn now_secs() -> i64 {
@@ -249,6 +399,13 @@ impl App {
         let (cache_tx, cache_rx) = channel();
         let (bg_tx, bg_rx) = channel();
         let layout = LayoutWorker::start(wake.clone());
+        let (preview_jobs, preview_rx) = channel();
+        {
+            let (tx, wake) = (bg_tx.clone(), wake.clone());
+            let _ = std::thread::Builder::new()
+                .name("afm-preview".into())
+                .spawn(move || preview_worker(preview_rx, tx, wake));
+        }
         let mut camera = Camera {
             speed: settings.fly_speed,
             sensitivity: settings.mouse_sensitivity,
@@ -274,6 +431,7 @@ impl App {
             cache_rx,
             bg_tx,
             bg_rx,
+            preview_jobs,
             layout,
             wake,
             camera,
@@ -317,6 +475,23 @@ impl App {
             last_frame_instances: 0,
             test_signal: 0.0,
             window_size: None,
+            starting: false,
+            axross: Axross::Looking,
+            beams_dirty: false,
+            open_ask: None,
+            focused: true,
+            hidden: false,
+            legend_open: true,
+            machine_scale: 1.0,
+            hits_page: 0,
+            teleport_filter: String::new(),
+            live: std::collections::HashMap::new(),
+            attempts: 0,
+            pending_fly: None,
+            axross_manager: false,
+            retry_after_refresh: None,
+            cache_usage: None,
+            cache_clearing: false,
             opts,
         };
         if let settings::Loaded::SetAside(p) = loaded {
@@ -352,9 +527,51 @@ impl App {
 
     /// The islands of this start.
     fn populate(&mut self) {
-        if self.opts.hardware && self.settings.hardware_island {
-            let m = self.opts.machine.clone().unwrap_or_else(hw::detect);
-            let hwi = hw::island(&m);
+        // the mounts, the machine, the paths: on a thread of their own - a
+        // hung mount never keeps the window from coming
+        let wants = world::StartupWants {
+            paths: self.opts.paths.clone(),
+            mounts: self.opts.paths.is_empty() && self.opts.mounts && self.opts.synthetic.is_none(),
+            show_pseudo: self.settings.show_pseudo_mounts,
+            show_binds: self.settings.show_bind_mounts,
+            hardware: self.opts.hardware && self.settings.hardware_island,
+            machine: self.opts.machine.clone(),
+        };
+        let probe: Arc<dyn world::Probe> = self
+            .opts
+            .probe
+            .clone()
+            .unwrap_or_else(|| Arc::new(world::RealProbe));
+        let tx = self.bg_tx.clone();
+        let wake = self.wake.clone();
+        self.starting = true;
+        let _ = std::thread::Builder::new()
+            .name("afm-startup".into())
+            .spawn(move || {
+                let found = world::startup(&*probe, &wants);
+                let _ = tx.send(Bg::Startup(Box::new(found)));
+                wake();
+            });
+        if let Some(files) = self.opts.synthetic {
+            let i = self.add_island(
+                IslandSource::Synthetic { files, seed: 7 },
+                format!("synthetic city ({files} files)"),
+                Ring::Local,
+            );
+            self.islands[i].expected = files + files / 6;
+            self.start_walk(i, &[]);
+        }
+        if self.opts.mcp && self.settings.mcp.enabled {
+            self.connect_mcp();
+        }
+        self.probe_axross();
+        self.prune_cache(false);
+    }
+
+    /// What the start's thread found: the machine's island, the local ones.
+    fn started(&mut self, found: world::Startup) {
+        self.starting = false;
+        if let (Some(m), Some(hwi)) = (found.machine, found.hw) {
             let id = self.next_id;
             self.next_id += 1;
             let mut isl = Island::new(
@@ -363,77 +580,81 @@ impl App {
                 "This machine".into(),
                 Ring::Hardware,
             );
-            isl.tree = hwi.tree.clone();
+            isl.tree = Arc::new(hwi.tree.clone());
             let l = Arc::new(hwi.layout.clone());
             let boxes = Arc::new(city::boxes_of(&l));
             let bvh = Arc::new(crate::pick::Bvh::build(&boxes));
-            isl.city = Some(IslandCity::new(Ring::Hardware, l, bvh, boxes));
+            let mut c = IslandCity::new(Ring::Hardware, l, bvh, boxes);
+            c.rebuild(self.theme);
+            isl.city = Some(c);
             isl.hw = Some(hwi);
             isl.dirty = false;
             isl.status.done = true;
-            self.islands.push(isl);
-            self.machine = Some(m);
+            // (first: the machine stands in the middle)
+            self.islands.insert(0, isl);
+            // the synthetic city lives on the first disk (for the beam)
+            if !m.disks.is_empty() {
+                for i in &mut self.islands {
+                    if matches!(i.source, IslandSource::Synthetic { .. }) {
+                        i.disks = vec![0];
+                    }
+                }
+            }
             if self.opts.machine.is_none() {
                 self.sampler = Some(hw::Sampler::start(self.wake.clone()));
             }
+            self.machine = Some(m);
+            self.placed_sides.clear();
+            self.search_reset_all();
         }
-        let mut locals: Vec<(PathBuf, Option<mounts::Mount>)> = Vec::new();
-        if !self.opts.paths.is_empty() {
-            for p in &self.opts.paths {
-                let p = std::fs::canonicalize(p).unwrap_or_else(|_| p.clone());
-                locals.push((p, None));
-            }
-        } else if self.opts.mounts && self.opts.synthetic.is_none() {
-            let all = mounts::system_mounts();
-            for m in mounts::visible(&all, self.settings.show_pseudo_mounts) {
-                locals.push((m.mount_point.clone(), Some(m)));
-            }
-        }
-        let all_mounts = if self.opts.paths.is_empty() && self.opts.mounts {
-            mounts::system_mounts()
-        } else {
-            Vec::new()
-        };
-        for (root, mount) in locals {
-            let title = match &mount {
+        for local in found.locals {
+            let title = match &local.mount {
                 Some(m) => m.label(),
-                None => root.to_string_lossy().into_owned(),
+                None => local.root.to_string_lossy().into_owned(),
             };
-            let skip = mounts::nested_below(&all_mounts, &root);
+            let sensitive = local
+                .mount
+                .as_ref()
+                .is_some_and(|m| matches!(m.kind, MountKind::Network | MountKind::Removable));
             let i = self.add_island(
                 IslandSource::Local {
-                    root,
-                    mount: mount.clone(),
+                    root: local.root,
+                    mount: local.mount,
                 },
                 title,
                 Ring::Local,
             );
-            if let (Some(m), Some(machine)) = (&mount, &self.machine) {
-                self.islands[i].disk = hw::disk_of(machine, m.dev);
-            }
-            self.start_walk(i, &skip);
+            self.islands[i].disks = local.disks;
+            // (room for what its file system holds, up to the walk's budget)
+            self.islands[i].expected = local.expected.map_or(0, |n| {
+                (n as usize).min(self.settings.walk_budget.max(1) * 11 / 10)
+            });
+            self.islands[i].sensitive = sensitive;
+            self.start_walk(i, &local.skip);
         }
-        if let Some(files) = self.opts.synthetic {
-            let i = self.add_island(
-                IslandSource::Synthetic { files, seed: 7 },
-                format!("synthetic city ({files} files)"),
-                Ring::Local,
-            );
-            // (it lives on the first disk, for the beam)
-            if self.machine.as_ref().is_some_and(|m| !m.disks.is_empty()) {
-                self.islands[i].disk = Some(0);
-            }
-            self.start_walk(i, &[]);
+    }
+
+    /// Islands were put before others: every search hit's island index
+    /// moved - the search starts over.
+    fn search_reset_all(&mut self) {
+        if let Some(s) = &self.search {
+            let q = s.query.clone();
+            self.search = Some(Search::new(&q));
         }
-        if self.opts.mcp && self.settings.mcp.enabled {
-            self.connect_mcp();
-        }
+        self.selected = None;
+        self.sel_box = None;
+        self.preview = None;
+        self.hover = None;
     }
 
     fn add_island(&mut self, source: IslandSource, title: String, ring: Ring) -> usize {
         let id = self.next_id;
         self.next_id += 1;
-        self.islands.push(Island::new(id, source, title, ring));
+        let remote = source.is_remote();
+        let mut isl = Island::new(id, source, title, ring);
+        // (a remote backend's walk is cached only when the settings say so)
+        isl.sensitive = remote;
+        self.islands.push(isl);
         self.islands.len() - 1
     }
 
@@ -448,16 +669,28 @@ impl App {
         isl.saved = false;
         isl.requested.clear();
         isl.status = walk::Status::default();
+        let cache_dir = cache_dir.filter(|_| !isl.sensitive || self.settings.cache_sensitive);
         let root_name = isl.tree.root().name.clone();
-        if isl.city.is_some() || isl.from_cache.is_some() {
+        // (a city that is only a placeholder - a system being opened, a
+        // walk that failed - is replaced as the walk streams in)
+        if (isl.city.is_some() && isl.tree.len() > 1) || isl.from_cache.is_some() {
             // a city stands: the new walk goes beside it
-            isl.fresh = Some(crate::tree::Tree::new(&root_name, 0));
+            isl.fresh = Some(crate::tree::Tree::with_room(
+                &root_name,
+                isl.expected.min(4_000_000),
+            ));
         } else {
-            isl.replace_tree(crate::tree::Tree::new(&root_name, 0));
+            let mut t = crate::tree::Tree::new(&root_name, 0);
+            // (untouched room: memory is only used as entries come)
+            t.nodes.reserve(isl.expected.min(4_000_000));
+            isl.replace_tree(t);
             isl.fresh = None;
             if let Some(dir) = cache_dir.filter(|_| isl.generation == 1) {
                 // the cached city first, the walk beside it
-                isl.fresh = Some(crate::tree::Tree::new(&root_name, 0));
+                isl.fresh = Some(crate::tree::Tree::with_room(
+                    &root_name,
+                    isl.expected.min(4_000_000),
+                ));
                 world::load_cache(
                     dir,
                     isl.source.key(),
@@ -483,10 +716,26 @@ impl App {
         let wake = self.wake.clone();
         let configured = self.settings.mcp.command.clone();
         let allow = self.settings.mcp.allow_uvx_download;
-        let open = self.settings.mcp.open_profiles.clone();
+        let given = self.opts.mcp_client.clone();
         let _ = std::thread::Builder::new()
             .name("afm-mcp".into())
             .spawn(move || {
+                if let Some(c) = given {
+                    // (the tests' server, connected already)
+                    let result = c.backends(Duration::from_secs(30)).map(|b| {
+                        let systems = c.systems(Duration::from_secs(30));
+                        (
+                            c.clone(),
+                            "given".to_string(),
+                            "(given)".to_string(),
+                            b,
+                            systems,
+                        )
+                    });
+                    let _ = tx.send(Bg::Mcp(result.map_err(Some)));
+                    wake();
+                    return;
+                }
                 let found = mcp::find_server(Some(&configured), allow);
                 let Some((cmd, label)) = found else {
                     let _ = tx.send(Bg::Mcp(Err(None)));
@@ -498,25 +747,419 @@ impl App {
                 } else {
                     Duration::from_secs(30)
                 };
-                let client = match Client::spawn(&cmd, timeout) {
-                    Ok(c) => Ok(c),
+                // (read-only: never --mcp-write; the remote group for the
+                // saved connections - a server that does not know it is
+                // started without it, and then says it cannot list them)
+                let (client, used) = match Client::spawn(&cmd, timeout) {
+                    Ok(c) => (Ok(c), cmd.clone()),
                     Err(_) if cmd.iter().any(|a| a == "--mcp-tools") => {
-                        Client::spawn(&mcp::without_groups(&cmd), timeout)
+                        let plain = mcp::without_groups(&cmd);
+                        (Client::spawn(&plain, timeout), plain)
                     }
-                    Err(e) => Err(e),
+                    Err(e) => (Err(e), cmd.clone()),
                 };
+                let line = used
+                    .iter()
+                    .map(|a| crate::tree::display_text(a))
+                    .collect::<Vec<_>>()
+                    .join(" ");
                 let result = client.and_then(|c| {
                     let c = Arc::new(c);
-                    for p in &open {
-                        let _ = c.open_profile(p, Duration::from_secs(60));
-                    }
                     let backends = c.backends(Duration::from_secs(30))?;
-                    let profiles = c.profiles(Duration::from_secs(30)).unwrap_or_default();
-                    Ok((c, label, backends, profiles))
+                    let systems = c.systems(Duration::from_secs(30));
+                    Ok((c, label, line, backends, systems))
                 });
                 let _ = tx.send(Bg::Mcp(result.map_err(Some)));
                 wake();
             });
+    }
+
+    // ------------------------------------------------------------------
+    // the systems of axross's connection manager
+    // ------------------------------------------------------------------
+
+    /// The saved connections axross's server listed (empty when it cannot).
+    pub fn system_profiles(&self) -> Vec<mcp::Profile> {
+        match &self.mcp {
+            McpState::Connected { systems: Ok(s), .. } => s.profiles.clone(),
+            _ => Vec::new(),
+        }
+    }
+
+    fn profile(&self, name: &str) -> Option<mcp::Profile> {
+        match &self.mcp {
+            McpState::Connected { systems: Ok(s), .. } => {
+                s.profiles.iter().find(|p| p.name == name).cloned()
+            }
+            _ => None,
+        }
+    }
+
+    /// The protocol's name in axross's registry.
+    fn protocol_name(&self, id: &str) -> Option<String> {
+        match &self.mcp {
+            McpState::Connected { systems: Ok(s), .. } => s
+                .protocols
+                .iter()
+                .find(|p| p.id == id)
+                .map(|p| p.name.clone()),
+            _ => None,
+        }
+    }
+
+    /// The island of a system (by its profile's name).
+    pub fn system_island(&self, name: &str) -> Option<usize> {
+        if let Some(id) = self.live.get(name).and_then(|l| l.island)
+            && let Some(i) = self.islands.iter().position(|x| x.id == id)
+        {
+            return Some(i);
+        }
+        self.islands.iter().position(|x| {
+            matches!(&x.source, IslandSource::Mcp { backend, .. } if backend.profile.as_deref() == Some(name))
+        })
+    }
+
+    /// Where a system stands.
+    pub fn system_state(&self, name: &str) -> SysState {
+        if let Some(l) = self.live.get(name)
+            && matches!(
+                l.state,
+                SysState::Connecting
+                    | SysState::Failed(_)
+                    | SysState::NeedsSecret
+                    | SysState::Unavailable(_)
+            )
+        {
+            return l.state.clone();
+        }
+        if let Some(i) = self.system_island(name) {
+            let isl = &self.islands[i];
+            return match &isl.status.error {
+                Some(e) => SysState::Failed(e.clone()),
+                None if isl.walker.is_none() && !isl.status.done => SysState::NotOpen,
+                None if !isl.status.done => SysState::Walking,
+                None => SysState::Open,
+            };
+        }
+        match self.profile(name) {
+            Some(p) if p.needs_secret => SysState::NeedsSecret,
+            Some(p) if !p.openable => SysState::Unavailable(p.reason),
+            _ => SysState::NotOpen,
+        }
+    }
+
+    /// Teleports to a system: there at once when its island stands;
+    /// otherwise it is opened through axross's server - its island raised
+    /// at once, "connecting…" - and the camera flies there. `path`: a
+    /// district inside it to fly to once it has been read (a saved spot).
+    pub fn teleport_system(&mut self, name: &str, path: Vec<Vec<u8>>) {
+        let Some(profile) = self.profile(name) else {
+            self.toast(format!(
+                "No saved connection named {}",
+                crate::tree::display_text(std::ffi::OsStr::new(name))
+            ));
+            return;
+        };
+        let state = self.system_state(name);
+        if state == SysState::NeedsSecret {
+            self.open_ask = Some(OpenAsk::Unlock {
+                name: profile.name.clone(),
+            });
+            return;
+        }
+        if let Some(i) = self.system_island(name) {
+            if matches!(state, SysState::Failed(_) | SysState::NotOpen) {
+                self.open_system(name, Some(i));
+            }
+            self.fly_when_ready(i, path, &profile.name);
+            return;
+        }
+        match state {
+            SysState::NeedsSecret => {
+                self.open_ask = Some(OpenAsk::Unlock {
+                    name: profile.name.clone(),
+                });
+                return;
+            }
+            SysState::Unavailable(why) => {
+                self.toast(format!("{} cannot be opened here: {why}", profile.name));
+                return;
+            }
+            _ => {}
+        }
+        if let Some(i) = self.open_system(name, None) {
+            self.fly_when_ready(i, path, &profile.name);
+        }
+    }
+
+    /// Flies to island `i` (and the district at `path` in it) as soon as
+    /// it stands (and that district has been read).
+    fn fly_when_ready(&mut self, i: usize, path: Vec<Vec<u8>>, what: &str) {
+        self.pending_fly = Some(PendingFly {
+            island: self.islands[i].id,
+            path,
+            deadline: Instant::now() + crate::systems::SPOT_TIMEOUT,
+            what: what.to_string(),
+        });
+    }
+
+    /// Raises the island of a system (unless it stands: `at`) and opens it
+    /// through axross's server on a thread of its own. The island's index.
+    fn open_system(&mut self, name: &str, at: Option<usize>) -> Option<usize> {
+        let profile = self.profile(name)?;
+        let McpState::Connected { client, .. } = &self.mcp else {
+            return None;
+        };
+        let client = client.clone();
+        if profile.needs_secret {
+            self.live.entry(name.to_string()).or_default().state = SysState::NeedsSecret;
+            return at;
+        }
+        let i = match at.or_else(|| self.system_island(name)) {
+            Some(i) => i,
+            None => {
+                let family = crate::systems::Family::of(&profile.protocol);
+                let proto = profile
+                    .protocol_name
+                    .clone()
+                    .or_else(|| self.protocol_name(&profile.protocol))
+                    .unwrap_or_else(|| profile.protocol.clone());
+                let title = format!("{} {}  ({proto}, axross)", family.sign(), profile.name);
+                let backend = Backend {
+                    id: profile
+                        .open_as
+                        .clone()
+                        .unwrap_or_else(|| format!("profile:{}", profile.name)),
+                    class: String::new(),
+                    name: profile.name.clone(),
+                    remote: true,
+                    is_default: false,
+                    profile: Some(profile.name.clone()),
+                    protocol: Some(profile.protocol.clone()),
+                    production: profile.production,
+                };
+                self.add_island(
+                    IslandSource::Mcp {
+                        client: client.clone(),
+                        backend,
+                        root: "/".into(),
+                    },
+                    title,
+                    Ring::Remote,
+                )
+            }
+        };
+        self.attempts += 1;
+        let attempt = self.attempts;
+        {
+            let isl = &mut self.islands[i];
+            // (a walk that runs is ended: the new connect starts it again)
+            isl.walker = None;
+            isl.status = walk::Status::default();
+            isl.generation += 1;
+        }
+        let live = self.live.entry(name.to_string()).or_default();
+        live.state = SysState::Connecting;
+        live.island = Some(self.islands[i].id);
+        live.since = Some(Instant::now());
+        live.attempt = attempt;
+        let tx = self.bg_tx.clone();
+        let wake = self.wake.clone();
+        let n = name.to_string();
+        let timeout = self
+            .opts
+            .connect_timeout
+            .unwrap_or(crate::systems::CONNECT_TIMEOUT);
+        let _ = std::thread::Builder::new()
+            .name("afm-system-open".into())
+            .spawn(move || {
+                let result = client.open_profile(&n, timeout).map_err(|e| {
+                    if e.contains("timed out") || e.contains("no answer") {
+                        format!(
+                            "no answer within {} s (the host may be down)",
+                            timeout.as_secs()
+                        )
+                    } else {
+                        e
+                    }
+                });
+                let _ = tx.send(Bg::SystemOpened {
+                    name: n,
+                    attempt,
+                    result,
+                });
+                wake();
+            });
+        Some(i)
+    }
+
+    /// A system's connect came back: its walk starts, or it failed (said
+    /// on its island and in the menu).
+    fn system_opened(&mut self, name: &str, attempt: u64, result: Result<mcp::Opened, String>) {
+        let Some(live) = self.live.get_mut(name) else {
+            return;
+        };
+        if live.attempt != attempt || live.state != SysState::Connecting {
+            // (cancelled, or tried again since: this answer is old - a
+            // connection it opened is closed unless a newer try uses it)
+            if let (Ok(opened), false) = (&result, live.state == SysState::Connecting)
+                && let McpState::Connected { client, .. } = &self.mcp
+            {
+                let (client, backend) = (client.clone(), opened.backend.clone());
+                let _ = std::thread::Builder::new()
+                    .name("afm-system-close".into())
+                    .spawn(move || {
+                        let _ = client.close_profile(&backend, Duration::from_secs(30));
+                    });
+            }
+            return;
+        }
+        live.since = None;
+        let Some(i) = live
+            .island
+            .and_then(|id| self.islands.iter().position(|x| x.id == id))
+        else {
+            return;
+        };
+        match result {
+            Ok(opened) => {
+                live.state = SysState::Walking;
+                if let IslandSource::Mcp { backend, .. } = &mut self.islands[i].source {
+                    backend.id = opened.backend;
+                    if let Some(p) = opened.protocol {
+                        backend.protocol = Some(p);
+                    }
+                }
+                self.start_walk(i, &[]);
+            }
+            Err(e) => {
+                let lower = e.to_ascii_lowercase();
+                let secret = (lower.contains("password") || lower.contains("passphrase"))
+                    && (lower.contains("not stored") || lower.contains("keyring"));
+                live.state = if secret {
+                    SysState::NeedsSecret
+                } else {
+                    SysState::Failed(e.clone())
+                };
+                let isl = &mut self.islands[i];
+                isl.status.error = Some(e);
+                isl.status.done = true;
+                if self
+                    .pending_fly
+                    .as_ref()
+                    .is_some_and(|f| f.island == isl.id && !f.path.is_empty())
+                {
+                    self.pending_fly = None;
+                }
+            }
+        }
+    }
+
+    /// Gives up a connect under way (its late answer is dropped); the
+    /// island stays, "cancelled", with a retry.
+    pub fn cancel_system(&mut self, name: &str) {
+        let Some(live) = self.live.get_mut(name) else {
+            return;
+        };
+        if live.state != SysState::Connecting {
+            return;
+        }
+        live.state = SysState::Failed("cancelled".into());
+        live.since = None;
+        if let Some(i) = live
+            .island
+            .and_then(|id| self.islands.iter().position(|x| x.id == id))
+        {
+            let isl = &mut self.islands[i];
+            isl.status.error = Some("cancelled".into());
+            isl.status.done = true;
+            if self
+                .pending_fly
+                .as_ref()
+                .is_some_and(|f| f.island == isl.id)
+            {
+                self.pending_fly = None;
+            }
+        }
+    }
+
+    /// Lists the systems again (after unlocking one in axross).
+    pub fn refresh_systems(&mut self) {
+        let McpState::Connected { client, .. } = &self.mcp else {
+            return;
+        };
+        let client = client.clone();
+        let tx = self.bg_tx.clone();
+        let wake = self.wake.clone();
+        let _ = std::thread::Builder::new()
+            .name("afm-systems".into())
+            .spawn(move || {
+                let _ = tx.send(Bg::Systems(client.systems(Duration::from_secs(30))));
+                wake();
+            });
+    }
+
+    /// The flight that waits for its target: there when the island stands
+    /// (and the district at its path has been read - folders on the way
+    /// asked for); given up at its deadline or when the island failed.
+    fn pending_flight(&mut self) {
+        let Some(f) = self.pending_fly.clone() else {
+            return;
+        };
+        let Some(i) = self.islands.iter().position(|x| x.id == f.island) else {
+            self.pending_fly = None;
+            return;
+        };
+        if let Some(e) = self.islands[i].status.error.clone() {
+            self.pending_fly = None;
+            self.toast(format!("{}: {e}", f.what));
+            return;
+        }
+        if Instant::now() > f.deadline {
+            self.pending_fly = None;
+            self.toast(format!("{} could not be reached in time", f.what));
+            return;
+        }
+        let shown = self.islands[i]
+            .city
+            .as_ref()
+            .is_some_and(|c| c.shown && c.target.is_none_or(|t| t == c.offset));
+        if !shown {
+            return;
+        }
+        let (node, rest) = find_path(&self.islands[i].tree, &f.path);
+        if rest == 0 {
+            // (its district stands in the layout: there)
+            if self.node_box(i, node).is_some() {
+                self.pending_fly = None;
+                self.teleport_to(i, node);
+            }
+            return;
+        }
+        // the folder on the way, read when it is not yet
+        let isl = &mut self.islands[i];
+        if let Some(n) = isl.tree.get(node)
+            && n.kind == Kind::Dir
+            && matches!(n.listing, crate::tree::Listing::Unlisted)
+            && isl.can_ask()
+            && isl.requested.insert(node)
+            && let Some(w) = isl.walker.as_ref()
+        {
+            w.list(node);
+        }
+    }
+
+    /// Ends axross's server: killed and reaped, a call still waiting
+    /// included (the walks holding the client hear "ended").
+    pub fn shutdown_mcp(&mut self) {
+        if let McpState::Connected { client, .. } = &self.mcp {
+            client.shutdown();
+        }
+        for isl in &self.islands {
+            if let IslandSource::Mcp { client, .. } = &isl.source {
+                client.shutdown();
+            }
+        }
     }
 
     fn add_backends(&mut self, client: &Arc<Client>, backends: Vec<Backend>) {
@@ -556,6 +1199,7 @@ impl App {
     /// Takes what the threads sent, at most `budget` of time.
     pub fn pump(&mut self, budget: Duration) {
         let start = Instant::now();
+        let mut lap: Vec<(&str, Duration)> = Vec::new();
         // cached cities
         while let Ok((id, got)) = self.cache_rx.try_recv() {
             let Some(isl) = self.islands.iter_mut().find(|i| i.id == id) else {
@@ -583,6 +1227,7 @@ impl App {
                 }
             }
         }
+        lap.push(("walks", start.elapsed()));
         // walks
         let mut changed = Vec::new();
         let mut swapped: Vec<usize> = Vec::new();
@@ -598,18 +1243,14 @@ impl App {
                 continue;
             }
             match msg.event {
-                Event::Batch(b) => {
-                    let shown = isl.fresh.is_none();
-                    if !isl.walk_tree().apply(b) {
-                        // out of step (never expected): the walk starts over
+                Event::Batch(b) => match isl.apply_batch(b) {
+                    Ok(true) => changed.push(i),
+                    Ok(false) => {}
+                    Err(world::OutOfStep) => {
+                        // out of step (never expected): the walk ends here
                         isl.walker = None;
-                        continue;
                     }
-                    if shown {
-                        isl.dirty = true;
-                        changed.push(i);
-                    }
-                }
+                },
                 Event::Status(s) => {
                     let done = s.done;
                     isl.status = s;
@@ -630,11 +1271,26 @@ impl App {
                             swapped.push(i);
                         }
                     }
-                    if done && isl.fresh.is_none() && !isl.saved {
-                        isl.saved = true;
-                        self.save_cache(i);
-                    }
                 }
+            }
+        }
+        lap.push(("deferred", start.elapsed()));
+        // batches that waited for a tree lent out (the layout, the cache)
+        for (i, isl) in self.islands.iter_mut().enumerate() {
+            if !isl.deferred.is_empty() {
+                match isl.drain_deferred(Duration::from_millis(4)) {
+                    Ok(true) => changed.push(i),
+                    Ok(false) => {}
+                    Err(world::OutOfStep) => isl.walker = None,
+                }
+            }
+        }
+        // a walk done and every batch of it in the tree: cached
+        for i in 0..self.islands.len() {
+            let isl = &self.islands[i];
+            if isl.status.done && isl.fresh.is_none() && !isl.saved && isl.deferred.is_empty() {
+                self.islands[i].saved = true;
+                self.save_cache(i);
             }
         }
         for &i in &swapped {
@@ -654,28 +1310,67 @@ impl App {
         {
             s.resume();
         }
-        // layouts
-        while let Ok(done) = self.layout.rx.try_recv() {
-            let Some(isl) = self.islands.iter_mut().find(|i| i.id == done.id) else {
-                continue;
-            };
-            isl.layout_pending = false;
-            if done.generation != isl.epoch || done.layout.nodes > isl.tree.len() {
-                isl.dirty = true;
-                continue;
+        lap.push(("layouts", start.elapsed()));
+        // layouts, and instances for islands that moved
+        while let Ok(made) = self.layout.rx.try_recv() {
+            match made {
+                world::Made::Layout(done) => {
+                    let Some(isl) = self.islands.iter_mut().find(|i| i.id == done.id) else {
+                        continue;
+                    };
+                    isl.layout_pending = false;
+                    if done.generation != isl.epoch || done.layout.nodes > isl.tree.len() {
+                        isl.dirty = true;
+                        continue;
+                    }
+                    isl.stale = false;
+                    let mut c = IslandCity::new(isl.ring, done.layout, done.bvh, done.boxes);
+                    // (a new island is drawn once it stands where it belongs;
+                    // one that stood keeps standing where it was meanwhile)
+                    // (placed again by place_islands: a placing asked for
+                    // the old layout is dropped when it comes)
+                    c.shown = isl.city.as_ref().is_some_and(|o| o.shown);
+                    c.set_instances(done.inst);
+                    // (the old city's memory: given back elsewhere)
+                    if let Some(old) = isl.city.take() {
+                        world::drop_later(old);
+                    }
+                    if let Some(tint) = family_tint(&isl.source) {
+                        Arc::make_mut(&mut c.inst).ground.color = tint;
+                    }
+                    isl.city = Some(c);
+                    self.world_version += 1;
+                    self.placed_sides.clear();
+                }
+                world::Made::Placed { id, layout, inst } => {
+                    let tint = self
+                        .islands
+                        .iter()
+                        .find(|i| i.id == id)
+                        .and_then(|i| family_tint(&i.source));
+                    if let Some(c) = self
+                        .islands
+                        .iter_mut()
+                        .find(|i| i.id == id)
+                        .and_then(|i| i.city.as_mut())
+                        .filter(|c| Arc::ptr_eq(&c.layout, &layout))
+                    {
+                        let old = std::mem::take(&mut c.inst);
+                        c.set_instances(inst);
+                        world::drop_later(old);
+                        if let Some(tint) = tint {
+                            Arc::make_mut(&mut c.inst).ground.color = tint;
+                        }
+                        self.world_version += 1;
+                        self.beams_dirty = true;
+                    }
+                }
             }
-            isl.stale = false;
-            let ring = isl.ring;
-            isl.city = Some(IslandCity::new(
-                ring,
-                Arc::new(done.layout),
-                Arc::new(done.bvh),
-                Arc::new(done.boxes),
-            ));
-            self.world_version += 1;
-            self.placed_sides.clear();
         }
-        // ask for layouts
+        lap.push(("ask", start.elapsed()));
+        // ask for layouts (the tree lent, not copied)
+        let theme = self.theme;
+        let by_alloc = self.settings.size_by_allocated;
         for isl in &mut self.islands {
             if isl.dirty
                 && !isl.layout_pending
@@ -688,25 +1383,50 @@ impl App {
                 self.layout.ask(Job {
                     id: isl.id,
                     generation: isl.epoch,
-                    nodes: snapshot(&isl.tree),
+                    tree: isl.tree.clone(),
+                    ring: isl.ring,
+                    offset: isl.city.as_ref().map_or([0.0, 0.0], |c| c.offset),
+                    theme,
+                    by_alloc,
                 });
             }
         }
+        lap.push(("bg", start.elapsed()));
         // the rest
         while let Ok(bg) = self.bg_rx.try_recv() {
             match bg {
-                Bg::Mcp(Ok((client, label, backends, profiles))) => {
+                Bg::Mcp(Ok((client, label, command, backends, systems))) => {
                     self.mcp = McpState::Connected {
                         label,
+                        command,
                         client: client.clone(),
-                        profiles,
+                        systems,
                     };
                     self.add_backends(&client, backends);
+                    // the systems opened at the start (on their own: a hung
+                    // host holds nothing else)
+                    for name in self.settings.mcp.open_profiles.clone() {
+                        self.open_system(&name, None);
+                    }
+                }
+                Bg::SystemOpened {
+                    name,
+                    attempt,
+                    result,
+                } => self.system_opened(&name, attempt, result),
+                Bg::Systems(systems) => {
+                    if let McpState::Connected { systems: s, .. } = &mut self.mcp {
+                        *s = systems;
+                    }
+                    if let Some(name) = self.retry_after_refresh.take() {
+                        if let Some(l) = self.live.get_mut(&name) {
+                            l.state = SysState::NotOpen;
+                        }
+                        self.teleport_system(&name, Vec::new());
+                    }
                 }
                 Bg::Mcp(Err(None)) => self.mcp = McpState::NotFound,
                 Bg::Mcp(Err(Some(e))) => self.mcp = McpState::Failed(e),
-                Bg::Backends(client, Ok(b)) => self.add_backends(&client, b),
-                Bg::Backends(_, Err(e)) => self.toast(format!("axross: {e}")),
                 Bg::Preview(island, node, p) => {
                     if let Some(v) = self.preview.as_mut()
                         && v.island == island
@@ -719,15 +1439,52 @@ impl App {
                 }
                 Bg::Opened(Ok(how)) => self.toast(format!("Opened with {how}")),
                 Bg::Opened(Err(e)) => self.toast(e),
+                Bg::Startup(found) => self.started(*found),
+                Bg::Axross(state, probe) => {
+                    self.axross = state;
+                    self.axross_manager = probe.as_ref().is_some_and(|p| p.connection_manager);
+                    if probe.is_some() && probe != self.settings.axross_probe {
+                        self.settings.axross_probe = probe;
+                        let _ = settings::save(&self.settings_path, &self.settings);
+                    }
+                }
+                Bg::CachePruned(pruned, usage) => {
+                    self.cache_usage = Some(usage);
+                    if pruned.files > 0 && self.cache_clearing {
+                        self.toast(format!(
+                            "The cache is cleared: {} files, {}",
+                            pruned.files,
+                            hw::human_bytes(pruned.bytes)
+                        ));
+                    }
+                    self.cache_clearing = false;
+                }
+                Bg::OpenChecked(check) => self.open_checked(*check),
             }
         }
+        lap.push(("sampler", start.elapsed()));
         // the machine's live light
         if let Some(sampler) = self.sampler.as_mut()
             && let Some((loads, mem)) = sampler.poll().cloned()
         {
             self.apply_load(&loads, mem);
         }
+        lap.push(("place", start.elapsed()));
         self.place_islands();
+        self.pending_flight();
+        if self.opts.frame_stats && start.elapsed() > Duration::from_millis(20) {
+            lap.push(("end", start.elapsed()));
+            let mut prev = Duration::ZERO;
+            let parts: Vec<String> = lap
+                .iter()
+                .map(|(n, t)| {
+                    let d = *t - prev;
+                    prev = *t;
+                    format!("{n} {:.1}", d.as_secs_f32() * 1000.0)
+                })
+                .collect();
+            eprintln!("slow pump: before {}", parts.join(", "));
+        }
     }
 
     /// The processor's load as its towers' light, the memory's in use.
@@ -738,6 +1495,7 @@ impl App {
         let (Some(hwi), Some(c)) = (isl.hw.as_ref(), isl.city.as_mut()) else {
             return;
         };
+        let mut changed = false;
         for (node, part) in &hwi.parts {
             let Some(Placed::Building(b)) = c.layout.placed.get(*node as usize).copied() else {
                 continue;
@@ -747,44 +1505,97 @@ impl App {
                 Part::Module | Part::MemoryInUse => mem,
                 _ => continue,
             };
-            // eased: the light follows the load slowly (never a flash)
-            if let Some(inst) = c.buildings.get_mut(b as usize) {
-                let old = ((inst.info >> 8) & 0xff) as f32 / 255.0;
-                inst.set_glow(old + (target - old) * 0.5);
+            // eased: the light follows the load slowly (never a flash); a
+            // change too small to see changes nothing (no new frame set)
+            let Some(inst) = c.inst.buildings.get(b as usize) else {
+                continue;
+            };
+            let old = ((inst.info >> 8) & 0xff) as f32 / 255.0;
+            let new = old + (target - old) * 0.5;
+            if (new - old).abs() < 0.03 {
+                continue;
             }
+            Arc::make_mut(&mut c.inst).buildings[b as usize].set_glow(new);
+            changed = true;
         }
-        self.world_version += 1;
+        if changed {
+            self.world_version += 1;
+        }
     }
 
+    /// Whether island `i`'s walk is kept in the cache: not the machine's,
+    /// not a tiny one, and one on a removable medium, a network file
+    /// system or a remote backend only when the settings say so.
+    fn cacheable(&self, i: usize) -> bool {
+        let isl = &self.islands[i];
+        !matches!(isl.source, IslandSource::Hardware)
+            && isl.tree.len() >= 2
+            && (!isl.sensitive || self.settings.cache_sensitive)
+    }
+
+    /// Saves island `i`'s walk: the tree lent to a thread, encoded there.
     fn save_cache(&self, i: usize) {
         let Some(dir) = self.cache_dir() else { return };
-        let isl = &self.islands[i];
-        if matches!(isl.source, IslandSource::Hardware) || isl.tree.len() < 2 {
+        if !self.cacheable(i) {
             return;
         }
-        let bytes = cache::encode(&isl.tree, &isl.source.key(), now_secs());
+        let isl = &self.islands[i];
+        let tree = isl.tree.clone();
         let key = isl.source.key();
         let _ = std::thread::Builder::new()
             .name("afm-cache-save".into())
             .spawn(move || {
+                let bytes = cache::encode(&tree, &key, now_secs());
+                drop(tree);
                 let _ = cache::save(&dir, &key, &bytes);
             });
     }
 
-    /// Saves every island's cache and the settings (at the end).
+    /// Prunes the cache folder (at the start, and "clear" in the
+    /// settings: everything) - on a thread.
+    fn prune_cache(&mut self, everything: bool) {
+        let Some(dir) = self.cache_dir() else { return };
+        let (max_bytes, max_age) = if everything {
+            (0, Duration::ZERO)
+        } else {
+            (
+                self.settings.cache_max_mb << 20,
+                Duration::from_secs(self.settings.cache_max_days * 86_400),
+            )
+        };
+        self.cache_clearing = everything;
+        let tx = self.bg_tx.clone();
+        let wake = self.wake.clone();
+        let _ = std::thread::Builder::new()
+            .name("afm-cache-prune".into())
+            .spawn(move || {
+                let pruned = cache::prune(&dir, max_bytes, max_age);
+                let usage = cache::usage(&dir);
+                let _ = tx.send(Bg::CachePruned(pruned, usage));
+                wake();
+            });
+    }
+
+    /// Saves every island's cache and the settings, and ends axross's
+    /// server (at the end).
     pub fn save_all(&mut self) {
         if let Some(dir) = self.cache_dir() {
-            for isl in &self.islands {
-                if matches!(isl.source, IslandSource::Hardware)
-                    || isl.tree.len() < 2
-                    || isl.fresh.is_some()
-                {
-                    continue;
+            let jobs: Vec<(Arc<crate::tree::Tree>, String)> = (0..self.islands.len())
+                .filter(|&i| self.cacheable(i) && self.islands[i].fresh.is_none())
+                .map(|i| (self.islands[i].tree.clone(), self.islands[i].source.key()))
+                .collect();
+            // (in parallel: the window is closing)
+            std::thread::scope(|sc| {
+                for (tree, key) in &jobs {
+                    let dir = &dir;
+                    sc.spawn(move || {
+                        let bytes = cache::encode(tree, key, now_secs());
+                        let _ = cache::save(dir, key, &bytes);
+                    });
                 }
-                let bytes = cache::encode(&isl.tree, &isl.source.key(), now_secs());
-                let _ = cache::save(&dir, &isl.source.key(), &bytes);
-            }
+            });
         }
+        self.shutdown_mcp();
         self.settings.fly_speed = self.camera.speed;
         if let Some(size) = self.window_size {
             self.settings.window = Some(size);
@@ -792,31 +1603,62 @@ impl App {
         let _ = settings::save(&self.settings_path, &self.settings);
     }
 
-    /// Places the islands when a side changed; rebuilds their instances.
+    /// Places the islands when a side changed: the layout thread makes the
+    /// instances of each island that moves (no island is rebuilt here, and
+    /// one that stays is not rebuilt at all).
     fn place_islands(&mut self) {
+        self.scale_machine();
         let sides: Vec<f32> = self
             .islands
             .iter()
             .map(|i| i.city.as_ref().map_or(0.0, |c| c.side()))
             .collect();
-        if sides == self.placed_sides {
-            return;
-        }
-        self.placed_sides = sides;
-        let with_city: Vec<usize> = (0..self.islands.len())
-            .filter(|&i| self.islands[i].city.is_some())
-            .collect();
-        let input: Vec<(Ring, f32)> = with_city
-            .iter()
-            .map(|&i| (self.islands[i].ring, self.placed_sides[i]))
-            .collect();
-        let offsets = city::place(&input);
-        let theme = self.theme;
-        for (k, &i) in with_city.iter().enumerate() {
-            if let Some(c) = self.islands[i].city.as_mut() {
-                c.offset = offsets[k];
-                c.rebuild(theme);
+        if sides != self.placed_sides {
+            self.placed_sides = sides;
+            let with_city: Vec<usize> = (0..self.islands.len())
+                .filter(|&i| self.islands[i].city.is_some())
+                .collect();
+            let input: Vec<(Ring, f32)> = with_city
+                .iter()
+                .map(|&i| (self.islands[i].ring, self.placed_sides[i]))
+                .collect();
+            let offsets = city::place(&input);
+            let theme = self.theme;
+            for (k, &i) in with_city.iter().enumerate() {
+                let id = self.islands[i].id;
+                let hw = self.islands[i].hw.is_some();
+                let Some(c) = self.islands[i].city.as_mut() else {
+                    continue;
+                };
+                let want = offsets[k];
+                if c.offset == want {
+                    c.target = Some(want);
+                    c.shown = true;
+                    continue;
+                }
+                if c.target == Some(want) {
+                    continue; // (asked already)
+                }
+                c.target = Some(want);
+                if hw {
+                    // (the machine's island is small: placed here)
+                    c.offset = want;
+                    c.rebuild(theme);
+                    c.shown = true;
+                } else {
+                    self.layout.place(world::PlaceJob {
+                        id,
+                        layout: c.layout.clone(),
+                        ring: c.ring,
+                        offset: want,
+                        theme,
+                    });
+                }
             }
+            self.beams_dirty = true;
+        }
+        if !std::mem::take(&mut self.beams_dirty) {
+            return;
         }
         // the beams from the disks to their islands
         self.beams.clear();
@@ -836,20 +1678,55 @@ impl App {
                 }
             }
             for isl in &self.islands {
-                let (Some(d), Some(c)) = (isl.disk, isl.city.as_ref()) else {
+                let Some(c) = isl.city.as_ref().filter(|c| c.shown) else {
                     continue;
                 };
-                let Some((_, from)) = disk_at.iter().find(|(k, _)| *k == d) else {
-                    continue;
-                };
-                let to = c.center();
-                // (to the island's edge facing the machine)
-                let dir = (to - *from).normalized();
-                let end = to - dir * (c.side() * 0.5);
-                self.beams
-                    .push(city::beam(*from, end, city::pack_color(self.theme.accent)));
+                // (one beam from each disk it lives on: RAID members, a pool)
+                for d in &isl.disks {
+                    let Some((_, from)) = disk_at.iter().find(|(k, _)| k == d) else {
+                        continue;
+                    };
+                    let to = c.center();
+                    // (to the island's edge facing the machine)
+                    let dir = (to - *from).normalized();
+                    let end = to - dir * (c.side() * 0.5);
+                    self.beams
+                        .push(city::beam(*from, end, city::pack_color(self.theme.accent)));
+                }
             }
         }
+        self.world_version += 1;
+    }
+
+    /// The machine's island grows with the biggest city (about a quarter of
+    /// its side, in steps of half again): never a speck beside it.
+    fn scale_machine(&mut self) {
+        let biggest = self
+            .islands
+            .iter()
+            .filter(|i| i.hw.is_none())
+            .filter_map(|i| i.city.as_ref().map(|c| c.side()))
+            .fold(0.0f32, f32::max);
+        let k = machine_scale(biggest, hw::SIDE);
+        if k == self.machine_scale {
+            return;
+        }
+        let theme = self.theme;
+        let Some(isl) = self.islands.iter_mut().find(|i| i.hw.is_some()) else {
+            return;
+        };
+        let (Some(hwi), Some(old)) = (isl.hw.as_ref(), isl.city.as_ref()) else {
+            return;
+        };
+        self.machine_scale = k;
+        let l = Arc::new(hwi.layout.scaled(k));
+        let boxes = Arc::new(city::boxes_of(&l));
+        let bvh = Arc::new(crate::pick::Bvh::build(&boxes));
+        let mut c = IslandCity::new(Ring::Hardware, l, bvh, boxes);
+        c.offset = old.offset;
+        c.rebuild(theme);
+        isl.city = Some(c);
+        // (the light it had comes back with the next sample)
         self.world_version += 1;
     }
 
@@ -995,8 +1872,11 @@ impl App {
             preview: None,
             texture: None,
         });
+        let not_open = matches!(isl.source, IslandSource::Mcp { .. }) && isl.walker.is_none();
         let at = match &isl.source {
             IslandSource::Local { root, .. } => Some(Where::Local(isl.tree.local_path(root, node))),
+            // (a system not open yet: nothing to ask its server)
+            IslandSource::Mcp { .. } if not_open => None,
             IslandSource::Mcp {
                 client,
                 backend,
@@ -1004,7 +1884,7 @@ impl App {
             } => Some(Where::Remote {
                 client: client.clone(),
                 backend: backend.id.clone(),
-                path: isl.tree.remote_path(root, node).into_bytes(),
+                path: isl.tree.remote_path_bytes(root, node),
             }),
             _ => None,
         };
@@ -1016,15 +1896,15 @@ impl App {
         };
         let name = n.name.to_string_lossy().into_owned();
         let (size, is_dir) = (n.size, n.kind == Kind::Dir);
-        let tx = self.bg_tx.clone();
-        let wake = self.wake.clone();
-        let _ = std::thread::Builder::new()
-            .name("afm-preview".into())
-            .spawn(move || {
-                let p = preview::load(&at, &name, size, is_dir);
-                let _ = tx.send(Bg::Preview(id, node, Box::new(p)));
-                wake();
-            });
+        // (one preview at a time: the worker takes only the newest request)
+        let _ = self.preview_jobs.send(PreviewJob {
+            island: id,
+            node,
+            at,
+            name,
+            size,
+            is_dir,
+        });
     }
 
     /// Runs a search (from the field, or tests).
@@ -1036,6 +1916,7 @@ impl App {
             Some(Search::new(query))
         };
         self.search_index = 0;
+        self.hits_page = 0;
         self.world_version += 1;
     }
 
@@ -1047,7 +1928,7 @@ impl App {
             return;
         }
         let trees: Vec<Option<&crate::tree::Tree>> =
-            self.islands.iter().map(|i| Some(&i.tree)).collect();
+            self.islands.iter().map(|i| Some(&*i.tree)).collect();
         let before = s.hits.len();
         s.step(&trees, budget);
         if s.hits.len() != before {
@@ -1078,7 +1959,7 @@ impl App {
             return Vec::new();
         };
         let mut out = Vec::new();
-        for &(i, n) in s.hits.iter().take(400) {
+        for &(i, n) in s.hits.iter().take(PILLARS) {
             let Some(b) = self.node_box(i, n) else {
                 continue;
             };
@@ -1129,20 +2010,30 @@ impl App {
                     .iter_mut()
                     .filter_map(|i| i.city.as_mut())
                     .collect();
-                city::select(&mut cities, eye, &frustum, &lod, &mut self.frame_set);
+                let budget = if self.opts.fixed_lod {
+                    usize::MAX
+                } else {
+                    city::FRAME_BUDGET
+                };
+                city::select_within(
+                    &mut cities,
+                    eye,
+                    &frustum,
+                    &lod,
+                    budget,
+                    &mut self.frame_set,
+                );
             }
             // unread folders near: asked for
             let want = std::mem::take(&mut self.frame_set.want);
             for (k, node) in &want {
                 if let Some(i) = self.island_of_city(*k) {
                     let isl = &mut self.islands[i];
-                    if isl.can_ask() && isl.requested.insert(*node) {
-                        if let Some(w) = isl.walker.as_ref() {
-                            w.list(*node);
-                        }
-                        if let Some(n) = isl.tree.nodes.get_mut(*node as usize) {
-                            n.listing = Listing::Pending;
-                        }
+                    if isl.can_ask()
+                        && isl.requested.insert(*node)
+                        && let Some(w) = isl.walker.as_ref()
+                    {
+                        w.list(*node);
                     }
                 }
             }
@@ -1220,7 +2111,9 @@ impl App {
     /// The camera's input from egui this frame.
     fn camera_input(&mut self, ui: &Ui, response: &egui::Response) -> Input {
         let mut input = Input::default();
-        let typing = ui.ctx().egui_wants_keyboard_input();
+        // (typing in a field: no flight; a button with the keyboard's
+        // focus - Tab - takes nothing from it)
+        let typing = ui.ctx().text_edit_focused() || self.modal_open();
         let (keys, mods, scroll, delta, motion) = ui.input(|i| {
             let k = |key| i.key_down(key);
             (
@@ -1272,11 +2165,28 @@ impl App {
         input
     }
 
+    /// A dialog that takes the keys is open.
+    fn modal_open(&self) -> bool {
+        self.open_ask.is_some() || self.ask_mode_open
+    }
+
     fn keys(&mut self, ctx: &egui::Context) {
-        if ctx.egui_wants_keyboard_input() {
+        if self.modal_open() {
+            return;
+        }
+        if ctx.text_edit_focused() {
             if ctx.input(|i| i.key_pressed(Key::Escape)) {
-                ctx.memory_mut(|m| m.request_focus(egui::Id::NULL));
+                ctx.memory_mut(|m| m.surrender_focus(m.focused().unwrap_or(egui::Id::NULL)));
             }
+            return;
+        }
+        // a button or another widget with the keyboard's focus (Tab): the
+        // shortcuts still work; Enter and Space are its own, Esc lets go
+        let widget_focus = ctx.memory(|m| m.focused());
+        if let Some(id) = widget_focus
+            && ctx.input(|i| i.key_pressed(Key::Escape))
+        {
+            ctx.memory_mut(|m| m.surrender_focus(id));
             return;
         }
         let (pressed, mods) = ctx.input(|i| {
@@ -1291,6 +2201,7 @@ impl App {
                 Key::O,
                 Key::Escape,
                 Key::M,
+                Key::L,
                 Key::Enter,
                 Key::Num1,
                 Key::Num2,
@@ -1320,12 +2231,41 @@ impl App {
                 Key::T => self.teleport_open = !self.teleport_open,
                 Key::Home => self.overview(true),
                 Key::H | Key::F1 => self.help_open = !self.help_open,
+                Key::Enter if widget_focus.is_some() => {}
                 Key::N | Key::Enter => self.next_hit(mods.shift),
-                Key::O => self.open_selected(!mods.shift, ctx),
+                Key::L => self.legend_open = !self.legend_open,
+                Key::O => self.open_selected(if mods.shift {
+                    OpenHow::DefaultProgram
+                } else {
+                    OpenHow::Axross
+                }),
                 Key::M => self.set_capture(ctx, !self.captured),
                 Key::Escape => {
                     if self.captured {
                         self.set_capture(ctx, false);
+                    } else if let Some(f) = self.pending_fly.take() {
+                        // (a flight that waits - and the connect it waits
+                        // for - given up)
+                        let name = self.live.iter().find_map(|(n, l)| {
+                            (l.island == Some(f.island) && l.state == SysState::Connecting)
+                                .then(|| n.clone())
+                        });
+                        if let Some(n) = name {
+                            self.cancel_system(&n);
+                        }
+                        self.toast(format!("{}: cancelled", f.what));
+                    } else if self.live.values().any(|l| l.state == SysState::Connecting) {
+                        // (connects under way: given up)
+                        let names: Vec<String> = self
+                            .live
+                            .iter()
+                            .filter(|(_, l)| l.state == SysState::Connecting)
+                            .map(|(n, _)| n.clone())
+                            .collect();
+                        for n in &names {
+                            self.cancel_system(n);
+                        }
+                        self.toast(format!("Connecting cancelled: {}", names.join(", ")));
                     } else {
                         self.selected = None;
                         self.sel_box = None;
@@ -1355,6 +2295,11 @@ impl App {
         }
     }
 
+    /// The mouse is captured (looking around).
+    pub fn captured(&self) -> bool {
+        self.captured
+    }
+
     fn set_capture(&mut self, ctx: &egui::Context, on: bool) {
         self.captured = on;
         if on {
@@ -1378,12 +2323,44 @@ impl App {
                 .unwrap_or_default(),
             None => format!("spot {n}"),
         };
+        // (chosen inside a system of axross's: the spot is that system and
+        // the path there - jumping to it opens the system again if needed)
+        let (system, path_b64, label) = match self.selected.and_then(|(i, node)| {
+            let isl = self.islands.get(i)?;
+            match &isl.source {
+                IslandSource::Mcp { backend, root, .. } => {
+                    let name = backend.profile.clone()?;
+                    let rel = isl
+                        .tree
+                        .chain(node)
+                        .iter()
+                        .skip(1)
+                        .map(|c| crate::tree::os_to_bytes(c))
+                        .collect::<Vec<_>>()
+                        .join(&b'/');
+                    let _ = root;
+                    Some((name, rel))
+                }
+                _ => None,
+            }
+        }) {
+            Some((name, rel)) => {
+                let shown = format!(
+                    "{name}: /{}",
+                    crate::tree::display_text(&crate::tree::os_from_bytes(&rel))
+                );
+                (Some(name), Some(mcp::b64_encode(&rel)), shown)
+            }
+            None => (None, None, label),
+        };
         if let Some(slot) = self.settings.bookmarks.get_mut(n - 1) {
             *slot = Some(Spot {
                 pos: self.camera.pos.to_array(),
                 yaw: self.camera.yaw,
                 pitch: self.camera.pitch,
                 label: label.clone(),
+                system,
+                path_b64,
             });
         }
         let _ = settings::save(&self.settings_path, &self.settings);
@@ -1395,69 +2372,335 @@ impl App {
             self.toast(format!("No spot {n} yet (Ctrl+{n} saves one)"));
             return;
         };
+        if let Some(system) = &s.system {
+            // inside a system: opened again if needed, then there once its
+            // district has been read
+            let rel = s
+                .path_b64
+                .as_deref()
+                .and_then(mcp::b64_decode)
+                .unwrap_or_default();
+            let path: Vec<Vec<u8>> = rel
+                .split(|&b| b == b'/')
+                .filter(|c| !c.is_empty())
+                .map(|c| c.to_vec())
+                .collect();
+            self.teleport_system(system, path);
+            return;
+        }
         self.teleport(vec3(s.pos[0], s.pos[1], s.pos[2]), s.yaw, s.pitch);
     }
 
-    fn open_selected(&mut self, axross_first: bool, _ctx: &egui::Context) {
+    /// Looks for axross and asks it (once per program file, remembered in
+    /// the settings) whether it opens paths - on a thread of its own.
+    fn probe_axross(&mut self) {
+        self.axross = Axross::Looking;
+        let given = self.opts.axross.clone();
+        let known = self.settings.axross_probe.clone();
+        let tx = self.bg_tx.clone();
+        let wake = self.wake.clone();
+        let _ = std::thread::Builder::new()
+            .name("afm-axross-probe".into())
+            .spawn(move || {
+                let (state, probe) = probe_axross(given, known);
+                let _ = tx.send(Bg::Axross(state, probe));
+                wake();
+            });
+    }
+
+    /// Whether the chosen thing can be opened at all (and how): None for
+    /// the machine's and the made-up islands.
+    pub fn can_open(&self, how: OpenHow) -> bool {
+        let Some((i, _)) = self.selected else {
+            return false;
+        };
+        match self.islands.get(i).map(|isl| &isl.source) {
+            Some(IslandSource::Local { .. }) => true,
+            Some(IslandSource::Mcp { .. }) => how == OpenHow::Axross,
+            _ => false,
+        }
+    }
+
+    /// What may happen when the default program opens a file on this
+    /// island's medium (None: a local disk).
+    fn untrusted_medium(&self, i: usize) -> Option<&'static str> {
+        match &self.islands.get(i)?.source {
+            IslandSource::Local { mount: Some(m), .. } => match m.kind {
+                MountKind::Network => Some("a network file system"),
+                MountKind::Removable => Some("a removable medium"),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
+    /// Opens the chosen thing: in axross (when it can open paths - said
+    /// plainly when it cannot), with the default program (a question
+    /// first for anything that may run), or in the file manager.
+    pub fn open_selected(&mut self, how: OpenHow) {
         let Some((i, node)) = self.selected else {
             return;
         };
         let Some(isl) = self.islands.get(i) else {
             return;
         };
-        let launch = match &isl.source {
-            IslandSource::Local { root, .. } => {
-                let path = isl.tree.local_path(root, node);
-                let ax = if axross_first {
-                    crate::open::in_axross(&path)
-                } else {
-                    None
-                };
-                ax.or_else(|| crate::open::system(&path))
-                    .map(|l| (l, Some(path)))
-            }
-            IslandSource::Mcp { backend, root, .. } => {
-                let path = isl.tree.remote_path(root, node);
-                match (&backend.profile, &backend.protocol) {
-                    (Some(p), Some(proto)) => {
-                        crate::open::remote_in_axross(proto, p, &path).map(|l| (l, None))
-                    }
-                    _ => None,
-                }
-            }
+        let local = match &isl.source {
+            IslandSource::Local { root, .. } => Some(isl.tree.local_path(root, node)),
             _ => None,
         };
-        let Some((launch, fallback)) = launch else {
-            self.toast("Nothing to open it with here".into());
+        if !self.can_open(how) {
+            self.toast("This is not a file on a disk: there is nothing to open".into());
             return;
-        };
+        }
+        match how {
+            OpenHow::Axross => {
+                let ax = match &self.axross {
+                    Axross::Ready(p) => p.clone(),
+                    other => {
+                        let why = match other {
+                            Axross::Looking => "axross is still being looked for".to_string(),
+                            Axross::Missing => {
+                                "axross is not installed (not on the PATH)".to_string()
+                            }
+                            Axross::TooOld(p) => format!(
+                                "the axross at {} is too old to open a path (that needs axross 0.15.186 or later)",
+                                crate::tree::display_text(p.as_os_str())
+                            ),
+                            Axross::Ready(_) => unreachable!(),
+                        };
+                        self.open_ask = Some(OpenAsk::NoAxross { why, path: local });
+                        return;
+                    }
+                };
+                let launch = match &isl.source {
+                    IslandSource::Local { .. } => match &local {
+                        Some(p) => Ok(open::axross_local(&ax, p)),
+                        None => return,
+                    },
+                    IslandSource::Mcp { backend, root, .. } => match &backend.profile {
+                        Some(profile) => open::axross_remote(
+                            &ax,
+                            profile,
+                            &isl.tree.remote_path_bytes(root, node),
+                        ),
+                        None => Err(format!(
+                            "{} has no saved profile: axross cannot open it by name",
+                            isl.title
+                        )),
+                    },
+                    _ => return,
+                };
+                match launch {
+                    Ok(l) => self.launch(l),
+                    Err(e) => self.toast(e),
+                }
+            }
+            OpenHow::FileManager => match local
+                .as_deref()
+                .and_then(|p| open::file_manager_via(self.opts.opener.as_deref(), p))
+            {
+                Some(l) => self.launch(l),
+                None => self.toast("No file manager was found".into()),
+            },
+            OpenHow::DefaultProgram => {
+                let Some(path) = local else { return };
+                // (the file's mode is read on a thread: never on the window's)
+                let untrusted = self.untrusted_medium(i);
+                let tx = self.bg_tx.clone();
+                let wake = self.wake.clone();
+                let _ = std::thread::Builder::new()
+                    .name("afm-open-check".into())
+                    .spawn(move || {
+                        let risk = open::risk_of(&path, untrusted);
+                        let _ = tx.send(Bg::OpenChecked(Box::new(OpenCheck { path, risk })));
+                        wake();
+                    });
+            }
+        }
+    }
+
+    /// The default program's check came back: opened, or asked first.
+    fn open_checked(&mut self, check: OpenCheck) {
+        match check.risk {
+            None => self.open_default(&check.path),
+            Some(why) => {
+                self.open_ask = Some(OpenAsk::Risky {
+                    path: check.path,
+                    why,
+                })
+            }
+        }
+    }
+
+    fn open_default(&mut self, path: &std::path::Path) {
+        match open::system_via(self.opts.opener.as_deref(), path) {
+            Some(l) => self.launch(l),
+            None => self.toast("No program to open it with was found".into()),
+        }
+    }
+
+    /// Starts a program (the tests: writes it down instead).
+    fn launch(&mut self, l: Launch) {
+        if let Some(log) = &self.opts.launch_log {
+            if let Ok(mut v) = log.lock() {
+                v.push(l.clone());
+            }
+            self.toast(format!("Opened with {}", l.label));
+            return;
+        }
         let tx = self.bg_tx.clone();
         let wake = self.wake.clone();
-        let how = launch.label.clone();
-        let is_axross = how == "axross";
-        crate::open::spawn(&launch, move |r| {
-            let r = match r {
-                Ok(()) => Ok(how),
-                // (axross that takes no path yet: the system's program instead)
-                Err(e) if is_axross => match fallback.as_deref().and_then(crate::open::system) {
-                    Some(sys) => {
-                        let (tx2, rx2) = channel();
-                        crate::open::spawn(&sys, move |r| {
-                            let _ = tx2.send(r);
-                        });
-                        match rx2.recv_timeout(Duration::from_secs(5)) {
-                            Ok(Ok(())) => Ok(format!("the default program ({e})")),
-                            Ok(Err(e2)) => Err(e2),
-                            Err(_) => Ok("the default program".into()),
-                        }
-                    }
-                    None => Err(e),
-                },
-                Err(e) => Err(e),
-            };
-            let _ = tx.send(Bg::Opened(r));
+        let how = l.label.clone();
+        open::spawn(&l, move |r| {
+            let _ = tx.send(Bg::Opened(r.map(|()| how)));
             wake();
         });
+    }
+
+    /// The question before opening, as a dialog.
+    fn open_ask_window(&mut self, ctx: &egui::Context) {
+        let Some(ask) = self.open_ask.clone() else {
+            return;
+        };
+        let t = self.theme;
+        let mut answer: Option<Option<OpenHow>> = None;
+        let mut risky_path: Option<PathBuf> = None;
+        let mut unlock: Option<(String, bool)> = None;
+        let manager = match &self.axross {
+            Axross::Ready(p) if self.axross_manager => Some(p.clone()),
+            _ => None,
+        };
+        let modal = egui::Modal::new(egui::Id::unique("afm-open-ask")).show(ctx, |ui| {
+            ui.set_max_width(460.0);
+            match &ask {
+                OpenAsk::Risky { path, why } => {
+                    ui.label(
+                        RichText::new("Open this with the default program?")
+                            .strong()
+                            .size(16.0),
+                    );
+                    ui.add_space(4.0);
+                    ui.label(
+                        RichText::new(crate::tree::display_text(path.as_os_str()))
+                            .monospace()
+                            .color(t.strong),
+                    );
+                    ui.add_space(4.0);
+                    ui.label(RichText::new(format!("Careful: {why}.")).color(t.warn));
+                    ui.label(
+                        RichText::new("Showing it in the file manager runs nothing.")
+                            .color(t.muted),
+                    );
+                    ui.add_space(6.0);
+                    ui.horizontal_wrapped(|ui| {
+                        let safe = ui.button(RichText::new("Show it in the file manager").strong());
+                        if ui.memory(|m| m.focused().is_none()) {
+                            safe.request_focus();
+                        }
+                        if safe.clicked() {
+                            answer = Some(Some(OpenHow::FileManager));
+                        }
+                        if ui.button("Open it anyway").clicked() {
+                            answer = Some(Some(OpenHow::DefaultProgram));
+                            risky_path = Some(path.clone());
+                        }
+                        if ui.button("Cancel").clicked() {
+                            answer = Some(None);
+                        }
+                    });
+                }
+                OpenAsk::Unlock { name } => {
+                    ui.label(RichText::new(format!("{name} needs unlocking in axross")).strong().size(16.0));
+                    ui.add_space(4.0);
+                    ui.label(
+                        "It needs a password or a key passphrase that axross has not stored. \
+                         This program never asks for a secret and never sends one: store it in \
+                         axross's connection manager (Store password), then try again.",
+                    );
+                    if manager.is_none() {
+                        ui.label(
+                            RichText::new("(This axross cannot open its connection manager from here: open it in axross.)")
+                                .color(t.muted),
+                        );
+                    }
+                    ui.add_space(6.0);
+                    ui.horizontal_wrapped(|ui| {
+                        if ui
+                            .add_enabled(manager.is_some(), egui::Button::new("Open axross's connection manager"))
+                            .clicked()
+                        {
+                            unlock = Some((name.clone(), true));
+                        }
+                        if ui.button("Try again").clicked() {
+                            unlock = Some((name.clone(), false));
+                        }
+                        if ui.button("Cancel").clicked() {
+                            answer = Some(None);
+                        }
+                    });
+                }
+                OpenAsk::NoAxross { why, path } => {
+                    ui.label(RichText::new("axross cannot open this").strong().size(16.0));
+                    ui.add_space(4.0);
+                    ui.label(RichText::new(format!("{why}.")).color(t.warn));
+                    if path.is_some() {
+                        ui.label(
+                            RichText::new(
+                                "The default program or the file manager can open it instead.",
+                            )
+                            .color(t.muted),
+                        );
+                    }
+                    ui.add_space(6.0);
+                    ui.horizontal_wrapped(|ui| {
+                        if path.is_some() {
+                            if ui.button("Show it in the file manager").clicked() {
+                                answer = Some(Some(OpenHow::FileManager));
+                            }
+                            if ui.button("Open with the default program").clicked() {
+                                answer = Some(Some(OpenHow::DefaultProgram));
+                            }
+                        }
+                        if ui.button("Cancel").clicked() {
+                            answer = Some(None);
+                        }
+                    });
+                }
+            }
+        });
+        if let Some((name, manager_wanted)) = unlock {
+            self.open_ask = None;
+            if manager_wanted {
+                if let Some(ax) = manager.filter(|_| open::valid_profile(&name)) {
+                    let mut arg = std::ffi::OsString::from("--connection-manager=");
+                    arg.push(&name);
+                    self.launch(Launch {
+                        program: ax,
+                        args: vec![arg],
+                        label: "axross's connection manager".into(),
+                    });
+                }
+            } else {
+                // (listed again: a secret stored meanwhile counts)
+                self.retry_after_refresh = Some(name);
+                self.refresh_systems();
+            }
+            return;
+        }
+        // (Esc closes it; a click beside it does not - the click that
+        // opened it must not close it again)
+        let _ = modal;
+        if answer.is_none() && ctx.input(|i| i.key_pressed(Key::Escape)) {
+            answer = Some(None);
+        }
+        let Some(answer) = answer else { return };
+        self.open_ask = None;
+        match (answer, risky_path) {
+            // (asked and answered: no second question)
+            (Some(OpenHow::DefaultProgram), Some(p)) => self.open_default(&p),
+            (Some(how), _) => self.open_selected(how),
+            (None, _) => {}
+        }
     }
 
     // ------------------------------------------------------------------
@@ -1531,6 +2774,7 @@ impl App {
             version: self.version,
             guard: self.opts.flash_guard,
             dt,
+            msaa: self.settings.msaa,
         });
         if self.has_gpu {
             ui.painter().add(render::callback(rect, frame));
@@ -1538,6 +2782,9 @@ impl App {
             ui.painter().rect_filled(rect, 0.0, Color32::BLACK);
         }
         self.labels(ui, rect, aspect);
+        if self.legend_open {
+            self.legend(ui, rect);
+        }
         if self.camera.mode == Mode::Fly {
             // a small crosshair
             let c = rect.center();
@@ -1560,22 +2807,149 @@ impl App {
                 .rect_filled(bg, 3.0, self.theme.surface.gamma_multiply(0.92));
             ui.painter().galley(at, galley, self.theme.strong);
         }
-        if self.camera.flying()
+        let veiling = self
+            .render_stats
+            .as_ref()
+            .and_then(|s| s.lock().ok().map(|s| s.veil))
+            .unwrap_or(false);
+        let animating = self.camera.flying()
             || self.camera.warp > 0.0
             || input.move_dir != [0.0; 3]
+            || input.scroll != 0.0
             || response.dragged()
-            || self.search.as_ref().is_some_and(|s| !s.done)
-        {
-            ui.ctx().request_repaint();
-        } else {
-            // (the rain and the light keep moving, slowly)
-            ui.ctx()
-                .request_repaint_after(Duration::from_millis(if self.settings.reduce_motion {
-                    500
-                } else {
-                    33
-                }));
+            || self.queued_teleport.is_some()
+            || veiling
+            || self.search.as_ref().is_some_and(|s| !s.done);
+        let s = &self.settings;
+        match repaint_policy(
+            animating,
+            self.hidden,
+            self.focused,
+            s.rain && !s.reduce_motion,
+            s.idle_fps,
+        ) {
+            Repaint::Now => ui.ctx().request_repaint(),
+            Repaint::After(d) => ui.ctx().request_repaint_after(d),
+            // (nothing moves: the next input, walk or answer draws)
+            Repaint::Idle => {}
         }
+        if let Some((_, at)) = &self.toast {
+            let left = Duration::from_secs(6).saturating_sub(at.elapsed());
+            if !left.is_zero() {
+                ui.ctx().request_repaint_after(left);
+            }
+        }
+    }
+
+    /// The colour legend, in the view's lower left corner (L hides it).
+    fn legend(&self, ui: &Ui, rect: Rect) {
+        let t = self.theme;
+        let painter = ui.painter_at(rect);
+        let font = egui::FontId::proportional(11.5);
+        let rows: Vec<(Color32, &str)> = crate::tree::FILE_TYPES
+            .iter()
+            .skip(1)
+            .map(|f| (t.type_color(*f), f.label()))
+            .collect();
+        let extra = [
+            (t.accent, "bright: changed lately"),
+            (t.muted, "dashed, dim: not read yet"),
+            (Color32::from_rgb(230, 153, 31), "amber edge: no access"),
+        ];
+        let Some((bg, cols)) = legend_geometry(rect) else {
+            return; // (no room)
+        };
+        let per_col = rows.len().div_ceil(cols);
+        let (line, col_w) = (LEGEND_LINE, LEGEND_COL);
+        let at = bg.min;
+        painter.rect_filled(bg, 3.0, t.ground.gamma_multiply(0.85));
+        painter.rect_stroke(bg, 3.0, (1.0, t.border), egui::StrokeKind::Inside);
+        painter.text(
+            at + vec2(8.0, 5.0),
+            egui::Align2::LEFT_TOP,
+            "height: size · L hides",
+            font.clone(),
+            t.muted,
+        );
+        for (k, (c, name)) in rows.iter().enumerate() {
+            let (col, row) = (k / per_col, k % per_col);
+            let p = at + vec2(8.0 + col as f32 * col_w, 22.0 + row as f32 * line);
+            painter.rect_filled(
+                Rect::from_min_size(p + vec2(0.0, 2.0), vec2(10.0, 10.0)),
+                1.0,
+                *c,
+            );
+            painter.text(
+                p + vec2(15.0, 0.0),
+                egui::Align2::LEFT_TOP,
+                *name,
+                font.clone(),
+                t.text,
+            );
+        }
+        for (k, (c, name)) in extra.iter().enumerate() {
+            let p = at + vec2(8.0, 22.0 + (per_col + k) as f32 * line);
+            painter.rect_stroke(
+                Rect::from_min_size(p + vec2(0.0, 2.0), vec2(10.0, 10.0)),
+                1.0,
+                (1.5, *c),
+                egui::StrokeKind::Inside,
+            );
+            painter.text(
+                p + vec2(15.0, 0.0),
+                egui::Align2::LEFT_TOP,
+                *name,
+                font.clone(),
+                t.text,
+            );
+        }
+    }
+
+    fn legend_rect(&self, rect: Rect) -> Option<Rect> {
+        self.legend_open
+            .then(|| legend_geometry(rect).map(|g| g.0))
+            .flatten()
+    }
+
+    /// An island's title with what it is doing: connecting, walking,
+    /// failed and why, sizes the backend does not tell, read as approached.
+    pub fn island_caption(&self, i: usize) -> String {
+        let Some(isl) = self.islands.get(i) else {
+            return String::new();
+        };
+        let mut s = isl.title.clone();
+        let system = match &isl.source {
+            IslandSource::Mcp { backend, .. } => backend.profile.clone(),
+            _ => None,
+        };
+        if let Some(name) = &system
+            && self
+                .live
+                .get(name)
+                .is_some_and(|l| l.state == SysState::Connecting)
+        {
+            s.push_str("  · connecting…");
+            return s;
+        }
+        if isl.from_cache.is_some() && isl.status.error.is_some() {
+            s.push_str("  · cached (cannot be read now)");
+        } else if let Some(e) = &isl.status.error {
+            let short: String = e.chars().take(70).collect();
+            s.push_str(&format!("  · failed: {short}"));
+        } else if isl.from_cache.is_some() {
+            s.push_str("  · cached, walking");
+        } else if !isl.status.done && isl.hw.is_none() && (system.is_none() || isl.walker.is_some())
+        {
+            s.push_str(&format!("  · {} …", isl.status.entries));
+        }
+        let files = isl.tree.root().count;
+        if isl.status.unknown_sizes > 0 && isl.status.unknown_sizes * 2 >= u64::from(files.max(1)) {
+            s.push_str("  · sizes unknown: equal footprints");
+        }
+        if isl.status.lazy {
+            s.push_str("  · read as approached");
+        }
+        s
     }
 
     /// "name  (size)" for the hover tip.
@@ -1612,6 +2986,9 @@ impl App {
             kb.cmp(&ka).then(b.weight.total_cmp(&a.weight))
         });
         let mut taken: Vec<Rect> = Vec::new();
+        if let Some(l) = self.legend_rect(rect) {
+            taken.push(l);
+        }
         let painter = ui.painter_at(rect);
         let t = self.theme;
         let cities = self.cities();
@@ -1698,15 +3075,19 @@ impl App {
             }
             let (text, size, color) = match c.kind {
                 LabelKind::Island => {
-                    let mut s = isl.title.clone();
-                    if isl.from_cache.is_some() && isl.status.error.is_some() {
-                        s.push_str("  · cached (cannot be read now)");
-                    } else if isl.from_cache.is_some() {
-                        s.push_str("  · cached, walking");
-                    } else if !isl.status.done && isl.hw.is_none() {
-                        s.push_str(&format!("  · {} …", isl.status.entries));
-                    }
-                    (s, 15.0, t.strong)
+                    let s = self.island_caption(island);
+                    let color = match &isl.source {
+                        IslandSource::Mcp { backend, .. } => backend
+                            .protocol
+                            .as_deref()
+                            .map(|p| {
+                                let [r, g, b] = crate::systems::Family::of(p).color();
+                                Color32::from_rgb(r, g, b)
+                            })
+                            .unwrap_or(t.strong),
+                        _ => t.strong,
+                    };
+                    (s, 15.0, color)
                 }
                 LabelKind::District => {
                     let Some(n) = isl.tree.get(c.node) else {
@@ -1736,10 +3117,17 @@ impl App {
                 at - vec2(0.0, galley.size().y * 0.5 + 2.0),
                 galley.size() + vec2(6.0, 2.0),
             );
-            if taken.iter().any(|o| o.intersects(r)) {
+            // (what a label covers: an island title's box, a little air
+            // round every label; none over the legend)
+            let cover = if c.kind == LabelKind::Island {
+                r.expand(5.0)
+            } else {
+                r.expand(2.0)
+            };
+            if taken.iter().any(|o| o.intersects(cover)) || !rect.contains_rect(cover) {
                 continue;
             }
-            taken.push(r);
+            taken.push(cover);
             if c.kind == LabelKind::Island {
                 painter.rect_filled(
                     r.expand(3.0),
@@ -1760,115 +3148,212 @@ impl App {
         }
     }
 
+    /// The bar above: below about 1000 points the buttons go into a menu,
+    /// below 720 the title goes too; the READ-ONLY badge always stays.
     fn top_bar(&mut self, ui: &mut Ui) {
         let t = self.theme;
+        let width = ui.available_width();
+        let narrow = width < 1000.0;
+        let tiny = width < 720.0;
+        let mut toggle_teleport = false;
+        let mut toggle_sources = false;
+        let mut toggle_settings = false;
+        let mut toggle_help = false;
+        let mut overview = false;
         ui.horizontal(|ui| {
-            ui.label(RichText::new("axross files matrix").monospace().strong().color(t.accent));
-            ui.separator();
-            let search = ui.add(
-                egui::TextEdit::singleline(&mut self.search_text)
-                    .hint_text("search names or *.glob  ( / )")
-                    .desired_width(240.0),
-            );
-            if std::mem::take(&mut self.focus_search) {
-                search.request_focus();
-            }
-            if search.changed() {
-                let q = self.search_text.clone();
-                self.run_search(&q);
-            }
-            if search.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter)) {
-                self.next_hit(false);
-            }
-            if let Some(s) = &self.search {
-                let state = if s.done { "" } else { " …" };
-                ui.label(RichText::new(format!("{} hits{state}", s.hits.len())).color(t.muted));
-                if ui.button("next").on_hover_text("Fly to the next hit (N; Shift+N teleports)").clicked() {
-                    self.next_hit(false);
-                }
-            }
-            ui.separator();
-            let fly = self.camera.mode == Mode::Fly;
-            if ui.selectable_label(fly, "Fly").on_hover_text("Free flight: WASD, Q/E, mouse look with the right button or M (F switches)").clicked() {
-                self.camera.set_mode(Mode::Fly);
-            }
-            if ui.selectable_label(!fly, "Orbit").on_hover_text("Orbit and map: drag to turn, Shift or the middle button to pan, wheel to zoom, click to fly there").clicked() {
-                self.camera.set_mode(Mode::Orbit);
-            }
-            if ui.button("Overview").on_hover_text("The whole world (Home)").clicked() {
-                self.overview(true);
-            }
-            if ui.button("Teleport").on_hover_text("Islands, districts, spots and hits (T)").clicked() {
-                self.teleport_open = !self.teleport_open;
-            }
-            ui.separator();
-            if ui.button("Sources").clicked() {
-                self.sources_open = !self.sources_open;
-            }
-            if ui.button("Settings").clicked() {
-                self.settings_open = !self.settings_open;
-            }
-            if ui.button("?").on_hover_text("Keys and mouse (H)").clicked() {
-                self.help_open = !self.help_open;
-            }
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 // the write mode: visibly off (file operations come later)
                 let badge = RichText::new(" READ-ONLY ").monospace().strong().color(t.ground).background_color(t.accent);
                 ui.label(badge).on_hover_text("Nothing is changed on any disk. File operations (copy, move, rename, delete) come in a later release.");
-                let mut write = false;
-                ui.add_enabled(false, egui::Checkbox::new(&mut write, "write mode")).on_disabled_hover_text("Not available yet: this release only reads.");
+                if !narrow {
+                    let mut write = false;
+                    ui.add_enabled(false, egui::Checkbox::new(&mut write, "write mode")).on_disabled_hover_text("Not available yet: this release only reads.");
+                    ui.separator();
+                    if ui.button("?").on_hover_text("Keys and mouse (H)").clicked() {
+                        toggle_help = true;
+                    }
+                    if ui.button("Settings").clicked() {
+                        toggle_settings = true;
+                    }
+                    if ui.button("Sources").clicked() {
+                        toggle_sources = true;
+                    }
+                } else {
+                    ui.menu_button("Menu", |ui| {
+                        if ui.button("Overview (Home)").clicked() {
+                            overview = true;
+                            ui.close();
+                        }
+                        if ui.button("Teleport (T)").clicked() {
+                            toggle_teleport = true;
+                            ui.close();
+                        }
+                        if ui.button("Sources").clicked() {
+                            toggle_sources = true;
+                            ui.close();
+                        }
+                        if ui.button("Settings").clicked() {
+                            toggle_settings = true;
+                            ui.close();
+                        }
+                        if ui.button("Colour legend (L)").clicked() {
+                            self.legend_open = !self.legend_open;
+                            ui.close();
+                        }
+                        if ui.button("Keys and mouse (H)").clicked() {
+                            toggle_help = true;
+                            ui.close();
+                        }
+                    });
+                }
+                ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                    if !tiny {
+                        ui.label(RichText::new("axross files matrix").monospace().strong().color(t.accent));
+                        ui.separator();
+                    }
+                    let field = (ui.available_width() * 0.4).clamp(110.0, 240.0);
+                    let search = ui.add(
+                        egui::TextEdit::singleline(&mut self.search_text)
+                            .hint_text(if tiny { "search ( / )" } else { "search names or *.glob  ( / )" })
+                            .desired_width(field),
+                    );
+                    if std::mem::take(&mut self.focus_search) {
+                        search.request_focus();
+                    }
+                    if search.changed() {
+                        let q = self.search_text.clone();
+                        self.run_search(&q);
+                    }
+                    if search.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter)) {
+                        self.next_hit(false);
+                    }
+                    if let Some(s) = &self.search {
+                        let state = if s.done { "" } else { " …" };
+                        let n = s.hits.len();
+                        let tip = if n > PILLARS {
+                            format!("Pillars of light stand over the first {PILLARS}; N and the teleport window go through all {n}")
+                        } else {
+                            "N flies to the next one".to_string()
+                        };
+                        ui.label(RichText::new(format!("{n} hits{state}")).color(t.muted)).on_hover_text(tip);
+                        if ui.button("next").on_hover_text("Fly to the next hit (N; Shift+N teleports)").clicked() {
+                            self.next_hit(false);
+                        }
+                    }
+                    ui.separator();
+                    let fly = self.camera.mode == Mode::Fly;
+                    if ui.selectable_label(fly, "Fly").on_hover_text("Free flight: WASD, Q/E, mouse look with the right button or M (F switches)").clicked() {
+                        self.camera.set_mode(Mode::Fly);
+                    }
+                    if ui.selectable_label(!fly, "Orbit").on_hover_text("Orbit and map: drag to turn, Shift or the middle button to pan, wheel to zoom, click to fly there").clicked() {
+                        self.camera.set_mode(Mode::Orbit);
+                    }
+                    if !narrow {
+                        if ui.button("Overview").on_hover_text("The whole world (Home)").clicked() {
+                            overview = true;
+                        }
+                        if ui.button("Teleport").on_hover_text("Islands, districts, spots and hits (T)").clicked() {
+                            toggle_teleport = true;
+                        }
+                    }
+                });
             });
         });
+        if overview {
+            self.overview(true);
+        }
+        self.teleport_open ^= toggle_teleport;
+        self.sources_open ^= toggle_sources;
+        self.settings_open ^= toggle_settings;
+        self.help_open ^= toggle_help;
     }
 
+    /// The status line: the frame rate and the warnings on the right, the
+    /// rest on the left, cut short (all of it in the tooltip) when narrow.
     fn status_bar(&mut self, ui: &mut Ui) {
         let t = self.theme;
+        let wide = ui.available_width() >= 1000.0;
+        let walking: Vec<&Island> = self
+            .islands
+            .iter()
+            .filter(|i| !i.status.done && i.hw.is_none())
+            .collect();
+        let nodes: usize = self.islands.iter().map(|i| i.tree.len()).sum();
+        let mut left = format!("{} islands · {} entries", self.islands.len(), nodes);
+        if self.starting {
+            left.push_str(" · looking at the mounts…");
+        }
+        if !walking.is_empty() {
+            let entries: u64 = walking.iter().map(|i| i.status.entries).sum();
+            left.push_str(&format!(" · walking {} ({} found)", walking.len(), entries));
+        }
+        // what a walk could not show (said, never silent)
+        let notes: Vec<String> = self
+            .islands
+            .iter()
+            .filter_map(|i| i.status.note.as_ref().map(|n| format!("{}: {n}", i.title)))
+            .collect();
+        let skipped: u64 = self.islands.iter().map(|i| i.status.skipped_names).sum();
+        match &self.mcp {
+            McpState::Connected { label, .. } => left.push_str(&format!(" · axross: {label}")),
+            McpState::Looking => left.push_str(" · looking for axross…"),
+            _ => {}
+        }
+        let toast = self
+            .toast
+            .as_ref()
+            .filter(|(_, at)| at.elapsed() < Duration::from_secs(6))
+            .map(|(text, _)| text.clone());
+        let stats = self
+            .render_stats
+            .as_ref()
+            .and_then(|s| s.lock().ok().map(|s| s.clone()));
         ui.horizontal(|ui| {
-            let walking: Vec<&Island> = self.islands.iter().filter(|i| !i.status.done && i.hw.is_none()).collect();
-            let nodes: usize = self.islands.iter().map(|i| i.tree.len()).sum();
-            ui.label(RichText::new(format!("{} islands · {} entries", self.islands.len(), nodes)).color(t.muted));
-            if !walking.is_empty() {
-                let entries: u64 = walking.iter().map(|i| i.status.entries).sum();
-                ui.label(RichText::new(format!("· walking {} ({} found)", walking.len(), entries)).color(t.text));
-            }
-            match &self.mcp {
-                McpState::Connected { label, .. } => {
-                    ui.label(RichText::new(format!("· axross: {label}")).color(t.muted));
-                }
-                McpState::Looking => {
-                    ui.label(RichText::new("· looking for axross…").color(t.muted));
-                }
-                _ => {}
-            }
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 let ms = FrameTimes::mean_ms(&self.times.frames);
                 let fps = if ms > 0.0 { 1000.0 / ms } else { 0.0 };
-                ui.label(RichText::new(format!("{fps:.0} fps · {} boxes", self.last_frame_instances)).monospace().color(t.muted));
-                let stats = self.render_stats.as_ref().and_then(|s| s.lock().ok().map(|s| s.clone()));
+                let adapter = stats.as_ref().map(|s| s.adapter.clone()).unwrap_or_default();
+                ui.label(RichText::new(format!("{fps:.0} fps · {} boxes", self.last_frame_instances)).monospace().color(t.muted))
+                    .on_hover_text(format!("drawn by {adapter}"));
                 if let Some(s) = &stats {
-                    ui.label(RichText::new(&s.adapter).color(t.muted));
+                    if wide {
+                        ui.add(egui::Label::new(RichText::new(&s.adapter).color(t.muted)).truncate());
+                    }
                     if s.software {
-                        ui.label(RichText::new("software renderer: slow").color(t.warn)).on_hover_text(
+                        ui.label(RichText::new(if wide { "software renderer: slow" } else { "software" }).color(t.warn)).on_hover_text(
                             "No GPU was found (or none that can draw this window): a software renderer draws the city, a few frames a second. \
                              With a GPU, see the README's GPU section (WGPU_BACKEND, WGPU_ADAPTER_NAME, Settings > GPU).",
                         );
                     }
+                    if s.veil {
+                        ui.label(RichText::new(if wide { "flash guard veiling" } else { "guard" }).color(t.warn))
+                            .on_hover_text("The picture was about to flash faster than three times a second here; it is softened.");
+                    }
                 }
-                if let Some(s) = stats
-                    && s.veil
-                {
-                    ui.label(RichText::new("flash guard veiling").color(t.warn))
-                        .on_hover_text("The picture was about to flash faster than three times a second here; it is softened.");
+                if !notes.is_empty() || skipped > 0 {
+                    let mut tip = notes.join("\n");
+                    if skipped > 0 {
+                        if !tip.is_empty() {
+                            tip.push('\n');
+                        }
+                        tip.push_str(&format!("{skipped} names a server sent were refused (a slash, a dot-dot or a control character in them)"));
+                    }
+                    ui.label(RichText::new(if wide { "not all shown" } else { "partial" }).color(t.warn)).on_hover_text(tip);
                 }
-                ui.label(RichText::new(match self.camera.mode {
-                    Mode::Fly => format!("fly {:.0} m/s", self.camera.speed),
-                    Mode::Orbit => "orbit".into(),
-                }).color(t.muted));
-                if let Some((text, at)) = &self.toast
-                    && at.elapsed() < Duration::from_secs(6)
-                {
-                    ui.label(RichText::new(text).color(t.strong));
+                if wide {
+                    ui.label(RichText::new(match self.camera.mode {
+                        Mode::Fly => format!("fly {:.0} m/s", self.camera.speed),
+                        Mode::Orbit => "orbit".into(),
+                    }).color(t.muted));
                 }
+                ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                    let (text, color) = match &toast {
+                        Some(x) => (x.clone(), t.strong),
+                        None => (left.clone(), t.muted),
+                    };
+                    ui.add(egui::Label::new(RichText::new(&text).color(color)).truncate())
+                        .on_hover_text(if toast.is_some() { format!("{text}\n{left}") } else { text.clone() });
+                });
             });
         });
     }
@@ -1911,7 +3396,7 @@ impl App {
                     ));
                     rows.push(("entries".into(), n.children.len().to_string()));
                     rows.push(("read".into(), n.listing.label().into()));
-                    rows.push(("newest change".into(), preview::time_string(n.newest)));
+                    rows.push(("newest change".into(), preview::time_local(n.newest)));
                 }
                 k => {
                     rows.push(("type".into(), n.ftype.label().into()));
@@ -1948,40 +3433,70 @@ impl App {
                 }
             });
         ui.add_space(6.0);
-        let is_hw = isl.hw.is_some();
-        let is_local = matches!(isl.source, IslandSource::Local { .. });
         let path_text = match &isl.source {
-            IslandSource::Local { root, .. } => isl
-                .tree
-                .local_path(root, node)
-                .to_string_lossy()
-                .into_owned(),
-            IslandSource::Mcp { root, .. } => isl.tree.remote_path(root, node),
+            IslandSource::Local { root, .. } => {
+                crate::tree::display_text(isl.tree.local_path(root, node).as_os_str())
+            }
+            IslandSource::Mcp { root, .. } => crate::tree::display_text(
+                &crate::tree::os_from_bytes(&isl.tree.remote_path_bytes(root, node)),
+            ),
             _ => String::new(),
         };
-        let has_axross = !is_hw && crate::open::axross().is_some();
+        let raw_path = match &isl.source {
+            IslandSource::Local { root, .. } => Some(isl.tree.local_path(root, node)),
+            _ => None,
+        };
+        let can_ax = self.can_open(OpenHow::Axross);
+        let can_local = self.can_open(OpenHow::DefaultProgram);
+        let ax_hint = match &self.axross {
+            Axross::Ready(_) => "O".to_string(),
+            Axross::Looking => "axross is being looked for".to_string(),
+            Axross::Missing => "axross is not installed".to_string(),
+            Axross::TooOld(_) => {
+                "This axross is too old to open a path (0.15.186 or later can)".to_string()
+            }
+        };
+        let ax_ready = matches!(self.axross, Axross::Ready(_));
         let mut fly = false;
-        let mut open_ax = false;
-        let mut open_sys = false;
+        let mut open_how: Option<OpenHow> = None;
         ui.horizontal_wrapped(|ui| {
             fly = ui.button("Fly here").clicked();
-            if !is_hw {
-                open_ax = has_axross && ui.button("Open in axross").on_hover_text("O").clicked();
-                open_sys = is_local
-                    && ui
-                        .button("Open")
-                        .on_hover_text("With the system's default program (Shift+O)")
-                        .clicked();
-                if ui.button("Copy path").clicked() {
-                    ui.ctx().copy_text(path_text.clone());
+            if can_ax {
+                let label = if ax_ready { "Open in axross" } else { "Open in axross…" };
+                if ui.button(label).on_hover_text(ax_hint).clicked() {
+                    open_how = Some(OpenHow::Axross);
                 }
+            }
+            if can_local {
+                if ui
+                    .button("Show in file manager")
+                    .on_hover_text("Its folder, in the file manager: runs nothing")
+                    .clicked()
+                {
+                    open_how = Some(OpenHow::FileManager);
+                }
+                if ui
+                    .button("Open")
+                    .on_hover_text("With the system's default program (Shift+O); programs, scripts and files on removable or network media ask first")
+                    .clicked()
+                {
+                    open_how = Some(OpenHow::DefaultProgram);
+                }
+            }
+            if !path_text.is_empty() && ui.button("Copy path").clicked() {
+                // (the path as it is where it can be: escaped only when it is no text)
+                let text = raw_path
+                    .as_ref()
+                    .and_then(|p| p.to_str().map(String::from))
+                    .unwrap_or_else(|| path_text.clone());
+                ui.ctx().copy_text(text);
             }
         });
         if fly {
             self.fly_to(i, node);
         }
-        if open_ax || open_sys {
-            self.open_selected(open_ax, ui.ctx());
+        if let Some(how) = open_how {
+            self.open_selected(how);
         }
         ui.separator();
         // the preview
@@ -1996,23 +3511,39 @@ impl App {
         match &p.content {
             Content::Text(text) => {
                 if p.truncated {
-                    ui.label(RichText::new("the first 64 KB").color(t.muted));
-                }
-                egui::ScrollArea::both().id_salt("preview").show(ui, |ui| {
-                    ui.add(
-                        egui::Label::new(RichText::new(text).monospace().size(11.5).color(t.text))
-                            .extend(),
+                    ui.label(
+                        RichText::new(format!(
+                            "the beginning (at most 64 KB, {} lines)",
+                            preview::TEXT_LINES
+                        ))
+                        .color(t.muted),
                     );
-                });
+                }
+                egui::ScrollArea::both()
+                    .id_salt("preview")
+                    .max_height(480.0)
+                    .show(ui, |ui| {
+                        ui.add(
+                            egui::Label::new(
+                                RichText::new(text).monospace().size(11.5).color(t.text),
+                            )
+                            .extend(),
+                        );
+                    });
             }
             Content::Hex(text) => {
                 ui.label(RichText::new("binary: the first bytes").color(t.muted));
-                egui::ScrollArea::both().id_salt("preview").show(ui, |ui| {
-                    ui.add(
-                        egui::Label::new(RichText::new(text).monospace().size(11.0).color(t.text))
+                egui::ScrollArea::both()
+                    .id_salt("preview")
+                    .max_height(480.0)
+                    .show(ui, |ui| {
+                        ui.add(
+                            egui::Label::new(
+                                RichText::new(text).monospace().size(11.0).color(t.text),
+                            )
                             .extend(),
-                    );
-                });
+                        );
+                    });
             }
             Content::Image(img, size) => {
                 let tex = pv.texture.get_or_insert_with(|| {
@@ -2043,27 +3574,171 @@ impl App {
         let mut go: Option<(usize, NodeId)> = None;
         let mut spot: Option<usize> = None;
         let mut save: Option<usize> = None;
+        let mut sys_go: Option<String> = None;
+        let mut sys_cancel: Option<String> = None;
+        let mut page = self.hits_page;
+        let mut filter = self.teleport_filter.clone();
         let t = self.theme;
+        let screen = ctx.content_rect();
+        let q = filter.clone();
+        let m = |fields: &[&str]| crate::systems::matches(&q, fields);
+        // the systems of axross's connection manager, with their state
+        let systems: Result<Vec<(mcp::Profile, SysState)>, String> = match &self.mcp {
+            McpState::Connected { systems: Ok(s), .. } => Ok(s
+                .profiles
+                .iter()
+                .map(|p| (p.clone(), self.system_state(&p.name)))
+                .collect()),
+            McpState::Connected {
+                systems: Err(e), ..
+            } => Err(e.clone()),
+            McpState::Looking => Err("looking for axross's MCP server…".into()),
+            McpState::Off => Err("axross's MCP server is off (Settings)".into()),
+            McpState::NotFound => {
+                Err("axross's MCP server was not found: no saved connections to show".into())
+            }
+            McpState::Failed(e) => Err(format!("axross's MCP server could not be started: {e}")),
+        };
         egui::Window::new("Teleport")
             .open(&mut open)
-            .default_width(320.0)
+            .default_width(560.0_f32.min(screen.width() - 24.0))
+            .default_height((screen.height() - 120.0).clamp(200.0, 640.0))
+            .max_height(screen.height() - 80.0)
             .default_pos(self.view_rect.left_top() + vec2(16.0, 16.0))
+            .vscroll(true)
             .show(ctx, |ui| {
-                egui::ScrollArea::vertical()
-                    .max_height(480.0)
+                ui.horizontal(|ui| {
+                    ui.label(RichText::new("filter").color(t.muted));
+                    ui.add(
+                        egui::TextEdit::singleline(&mut filter)
+                            .hint_text("name, protocol, host, …")
+                            .desired_width(ui.available_width() - 8.0),
+                    );
+                });
+                egui::CollapsingHeader::new(
+                    RichText::new("Systems (axross's connection manager)").strong(),
+                )
+                .id_salt("tp-systems")
+                .default_open(true)
+                .show(ui, |ui| match &systems {
+                    Err(e) => {
+                        ui.label(RichText::new(e).color(t.muted));
+                    }
+                    Ok(list) if list.is_empty() => {
+                        ui.label(RichText::new("No saved connections in axross.").color(t.muted));
+                    }
+                    Ok(list) => {
+                        // (open, connecting and failed ones first)
+                        let rank = |st: &SysState| match st {
+                            SysState::Open | SysState::Walking => 0,
+                            SysState::Connecting => 1,
+                            SysState::Failed(_) | SysState::NeedsSecret => 2,
+                            _ => 3,
+                        };
+                        let mut rows: Vec<&(mcp::Profile, SysState)> = list.iter().collect();
+                        rows.sort_by_key(|(p, st)| (rank(st), p.name.clone()));
+                        egui::Grid::new("tp-systems-grid")
+                            .num_columns(5)
+                            .spacing(vec2(6.0, 4.0))
+                            .striped(true)
+                            .show(ui, |ui| {
+                                for (p, state) in rows {
+                                    let fam = crate::systems::Family::of(&p.protocol);
+                                    let proto = p
+                                        .protocol_name
+                                        .clone()
+                                        .unwrap_or_else(|| p.protocol.clone());
+                                    let host = p.host.clone().unwrap_or_default();
+                                    if !m(&[
+                                        &p.name,
+                                        &p.protocol,
+                                        &proto,
+                                        &host,
+                                        fam.label(),
+                                        &state.label(),
+                                    ]) {
+                                        continue;
+                                    }
+                                    match state {
+                                        SysState::Connecting => {
+                                            if ui.small_button("cancel").clicked() {
+                                                sys_cancel = Some(p.name.clone());
+                                            }
+                                        }
+                                        SysState::Failed(_) => {
+                                            if ui.small_button("retry").clicked() {
+                                                sys_go = Some(p.name.clone());
+                                            }
+                                        }
+                                        SysState::NeedsSecret => {
+                                            if ui.small_button("unlock").clicked() {
+                                                sys_go = Some(p.name.clone());
+                                            }
+                                        }
+                                        SysState::Unavailable(_) => {
+                                            ui.add_enabled(false, egui::Button::new("go").small());
+                                        }
+                                        _ => {
+                                            if ui.small_button("go").clicked() {
+                                                sys_go = Some(p.name.clone());
+                                            }
+                                        }
+                                    }
+                                    let [r, g, b] = fam.color();
+                                    ui.label(
+                                        RichText::new(fam.sign())
+                                            .monospace()
+                                            .color(Color32::from_rgb(r, g, b)),
+                                    )
+                                    .on_hover_text(fam.label());
+                                    let mut where_ = proto.clone();
+                                    if !host.is_empty() {
+                                        where_.push_str(&format!(" · {host}"));
+                                    }
+                                    ui.label(RichText::new(&p.name).monospace().strong());
+                                    let cut = |x: &str, n: usize| {
+                                        if x.chars().count() > n {
+                                            x.chars().take(n - 1).collect::<String>() + "…"
+                                        } else {
+                                            x.to_string()
+                                        }
+                                    };
+                                    ui.label(
+                                        RichText::new(cut(&where_, 30)).color(t.muted).size(12.0),
+                                    )
+                                    .on_hover_text(&where_);
+                                    let color = match state {
+                                        SysState::Failed(_)
+                                        | SysState::Unavailable(_)
+                                        | SysState::NeedsSecret => t.warn,
+                                        SysState::Open
+                                        | SysState::Walking
+                                        | SysState::Connecting => t.accent,
+                                        SysState::NotOpen => t.muted,
+                                    };
+                                    let full = state.label();
+                                    let shown = if full.chars().count() > 34 {
+                                        full.chars().take(33).collect::<String>() + "…"
+                                    } else {
+                                        full.clone()
+                                    };
+                                    ui.label(RichText::new(shown).color(color))
+                                        .on_hover_text(format!("{where_}\n{full}"));
+                                    ui.end_row();
+                                }
+                            });
+                    }
+                });
+                egui::CollapsingHeader::new(RichText::new("Islands").strong())
+                    .id_salt("tp-islands")
+                    .default_open(true)
                     .show(ui, |ui| {
-                        ui.label(RichText::new("Islands").strong());
                         for (i, isl) in self.islands.iter().enumerate() {
                             if isl.city.is_none() {
                                 continue;
                             }
-                            ui.horizontal(|ui| {
-                                if ui.button("go").clicked() {
-                                    go = Some((i, 0));
-                                }
-                                ui.label(&isl.title);
-                            });
-                            // its largest districts
+                            // its districts, the largest first (those the
+                            // filter takes; the island when it or one does)
                             let root = isl.tree.root();
                             let mut kids: Vec<NodeId> = root
                                 .children
@@ -2074,72 +3749,162 @@ impl App {
                             kids.sort_by_key(|c| {
                                 std::cmp::Reverse(isl.tree.nodes[*c as usize].total)
                             });
-                            for c in kids.into_iter().take(5) {
-                                ui.horizontal(|ui| {
-                                    ui.add_space(18.0);
-                                    if ui.small_button("go").clicked() {
-                                        go = Some((i, c));
-                                    }
-                                    let n = &isl.tree.nodes[c as usize];
-                                    let text = if isl.hw.is_some() {
-                                        display_name(&n.name, 40)
-                                    } else {
-                                        format!(
-                                            "{}/  {}",
-                                            display_name(&n.name, 40),
-                                            hw::human_bytes(n.total)
-                                        )
-                                    };
-                                    ui.label(RichText::new(text).color(t.muted));
+                            let island_hit = m(&[&isl.title]);
+                            if !island_hit {
+                                kids.retain(|c| {
+                                    m(&[&display_name(&isl.tree.nodes[*c as usize].name, 200)])
                                 });
+                                if kids.is_empty() {
+                                    continue;
+                                }
                             }
-                        }
-                        ui.separator();
-                        ui.label(RichText::new("Spots (1-9 jump, Ctrl+1-9 save)").strong());
-                        for k in 0..9 {
                             ui.horizontal(|ui| {
-                                let s = self.settings.bookmarks.get(k).cloned().flatten();
-                                if ui
-                                    .add_enabled(
-                                        s.is_some(),
-                                        egui::Button::new(format!("{}", k + 1)).small(),
-                                    )
-                                    .clicked()
-                                {
-                                    spot = Some(k + 1);
+                                if ui.button("go").clicked() {
+                                    go = Some((i, 0));
                                 }
-                                if ui.small_button("save here").clicked() {
-                                    save = Some(k + 1);
-                                }
-                                ui.label(
-                                    RichText::new(s.map_or("-".into(), |s| s.label)).color(t.muted),
-                                );
+                                ui.label(RichText::new(&isl.title).strong());
                             });
-                        }
-                        if let Some(s) = &self.search
-                            && !s.hits.is_empty()
-                        {
-                            ui.separator();
-                            ui.label(
-                                RichText::new(format!("Search hits ({})", s.hits.len())).strong(),
-                            );
-                            for &(i, n) in s.hits.iter().take(40) {
-                                let name = self
-                                    .islands
-                                    .get(i)
-                                    .and_then(|isl| isl.tree.get(n))
-                                    .map(|x| display_name(&x.name, 50))
-                                    .unwrap_or_default();
-                                ui.horizontal(|ui| {
-                                    if ui.small_button("go").clicked() {
-                                        go = Some((i, n));
+                            let show =
+                                |ui: &mut Ui, list: &[NodeId], go: &mut Option<(usize, NodeId)>| {
+                                    for &c in list {
+                                        ui.horizontal(|ui| {
+                                            ui.add_space(18.0);
+                                            if ui.small_button("go").clicked() {
+                                                *go = Some((i, c));
+                                            }
+                                            let n = &isl.tree.nodes[c as usize];
+                                            let text = if isl.hw.is_some() {
+                                                display_name(&n.name, 40)
+                                            } else {
+                                                format!(
+                                                    "{}/  {}",
+                                                    display_name(&n.name, 40),
+                                                    hw::human_bytes(n.total)
+                                                )
+                                            };
+                                            ui.label(RichText::new(text).color(t.muted));
+                                        });
                                     }
-                                    ui.label(RichText::new(name).monospace());
-                                });
+                                };
+                            show(ui, &kids[..kids.len().min(8)], &mut go);
+                            if kids.len() > 8 {
+                                egui::CollapsingHeader::new(format!("{} more", kids.len() - 8))
+                                    .id_salt(("tp-more", isl.id))
+                                    .show(ui, |ui| {
+                                        let rest = &kids[8..kids.len().min(8 + TELEPORT_PAGE)];
+                                        show(ui, rest, &mut go);
+                                        if kids.len() > 8 + TELEPORT_PAGE {
+                                            ui.label(
+                                                RichText::new(format!(
+                                                    "and {} smaller ones: the search finds them",
+                                                    kids.len() - 8 - TELEPORT_PAGE
+                                                ))
+                                                .color(t.muted),
+                                            );
+                                        }
+                                    });
                             }
                         }
                     });
+                egui::CollapsingHeader::new(
+                    RichText::new("Spots (1-9 jump, Ctrl+1-9 save)").strong(),
+                )
+                .id_salt("tp-spots")
+                .default_open(true)
+                .show(ui, |ui| {
+                    for k in 0..9 {
+                        let s = self.settings.bookmarks.get(k).cloned().flatten();
+                        let label = s.as_ref().map_or("-".to_string(), |s| s.label.clone());
+                        if !q.trim().is_empty() && !m(&[&label]) {
+                            continue;
+                        }
+                        ui.horizontal(|ui| {
+                            if ui
+                                .add_enabled(
+                                    s.is_some(),
+                                    egui::Button::new(format!("{}", k + 1)).small(),
+                                )
+                                .clicked()
+                            {
+                                spot = Some(k + 1);
+                            }
+                            if ui.small_button("save here").clicked() {
+                                save = Some(k + 1);
+                            }
+                            ui.label(RichText::new(label).color(t.muted));
+                        });
+                    }
+                });
+                // the search hits: paged, never cut short in silence
+                if let Some(s) = &self.search
+                    && !s.hits.is_empty()
+                {
+                    let names: Vec<(usize, NodeId, String)> = s
+                        .hits
+                        .iter()
+                        .filter_map(|&(i, node)| {
+                            let name = self
+                                .islands
+                                .get(i)
+                                .and_then(|isl| isl.tree.get(node))
+                                .map(|x| display_name(&x.name, 50))?;
+                            (q.trim().is_empty() || m(&[&name])).then_some((i, node, name))
+                        })
+                        .collect();
+                    let n = names.len();
+                    let pages = n.div_ceil(TELEPORT_PAGE).max(1);
+                    page = page.min(pages - 1);
+                    let from = page * TELEPORT_PAGE;
+                    let to = (from + TELEPORT_PAGE).min(n);
+                    egui::CollapsingHeader::new(
+                        RichText::new(format!(
+                            "Search hits ({n}{})",
+                            if s.done { "" } else { ", still searching" }
+                        ))
+                        .strong(),
+                    )
+                    .id_salt("tp-hits")
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            if ui
+                                .add_enabled(page > 0, egui::Button::new("<").small())
+                                .clicked()
+                            {
+                                page -= 1;
+                            }
+                            ui.label(
+                                RichText::new(format!("{} - {} of {n}", (from + 1).min(n), to))
+                                    .color(t.muted),
+                            );
+                            if ui
+                                .add_enabled(page + 1 < pages, egui::Button::new(">").small())
+                                .clicked()
+                            {
+                                page += 1;
+                            }
+                        });
+                        egui::ScrollArea::vertical()
+                            .id_salt("tp-hit-list")
+                            .max_height(260.0)
+                            .show(ui, |ui| {
+                                for (i, node, name) in &names[from..to] {
+                                    ui.horizontal(|ui| {
+                                        if ui.small_button("go").clicked() {
+                                            go = Some((*i, *node));
+                                        }
+                                        ui.label(RichText::new(name).monospace());
+                                    });
+                                }
+                            });
+                    });
+                }
             });
+        if filter != self.teleport_filter {
+            page = 0;
+        }
+        self.teleport_filter = filter;
+        self.hits_page = page;
         self.teleport_open = open;
         if let Some((i, n)) = go {
             self.teleport_to(i, n);
@@ -2149,6 +3914,17 @@ impl App {
         }
         if let Some(k) = save {
             self.save_spot(k);
+        }
+        if let Some(name) = sys_cancel {
+            self.cancel_system(&name);
+        }
+        if let Some(name) = sys_go {
+            if let Some(l) = self.live.get_mut(&name)
+                && matches!(l.state, SysState::Failed(_))
+            {
+                l.state = SysState::NotOpen;
+            }
+            self.teleport_system(&name, Vec::new());
         }
     }
 
@@ -2161,14 +3937,19 @@ impl App {
         let mut open_profile: Option<(Arc<Client>, String)> = None;
         let mut rescan: Option<usize> = None;
         let mut reconnect = false;
-        egui::Window::new("Sources").open(&mut open).default_width(420.0).show(ctx, |ui| {
+        egui::Window::new("Sources")
+            .open(&mut open)
+            .default_width(420.0_f32.min(ctx.content_rect().width() - 24.0))
+            .max_height(ctx.content_rect().height() - 80.0)
+            .vscroll(true)
+            .show(ctx, |ui| {
             for (i, isl) in self.islands.iter().enumerate() {
                 ui.horizontal(|ui| {
                     let state = if isl.hw.is_some() {
                         "the machine".to_string()
                     } else if let Some(e) = &isl.status.error {
                         match isl.from_cache {
-                            Some(t) => format!("could not be read ({e}); the city from {}", preview::time_string(t)),
+                            Some(t) => format!("could not be read ({e}); the city from {}", preview::time_local(t)),
                             None => format!("could not be read: {e}"),
                         }
                     } else if isl.from_cache.is_some() {
@@ -2205,17 +3986,30 @@ impl App {
                         reconnect = true;
                     }
                 }
-                McpState::Connected { label, client, profiles } => {
+                McpState::Connected { label, command, client, systems } => {
                     ui.label(format!("{label} ({} {}), {} tools", client.server, client.version, client.tools.len()));
-                    if !profiles.is_empty() {
-                        ui.label(RichText::new("Saved remote profiles (opening one connects to it):").color(t.muted));
-                        for p in profiles {
-                            ui.horizontal(|ui| {
-                                ui.label(RichText::new(p).monospace());
-                                if ui.small_button("open").clicked() {
-                                    open_profile = Some((client.clone(), p.clone()));
-                                }
-                            });
+                    ui.label(RichText::new(format!("started as: {command}")).monospace().size(11.0).color(t.muted));
+                    match systems {
+                        Err(e) => {
+                            ui.label(RichText::new(format!("No saved connections: {e}.")).color(t.warn));
+                        }
+                        Ok(sys) => {
+                            ui.label(RichText::new(format!(
+                                "{} saved connections; axross has backends for {} protocols. Teleport (T) opens them.",
+                                sys.profiles.len(),
+                                sys.protocols.len()
+                            )).color(t.muted));
+                            for p in &sys.profiles {
+                                ui.horizontal(|ui| {
+                                    let fam = crate::systems::Family::of(&p.protocol);
+                                    let [r, g, b] = fam.color();
+                                    ui.label(RichText::new(fam.sign()).monospace().color(Color32::from_rgb(r, g, b)));
+                                    ui.label(RichText::new(&p.name).monospace());
+                                    if ui.small_button("teleport").clicked() {
+                                        open_profile = Some((client.clone(), p.name.clone()));
+                                    }
+                                });
+                            }
                         }
                     }
                 }
@@ -2235,22 +4029,8 @@ impl App {
             };
             self.start_walk(i, &skip);
         }
-        if let Some((client, name)) = open_profile {
-            if !self.settings.mcp.open_profiles.contains(&name) {
-                self.settings.mcp.open_profiles.push(name.clone());
-                let _ = settings::save(&self.settings_path, &self.settings);
-            }
-            let tx = self.bg_tx.clone();
-            let wake = self.wake.clone();
-            let _ = std::thread::Builder::new()
-                .name("afm-mcp-open".into())
-                .spawn(move || {
-                    let r = client
-                        .open_profile(&name, Duration::from_secs(90))
-                        .and_then(|_| client.backends(Duration::from_secs(30)));
-                    let _ = tx.send(Bg::Backends(client, r));
-                    wake();
-                });
+        if let Some((_, name)) = open_profile {
+            self.teleport_system(&name, Vec::new());
         }
     }
 
@@ -2263,9 +4043,12 @@ impl App {
         let before = self.settings.clone();
         let mut mode =
             UpdateMode::from_key(&self.settings.update_mode).unwrap_or(UpdateMode::Notify);
+        let mut clear_cache = false;
         egui::Window::new("Settings")
             .open(&mut open)
-            .default_width(380.0)
+            .default_width(380.0_f32.min(ctx.content_rect().width() - 24.0))
+            .max_height(ctx.content_rect().height() - 80.0)
+            .vscroll(true)
             .show(ctx, |ui| {
                 let s = &mut self.settings;
                 ui.label(RichText::new("Access").strong());
@@ -2293,8 +4076,16 @@ impl App {
                     "Show pseudo file systems (proc, sysfs, tmpfs, …) - at the next start",
                 );
                 ui.checkbox(
+                    &mut s.show_bind_mounts,
+                    "Show bind mounts of what another island shows - at the next start",
+                );
+                ui.checkbox(
                     &mut s.hardware_island,
                     "The machine's own island - at the next start",
+                );
+                ui.checkbox(
+                    &mut s.size_by_allocated,
+                    "Size buildings by the space on the disk (a sparse file is small)",
                 );
                 ui.checkbox(&mut s.mcp.enabled, "Look for axross's MCP server");
                 ui.checkbox(
@@ -2317,6 +4108,26 @@ impl App {
                     }
                 });
                 ui.separator();
+                ui.label(RichText::new("Walk cache").strong());
+                ui.label(
+                    RichText::new("What the walks found, kept to show the city at once next time (only you can read it).")
+                        .color(t.muted),
+                );
+                ui.checkbox(
+                    &mut s.cache_sensitive,
+                    "Also keep removable media, network and remote islands",
+                );
+                ui.add(egui::Slider::new(&mut s.cache_max_mb, 16..=8192).logarithmic(true).text("MiB at most"));
+                ui.add(egui::Slider::new(&mut s.cache_max_days, 1..=365).text("days at most"));
+                ui.horizontal_wrapped(|ui| {
+                    if let Some((bytes, files)) = self.cache_usage {
+                        ui.label(RichText::new(format!("now {} in {files} files", hw::human_bytes(bytes))).color(t.muted));
+                    }
+                    if ui.button("Clear the cache").clicked() {
+                        clear_cache = true;
+                    }
+                });
+                ui.separator();
                 ui.label(RichText::new("Look").strong());
                 ui.horizontal(|ui| {
                     ui.label("Theme:");
@@ -2332,6 +4143,11 @@ impl App {
                 ui.checkbox(&mut s.rain, "Digital rain");
                 ui.checkbox(&mut s.bloom, "Bloom");
                 ui.checkbox(&mut s.scanlines, "Scanlines");
+                ui.checkbox(&mut s.msaa, "Smooth edges (four samples a pixel)");
+                ui.add(
+                    egui::Slider::new(&mut s.idle_fps, 0..=30)
+                        .text("frames a second while nothing moves (the rain; 0: none)"),
+                );
                 ui.checkbox(
                     &mut s.reduce_motion,
                     "Reduce motion (no warp, still rain, slower flights)",
@@ -2367,10 +4183,43 @@ impl App {
             });
         self.settings.update_mode = mode.key().to_string();
         self.settings_open = open;
+        if clear_cache {
+            self.prune_cache(true);
+        }
+        if self.settings.size_by_allocated != before.size_by_allocated {
+            // (every city laid out again, by the other size)
+            for isl in &mut self.islands {
+                if isl.hw.is_none() {
+                    isl.dirty = true;
+                    isl.epoch += 1;
+                }
+            }
+        }
         if self.settings != before {
             self.camera.sensitivity = self.settings.mouse_sensitivity;
             self.camera.invert_y = self.settings.invert_y;
-            self.theme = theme::find(&self.settings.theme);
+            let theme = theme::find(&self.settings.theme);
+            if !std::ptr::eq(theme, self.theme) {
+                self.theme = theme;
+                // (the instances carry the theme's colours: made again,
+                // where they stand)
+                for isl in &mut self.islands {
+                    let id = isl.id;
+                    let Some(c) = isl.city.as_mut() else { continue };
+                    if isl.hw.is_some() {
+                        c.rebuild(theme);
+                    } else {
+                        self.layout.place(world::PlaceJob {
+                            id,
+                            layout: c.layout.clone(),
+                            ring: c.ring,
+                            offset: c.offset,
+                            theme,
+                        });
+                    }
+                }
+                self.beams_dirty = true;
+            }
             self.world_version += 1;
             let _ = settings::save(&self.settings_path, &self.settings);
         }
@@ -2387,7 +4236,9 @@ impl App {
             .and_then(|s| s.lock().ok().map(|s| (s.adapter.clone(), s.software)));
         egui::Window::new("Keys and mouse")
             .open(&mut open)
-            .default_width(420.0)
+            .default_width(420.0_f32.min(ctx.content_rect().width() - 24.0))
+            .max_height(ctx.content_rect().height() - 80.0)
+            .vscroll(true)
             .show(ctx, |ui| {
                 egui::Grid::new("help").num_columns(2).show(ui, |ui| {
                     if let Some((a, soft)) = &adapter {
@@ -2441,8 +4292,23 @@ impl App {
                 .iter()
                 .any(|i| !i.status.done && i.hw.is_none());
             let laying = self.islands.iter().any(|i| i.dirty || i.layout_pending);
-            let cached = self.islands.iter().any(|i| i.fresh.is_some());
-            if !walking && !laying && !cached && self.islands.iter().all(|i| i.city.is_some()) {
+            let cached = self
+                .islands
+                .iter()
+                .any(|i| i.fresh.is_some() || !i.deferred.is_empty());
+            // (islands still being placed: their instances on the way)
+            let placing = self.islands.iter().any(|i| {
+                i.city
+                    .as_ref()
+                    .is_some_and(|c| !c.shown || c.target.is_some_and(|t| t != c.offset))
+            });
+            if !self.starting
+                && !walking
+                && !laying
+                && !cached
+                && !placing
+                && self.islands.iter().all(|i| i.city.is_some())
+            {
                 return true;
             }
             std::thread::sleep(Duration::from_millis(5));
@@ -2471,6 +4337,153 @@ impl App {
     }
 }
 
+/// Search hits with a pillar of light over them (the rest: N, teleport).
+const PILLARS: usize = 400;
+
+/// Hits (and districts) the teleport window lists a page.
+const TELEPORT_PAGE: usize = 100;
+
+const LEGEND_LINE: f32 = 15.0;
+const LEGEND_COL: f32 = 92.0;
+
+/// Where the legend goes in the view `rect` and in how many columns (two
+/// where the view is low); None where there is no room for it.
+fn legend_geometry(rect: Rect) -> Option<(Rect, usize)> {
+    let types = crate::tree::FILE_TYPES.len() - 1;
+    let cols = if rect.height() < 520.0 { 2 } else { 1 };
+    let per_col = types.div_ceil(cols);
+    let h = LEGEND_LINE * (per_col + 3) as f32 + 26.0;
+    let w = (LEGEND_COL * cols as f32).max(176.0) + 16.0;
+    let at = Pos2::new(rect.left() + 10.0, rect.bottom() - h - 10.0);
+    if at.y < rect.top() + 40.0 || w > rect.width() * 0.5 {
+        return None;
+    }
+    Some((Rect::from_min_size(at, vec2(w, h)), cols))
+}
+
+/// How much bigger the machine's island (of side `base`) is drawn beside
+/// a city of side `biggest`: a quarter of it, in steps of half again, 1 to 40.
+pub fn machine_scale(biggest: f32, base: f32) -> f32 {
+    let want = (biggest / 4.0 / base.max(1.0)).clamp(1.0, 40.0);
+    if want <= 1.0 {
+        return 1.0;
+    }
+    let steps = (want.ln() / 1.5f32.ln()).round();
+    1.5f32.powf(steps).clamp(1.0, 40.0)
+}
+
+/// The ground colour of a system's island: its family's.
+fn family_tint(source: &IslandSource) -> Option<u32> {
+    match source {
+        IslandSource::Mcp { backend, .. } => backend.protocol.as_deref().map(|p| {
+            let [r, g, b] = crate::systems::Family::of(p).color();
+            city::pack_color(Color32::from_rgb(r, g, b))
+        }),
+        _ => None,
+    }
+}
+
+/// The node at `path` below the root (raw names), as far as the tree has
+/// it: the deepest node found and how many names are left.
+pub fn find_path(tree: &crate::tree::Tree, path: &[Vec<u8>]) -> (NodeId, usize) {
+    let mut at: NodeId = 0;
+    for (k, name) in path.iter().enumerate() {
+        let next = tree.get(at).and_then(|n| {
+            n.children
+                .iter()
+                .copied()
+                .find(|&c| crate::tree::os_to_bytes(&tree.nodes[c as usize].name) == *name)
+        });
+        match next {
+            Some(c) => at = c,
+            None => return (at, path.len() - k),
+        }
+    }
+    (at, 0)
+}
+
+/// When the next frame is drawn.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Repaint {
+    /// At once (something moves).
+    Now,
+    /// After a while (the rain, slowly).
+    After(Duration),
+    /// Only when something happens (an input, a walk, an answer).
+    Idle,
+}
+
+/// The idle policy: nothing is drawn while the window is hidden or
+/// minimised; when nothing moves only the rain asks for frames (`idle_fps`
+/// a second focused, one a second unfocused) - without it, none.
+pub fn repaint_policy(
+    animating: bool,
+    hidden: bool,
+    focused: bool,
+    rain: bool,
+    idle_fps: u32,
+) -> Repaint {
+    if hidden {
+        return Repaint::Idle;
+    }
+    if animating {
+        return if focused {
+            Repaint::Now
+        } else {
+            Repaint::After(Duration::from_millis(100))
+        };
+    }
+    if !rain || idle_fps == 0 {
+        return Repaint::Idle;
+    }
+    let every = Duration::from_secs_f32(1.0 / idle_fps as f32);
+    Repaint::After(if focused {
+        every
+    } else {
+        every.max(Duration::from_secs(1))
+    })
+}
+
+/// axross's state: the program (given or on the PATH), asked whether it
+/// opens paths unless the remembered answer is for this very file.
+pub fn probe_axross(
+    given: Option<PathBuf>,
+    known: Option<settings::AxrossProbe>,
+) -> (Axross, Option<settings::AxrossProbe>) {
+    let Some(path) = given.or_else(open::axross_on_path) else {
+        return (Axross::Missing, None);
+    };
+    let Some((size, mtime)) = open::file_stamp(&path) else {
+        return (Axross::Missing, None);
+    };
+    let key = path.to_string_lossy().into_owned();
+    let (opens, manager) = match known {
+        Some(k) if k.path == key && k.size == size && k.mtime == mtime => {
+            (k.opens_paths, k.connection_manager)
+        }
+        _ => {
+            let help = open::axross_help(&path);
+            (
+                help.contains("--profile") && help.contains("PATH"),
+                help.contains("--connection-manager"),
+            )
+        }
+    };
+    let probe = settings::AxrossProbe {
+        path: key,
+        size,
+        mtime,
+        opens_paths: opens,
+        connection_manager: manager,
+    };
+    let state = if opens {
+        Axross::Ready(path)
+    } else {
+        Axross::TooOld(path)
+    };
+    (state, Some(probe))
+}
+
 pub const HELP: &[(&str, &str)] = &[
     ("W A S D", "fly forward, left, back, right (arrows too)"),
     ("Q / E", "down / up"),
@@ -2486,12 +4499,22 @@ pub const HELP: &[(&str, &str)] = &[
     ),
     ("/ or Ctrl+F", "search (text, or a glob like *.iso)"),
     ("N / Enter", "fly to the next hit (Shift: teleport)"),
-    ("T", "teleport: islands, districts, spots, hits"),
+    (
+        "T",
+        "teleport: other systems, islands, districts, spots, hits",
+    ),
     ("1 - 9", "jump to a saved spot"),
     ("Ctrl+1 - 9", "save this spot"),
     ("Home", "overview"),
-    ("O / Shift+O", "open in axross / with the default program"),
-    ("Esc", "let the mouse go, then clear the choice"),
+    (
+        "O / Shift+O",
+        "open in axross / with the default program (asks first for programs)",
+    ),
+    ("L", "the colour legend"),
+    (
+        "Esc",
+        "let the mouse go, give a connect up, then clear the choice",
+    ),
     ("H / F1", "this help"),
 ];
 
@@ -2541,7 +4564,25 @@ impl eframe::App for App {
             self.window_size = Some([r.width(), r.height()]);
         }
         let ctx = ui.ctx().clone();
+        let (focused, hidden) = ctx.input(|i| {
+            let v = i.viewport();
+            let lost = i
+                .events
+                .iter()
+                .any(|e| matches!(e, egui::Event::WindowFocused(false)));
+            (
+                i.focused && v.focused != Some(false) && !lost,
+                v.minimized == Some(true) || v.occluded == Some(true),
+            )
+        });
+        self.focused = focused;
+        self.hidden = hidden;
+        if !focused && self.captured {
+            // (another window has the keyboard: the mouse is let go)
+            self.set_capture(&ctx, false);
+        }
         self.pump(Duration::from_millis(6));
+        let t_pump = t0.elapsed();
         self.step_search(Duration::from_millis(3));
         self.keys(&ctx);
         let mode = UpdateMode::from_key(&self.settings.update_mode).unwrap_or(UpdateMode::Notify);
@@ -2564,27 +4605,36 @@ impl eframe::App for App {
                     .inner_margin(egui::Margin::symmetric(8, 3)),
             )
             .show(ui, |ui| self.status_bar(ui));
+        let full = ctx.content_rect();
         if self.selected.is_some() {
+            let side = (full.width() * 0.4).clamp(200.0, 340.0);
             egui::Panel::right("inspect")
-                .default_size(340.0)
+                .default_size(side)
+                .max_size((full.width() * 0.6).max(220.0))
                 .frame(
                     egui::Frame::new()
                         .fill(t.surface)
                         .inner_margin(egui::Margin::same(10)),
                 )
                 .show(ui, |ui| {
-                    ui.set_min_width(260.0);
-                    self.inspect_panel(ui);
+                    ui.set_min_width(side.min(260.0));
+                    egui::ScrollArea::vertical()
+                        .id_salt("inspect-scroll")
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| self.inspect_panel(ui));
                 });
         }
+        let t_panels = t0.elapsed();
         egui::CentralPanel::default()
             .frame(egui::Frame::new().fill(Color32::BLACK))
             .show(ui, |ui| self.view(ui));
+        let t_view = t0.elapsed();
         self.teleport_window(&ctx);
         self.sources_window(&ctx);
         self.settings_window(&ctx);
         self.help_window(&ctx);
         self.ask_mode_window(&ctx);
+        self.open_ask_window(&ctx);
         let mut mode = mode;
         if self.updater.window(&ctx, &mut mode) {
             self.settings.update_mode = mode.key().to_string();
@@ -2592,6 +4642,17 @@ impl eframe::App for App {
         }
         // the adaptive level of detail: fewer boxes when frames are slow
         let work = t0.elapsed().as_secs_f32();
+        if self.opts.frame_stats && work > 0.025 {
+            // (a slow frame: where its time went)
+            eprintln!(
+                "slow frame {:.1} ms: pump {:.1}, bars and panels {:.1}, view {:.1}, windows {:.1}",
+                work * 1000.0,
+                t_pump.as_secs_f32() * 1000.0,
+                (t_panels - t_pump).as_secs_f32() * 1000.0,
+                (t_view - t_panels).as_secs_f32() * 1000.0,
+                work * 1000.0 - t_view.as_secs_f32() * 1000.0
+            );
+        }
         self.times.push(work);
         if !self.opts.fixed_lod && self.times.frames.len() >= 30 {
             let ms = FrameTimes::mean_ms(&self.times.frames);
@@ -2608,8 +4669,9 @@ impl eframe::App for App {
                 .is_none_or(|r| r.elapsed() >= Duration::from_secs(1));
             if due {
                 self.times.reported = Some(Instant::now());
+                let max_work = self.times.work.iter().copied().fold(0.0f32, f32::max) * 1000.0;
                 eprintln!(
-                    "frame {:.2} ms (p95 {:.2}), work {:.2} ms, {} boxes, lod {:.3}",
+                    "frame {:.2} ms (p95 {:.2}), work {:.2} ms (max {max_work:.2}), {} boxes, lod {:.3}",
                     FrameTimes::mean_ms(&self.times.frames),
                     FrameTimes::p95_ms(&self.times.frames),
                     FrameTimes::mean_ms(&self.times.work),
@@ -2688,5 +4750,54 @@ mod tests {
                 assert!((v - want).abs() < 1e-3, "{c} {r}: {v}");
             }
         }
+    }
+
+    #[test]
+    fn an_idle_window_draws_little_or_nothing() {
+        let ms = Duration::from_millis;
+        // hidden or minimised: nothing, whatever moves
+        assert_eq!(repaint_policy(true, true, true, true, 8), Repaint::Idle);
+        // moving: every frame (focused), ten a second (not)
+        assert_eq!(repaint_policy(true, false, true, true, 8), Repaint::Now);
+        assert_eq!(
+            repaint_policy(true, false, false, true, 8),
+            Repaint::After(ms(100))
+        );
+        // still: the rain's slow tick, one a second unfocused, none without rain
+        assert_eq!(
+            repaint_policy(false, false, true, true, 8),
+            Repaint::After(ms(125))
+        );
+        assert_eq!(
+            repaint_policy(false, false, false, true, 8),
+            Repaint::After(ms(1000))
+        );
+        assert_eq!(repaint_policy(false, false, true, false, 8), Repaint::Idle);
+        assert_eq!(repaint_policy(false, false, true, true, 0), Repaint::Idle);
+    }
+
+    #[test]
+    fn the_machine_grows_with_the_biggest_city() {
+        assert_eq!(machine_scale(0.0, 220.0), 1.0);
+        assert_eq!(machine_scale(1000.0, 220.0), 1.0);
+        let k = machine_scale(9000.0, 220.0);
+        assert!(k > 4.0 && k < 15.0, "{k}");
+        // in steps: a little growth changes nothing
+        assert_eq!(machine_scale(9000.0, 220.0), machine_scale(9300.0, 220.0));
+        assert!(machine_scale(1e9, 220.0) <= 40.0);
+    }
+
+    #[test]
+    fn the_legend_fits_or_stays_away() {
+        let big = Rect::from_min_size(Pos2::ZERO, vec2(1200.0, 800.0));
+        let (r, cols) = legend_geometry(big).unwrap();
+        assert!(big.contains_rect(r));
+        assert_eq!(cols, 1);
+        let low = Rect::from_min_size(Pos2::ZERO, vec2(640.0, 380.0));
+        if let Some((r, cols)) = legend_geometry(low) {
+            assert!(low.contains_rect(r));
+            assert_eq!(cols, 2);
+        }
+        assert!(legend_geometry(Rect::from_min_size(Pos2::ZERO, vec2(200.0, 150.0))).is_none());
     }
 }

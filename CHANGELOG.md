@@ -28,51 +28,109 @@ The first release: the MVP of the spec.
   is in use, the PCIe cards, the disks, the network and USB ports; each
   mountpoint's island tied to its disk by a beam of light. Linux reads
   `/proc`, `/sys` and DMI without root; missing data is left out quietly.
-- **The city**: folders are districts (a squarified treemap by bytes, with
-  streets), files are buildings (footprint and height by size, colour by
+  A mount finds its disks through every layer: LVM on LUKS (device-mapper
+  slaves down to the disk), MD RAID (all members), btrfs and ZFS pools
+  (every device), loop devices. The island grows with the biggest city, so
+  it is never a speck beside it. Bind mounts of what another island shows
+  and bind-mounted files are left out (a setting shows the bind mounts).
+- **The city**: folders are districts (a squarified treemap by the space
+  files take on the disk - a sparse file is small; a setting sizes by
+  length - with a least footprint for every file, and streets), files are
+  buildings (footprint and height by size, colour by
   type, glow by how recently they changed), unread folders dashed
   placeholders, unreadable ones amber. Floating labels with level of
   detail. Digital rain in the sky, code running down the tallest towers,
-  scanlines and bloom.
+  scanlines and bloom; edges smoothed with four samples a pixel (a
+  setting). A colour legend in the view (L hides it); labels never
+  overlap each other, an island's title or the legend.
 - **An instanced wgpu renderer** inside egui's frame: one draw call for
   every building, an HDR scene, a bloom chain, the final picture; far
   districts collapse into single blocks and open as you approach (and
-  unread folders are read then), with the level of detail adapting to the
-  frame time.
+  unread folders are read then); a big folder's buildings are cut into
+  tiles that collapse one by one; a hard budget of boxes a frame (160 000)
+  holds for any tree. The layout, its instances, the cache's encoding and
+  every island's move run off the window's thread; an island that does not
+  move is not rebuilt.
 - **Streaming walks**: one thread per island and a few readers, the city
   growing as entries arrive; symbolic links listed, never followed;
-  permission errors marked; huge folders read up to a cap; names that are
-  no UTF-8 or hold newlines kept and shown escaped. The last walk of each
-  island is cached (checksummed, every field checked when read back), so
-  the city stands at once on the next start while the new walk runs - and
-  stays, marked, when its folder cannot be read any more.
+  permission errors marked; folders of any size read whole, in pieces;
+  any depth; a limit of 8 million entries in all, said on the status line
+  when reached; names that are no UTF-8 or hold newlines kept and shown
+  escaped (`\xNN`). The mounts, the machine and the folders given are
+  looked at on a thread of their own: a dead mount never keeps the window
+  from coming. The last walk of each island is cached (checksummed, every
+  field checked when read back; a folder and files only you can read;
+  pruned by size and age, cleared from the settings; removable, network
+  and remote islands only when a setting says so), so the city stands at
+  once on the next start while the new walk runs - and stays, marked, when
+  its folder cannot be read any more.
 - **Flight**: free flight (WASD, Q/E, mouse look on the right button or
   captured with M, Shift faster, the wheel sets the speed), orbit and map
   (drag, pan, zoom, click a district to fly there), flights along paths
   that keep above every roof, walls you slide along.
+- **Teleport to other systems**: the Teleport menu lists every connection
+  saved in axross's connection manager (MCP `list_remote_profiles`) - name,
+  protocol, host and its state: not open, connecting, walking, open,
+  failed with the reason - and a filter that searches systems, islands,
+  districts, spots and hits at once. Teleporting to one connects it through
+  axross's server (`open_remote_profile`, read-only, the `remote` tool
+  group; Sources shows the command line), raises its island at once as
+  "connecting…", streams its walk and flies there; a time limit and a
+  cancel for a hung host; a failure stays on the island and in the menu
+  with a retry. Every protocol axross has a backend for works - the list
+  comes from axross's registry at run time; families (shell logins,
+  shares, cloud stores, phones, mail, databases, version control) have
+  their sign and colour, any other protocol the generic look. A backend
+  that tells no sizes gets equal footprints and says so; mail stores,
+  databases and slow backends are read folder by folder as they are
+  approached. A saved spot inside a system opens it again. The matrix
+  never asks for or stores a secret: a system that needs one says "needs
+  unlocking in axross" and opens axross's connection manager.
 - **Teleport**: a menu of the islands, their largest districts, the saved
-  spots and the search hits; 1-9 jump to saved spots, Ctrl+1-9 save them;
+  spots and every search hit (paged); 1-9 jump to saved spots, Ctrl+1-9 save them;
   a short warp, at most two teleports a second.
 - **Search** by name (any part, any case) or glob (`*`, `?`, `[a-z]`)
-  across everything walked, a few milliseconds a frame; hits are pillars of
-  light; N flies to the next.
+  across everything walked, a few milliseconds a frame; every hit is kept;
+  the first 400 are pillars of light (said); N flies to the next.
 - **Inspect and preview**: picking by a ray against a bounding volume
   hierarchy; the path, size, times, owner and mode, type; a preview of text
-  (the first 64 KB, control characters escaped), images (decoded on a
-  thread of their own, scaled down) and a hex dump; remote files through
-  MCP `read_file` with a byte limit.
-- **Open** in axross (`axross <path>`, a remote profile's URL) or with the
-  system's default program (`xdg-open`, `open`, Explorer) - never through
-  a shell.
+  (the first 64 KB and 2000 lines, control characters escaped), images
+  (at most 128 MB to decode, refused from the header before), a hex dump;
+  one preview at a time, the newest asked for; files opened without
+  following a link or waiting on a pipe; paths and link targets escaped;
+  times in local time; remote files through MCP `read_file` with a byte
+  limit, by their exact bytes.
+- **Open** in axross (`axross -- PATH`, `axross --profile=NAME -- PATH`
+  for a remote backend's saved profile - axross 0.15.186 and later, found
+  by asking its `--help` once; an older one is said to be too old, nothing
+  falls through), in the file manager (runs nothing), or with the system's
+  default program - programs, scripts, desktop entries, shortcuts,
+  executables, links and anything on removable or network media only after
+  a question that says what may happen. Never through a shell; a path never
+  read as an option.
 - **Read-only**: nothing on any disk is changed; the write mode is
   visibly off; "read-only or write?" before the flight can be asked (only
   read-only can be chosen in this release).
 - **Settings** in the configuration folder, read robustly (a file that is
   no JSON is set aside, values out of range are brought back).
+- **Small windows**: below 1000 points the bar's buttons go into a menu,
+  the READ-ONLY badge always stays; the status line is cut short with the
+  rest in its tooltip; every window scrolls. Keys work with a button in
+  focus; the mouse is let go when the window loses focus.
+- **An idle window rests**: nothing is drawn while hidden or minimised;
+  when nothing moves only the rain asks for frames (8 a second, a setting;
+  0 stills it), one a second unfocused.
+- **axross's server, hardened**: answers longer than 32 MiB are read past
+  in bounded memory and fail their call at once, as does an answer that is
+  no JSON; three such and the server is ended; names with a slash, a
+  dot-dot or a control character are refused (and counted); the server is
+  killed and reaped at the end with its process group, a call still
+  waiting included (Linux: also when the program dies).
 - **The Matrix theme**, the theme system ready for more.
 - **A flash guard** as axross-amp's: the picture shown is measured on a
   grid on the GPU and read back; where a field would flash more than three
-  times a second it is veiled towards its own slow average. The frames are
+  times a second it is veiled towards its own slow average, fading through black rather
+  than ghosting the view before. The frames are
   held to an independent meter in the tests.
 - **The GPU**: the dedicated one preferred (*Settings › GPU*: automatic,
   high performance, low power), never a software renderer while a GPU is
@@ -81,8 +139,12 @@ The first release: the MVP of the spec.
   it is a software renderer.
 - **`--benchmark [FILES]`**: a synthetic city (200 000 files) flown through
   offscreen with no vsync - the adapter, boxes and draw calls per frame, the
-  CPU side and the whole frame as median, p95 and p99, as text or JSON.
-- **Headless**: `--version`, `--self-test`, `--dump-city DIR [--json]`.
+  CPU side and the whole frame as median, p95 and p99, as text or JSON;
+  `--flat` puts the files in one folder, `--no-msaa` draws without smooth
+  edges.
+- **Headless**: `--version`, `--self-test`, `--dump-city DIR [--json]`
+  (names exact in JSON, with their bytes as base64 when they are no UTF-8).
+  `--` ends the options: after it every argument is a folder.
 - **Signed updates** from the GitHub releases (as axross-amp's), off until
   the maintainer pins the release key; CI with the supply-chain gate,
   tests and builds on Linux, macOS and Windows; releases with an AppImage,

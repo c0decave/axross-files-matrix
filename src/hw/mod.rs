@@ -385,6 +385,20 @@ pub fn disk_of(m: &Machine, dev: (u32, u32)) -> Option<usize> {
     }
 }
 
+/// The disks (indices) a mount lives on: all of them for RAID, LVM on
+/// several disks, a btrfs or ZFS pool.
+pub fn disks_of(m: &Machine, mount: &crate::mounts::Mount) -> Vec<usize> {
+    #[cfg(target_os = "linux")]
+    {
+        linux::disks_of_mount(std::path::Path::new("/"), &m.disks, mount)
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = (m, mount);
+        Vec::new()
+    }
+}
+
 pub fn human_bytes(b: u64) -> String {
     const UNITS: [&str; 7] = ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"];
     let mut v = b as f64;
@@ -452,6 +466,7 @@ impl Builder {
                 name: OsStr::new(name).into(),
                 kind,
                 size: 0,
+                alloc: 0,
                 mtime: 0,
             })
             .unwrap_or(0);
@@ -484,6 +499,7 @@ impl Builder {
             ftype: FileType::Binary,
             glow: 0.3,
             listing: Listing::Listed,
+            tiles: (0, 0),
         });
         self.current = Some((index, id));
         id
@@ -596,6 +612,7 @@ pub fn island(m: &Machine) -> HwIsland {
         ftype: FileType::Binary,
         glow: 0.2,
         listing: Listing::Listed,
+        tiles: (0, 0),
     });
     b.layout.placed[0] = Placed::District(0);
 
@@ -1041,7 +1058,11 @@ mod tests {
                 }
             })
             .collect();
-        assert_eq!(disks.len(), 2, "the mapped device is no disk of its own");
+        assert_eq!(
+            disks.len(),
+            3,
+            "the mapped device is no disk of its own (the loop device is)"
+        );
         assert_eq!(h.parts.values().filter(|p| **p == Part::Module).count(), 3);
         // every building lies on the board, inside its zone
         for bld in &h.layout.buildings {
@@ -1066,7 +1087,7 @@ mod tests {
                 .any(|(k, v)| k == "mainboard" && v == "ACME Z-Board 1")
         );
         // a mountpoint on the encrypted root is tied to the NVMe disk
-        assert_eq!(disk_of(&m, (253, 0)), Some(1));
+        assert_eq!(disk_of(&m, (253, 0)), Some(2));
     }
 
     #[test]

@@ -27,6 +27,11 @@ pub struct BenchOptions {
     pub size: (u32, u32),
     /// No level of detail: every building drawn, every frame.
     pub all: bool,
+    /// One flat folder of FILES files (the worst case for the level of
+    /// detail) instead of a tree of folders.
+    pub flat: bool,
+    /// Smooth edges (four samples a pixel), as the window draws by default.
+    pub msaa: bool,
     pub preference: Preference,
 }
 
@@ -37,6 +42,8 @@ impl Default for BenchOptions {
             frames: 600,
             size: (1920, 1080),
             all: false,
+            flat: false,
+            msaa: true,
             preference: Preference::Auto,
         }
     }
@@ -88,6 +95,11 @@ pub struct BenchReport {
     pub frames: usize,
     pub size: [u32; 2],
     pub level_of_detail: bool,
+    pub flat: bool,
+    /// Samples a pixel (4: smooth edges).
+    pub samples: u32,
+    /// The most boxes a frame may draw (the level of detail's budget).
+    pub budget: usize,
     /// Boxes per frame (buildings, blocks, floors, islands).
     pub instances: Counts,
     /// Of them, buildings.
@@ -106,11 +118,13 @@ impl BenchReport {
     pub fn text(&self) -> String {
         let mut s = String::new();
         s.push_str(&format!(
-            "axross-files-matrix benchmark: {} files, {} frames at {} x {}{}\n",
+            "axross-files-matrix benchmark: {} files{}, {} frames at {} x {}, {} samples a pixel{}\n",
             self.files,
+            if self.flat { " in one folder" } else { "" },
             self.frames,
             self.size[0],
             self.size[1],
+            self.samples,
             if self.level_of_detail {
                 ""
             } else {
@@ -148,6 +162,30 @@ impl BenchReport {
         ));
         s
     }
+}
+
+/// A tree of one folder holding `files` files (sizes spread over three
+/// orders of magnitude).
+pub fn flat_tree(files: usize) -> crate::tree::Tree {
+    use crate::tree::{Entry, Kind, Tree};
+    let mut t = Tree::new(std::ffi::OsStr::new("flat"), 0);
+    let mut x: u64 = 0x9e37_79b9_7f4a_7c15;
+    for i in 0..files {
+        x ^= x << 13;
+        x ^= x >> 7;
+        x ^= x << 17;
+        let size = 1_000 + x % 10_000_000;
+        t.push(Entry {
+            parent: 0,
+            name: std::ffi::OsString::from(format!("file-{i:07}.dat")).into_boxed_os_str(),
+            kind: Kind::File,
+            size,
+            alloc: size.div_ceil(4096) * 4096,
+            mtime: 1_700_000_000 - (x % 10_000_000) as i64,
+        });
+    }
+    t.recount();
+    t
 }
 
 /// The camera at frame `k` of `n`: round the island, from high above down
@@ -191,14 +229,19 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
     .map_err(|e| format!("the GPU device could not be made: {e}"))?;
     // the city
     let t = Instant::now();
-    let (tree, _) = walk_blocking(
-        Source::Synthetic {
-            files: opts.files,
-            seed: 7,
-        },
-        Limits::default(),
-        std::ffi::OsStr::new("synthetic"),
-    );
+    let tree = if opts.flat {
+        flat_tree(opts.files)
+    } else {
+        walk_blocking(
+            Source::Synthetic {
+                files: opts.files,
+                seed: 7,
+            },
+            Limits::default(),
+            std::ffi::OsStr::new("synthetic"),
+        )
+        .0
+    };
     let l = layout(&snapshot(&tree), &Params::default());
     let boxes = city::boxes_of(&l);
     let bvh = Bvh::build(&boxes);
@@ -208,7 +251,14 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
     c.rebuild(theme);
     let build_seconds = t.elapsed().as_secs_f64();
     let format = wgpu::TextureFormat::Rgba8Unorm;
-    let mut renderer = Renderer::new(&device, format);
+    let msaa_ok = crate::render::msaa_supported(&adapter);
+    let mut renderer = Renderer::new(&device, format, msaa_ok);
+    let samples = if opts.msaa && msaa_ok { 4 } else { 1 };
+    let budget = if opts.all {
+        usize::MAX
+    } else {
+        city::FRAME_BUDGET
+    };
     let (w, h) = (opts.size.0.clamp(16, 8192), opts.size.1.clamp(16, 8192));
     let target = device.create_texture(&wgpu::TextureDescriptor {
         label: Some("afm benchmark target"),
@@ -251,7 +301,7 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
         if let Some(old) = buffer.take().and_then(|b| Arc::try_unwrap(b).ok()) {
             set.opaque = old;
         }
-        city::select(&mut [&mut c], cam.pos, &frustum, &lod, &mut set);
+        city::select_within(&mut [&mut c], cam.pos, &frustum, &lod, budget, &mut set);
         let opaque = set.opaque.len() as u32;
         let built = set
             .opaque
@@ -278,6 +328,7 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
             version: k as u64,
             guard: true,
             dt: 1.0 / 60.0,
+            msaa: opts.msaa,
         };
         let mut enc = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("afm benchmark"),
@@ -323,6 +374,9 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
         frames,
         size: [w, h],
         level_of_detail: !opts.all,
+        flat: opts.flat,
+        samples,
+        budget: if opts.all { 0 } else { budget },
         instances: counts(&mut inst),
         buildings_drawn: counts(&mut blds),
         draw_calls: draws.0,

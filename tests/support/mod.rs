@@ -3,6 +3,7 @@
 //! and cache folders.
 #![allow(dead_code)]
 
+pub mod fake_mcp;
 pub mod m11;
 
 use axross_files_matrix::app::{App, StartOptions};
@@ -44,6 +45,8 @@ pub fn options(scratch: &Scratch) -> StartOptions {
         flash_guard: std::env::var_os("AFM_NO_GUARD").is_none(),
         clock: Some(12.5),
         step: Some(1.0 / 30.0),
+        // (no axross of this machine's: the tests give their own)
+        axross: Some(PathBuf::from("/nonexistent/axross")),
         ..StartOptions::default()
     }
 }

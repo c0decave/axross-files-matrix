@@ -21,6 +21,8 @@ pub struct LayoutNode {
     pub listing: Listing,
     pub hash: u32,
     pub total: u64,
+    /// The bytes on the disk (files).
+    pub alloc: u64,
     pub count: u32,
     pub newest: i64,
 }
@@ -37,6 +39,7 @@ pub fn snapshot(tree: &Tree) -> Vec<LayoutNode> {
             listing: n.listing,
             hash: n.hash,
             total: n.total,
+            alloc: n.alloc,
             count: n.count,
             newest: n.newest,
         })
@@ -64,6 +67,8 @@ pub struct District {
     pub ftype: FileType,
     pub glow: f32,
     pub listing: Listing,
+    /// Its own buildings' tiles (`tiles[a..b]`; empty: drawn one by one).
+    pub tiles: (u32, u32),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -90,7 +95,61 @@ pub struct CityLayout {
     /// Node id -> building index or district index ([`Placed`]).
     pub placed: Vec<Placed>,
     pub top: f32,
+    /// A big district's own buildings in tiles (each drawn as one block
+    /// from afar): the tiles, and their buildings' indices.
+    pub tiles: Vec<Tile>,
+    pub tile_items: Vec<u32>,
+    /// Per building: its tile (u32::MAX: none).
+    pub tile_of: Vec<u32>,
 }
+
+impl CityLayout {
+    /// The same city `k` times as big (every length, the heights too).
+    pub fn scaled(&self, k: f32) -> CityLayout {
+        let r = |r: Rect| Rect::new(r.x0 * k, r.z0 * k, r.x1 * k, r.z1 * k);
+        let mut l = self.clone();
+        l.side *= k;
+        l.top *= k;
+        for d in &mut l.districts {
+            d.rect = r(d.rect);
+            d.floor *= k;
+            d.top *= k;
+            d.block_height *= k;
+        }
+        for b in &mut l.buildings {
+            b.rect = r(b.rect);
+            b.base *= k;
+            b.height *= k;
+        }
+        for t in &mut l.tiles {
+            t.rect = r(t.rect);
+            t.base *= k;
+            t.height *= k;
+            t.top *= k;
+        }
+        l
+    }
+}
+
+/// A piece of a big district's own buildings: one block from afar.
+#[derive(Clone, Debug)]
+pub struct Tile {
+    pub district: u32,
+    pub rect: Rect,
+    /// Its buildings: `tile_items[first..end]`.
+    pub first: u32,
+    pub end: u32,
+    pub base: f32,
+    pub height: f32,
+    pub top: f32,
+    pub ftype: FileType,
+    pub glow: f32,
+}
+
+/// A district with more own buildings than this is cut into tiles.
+pub const TILE_MIN: usize = 192;
+/// About this many buildings a tile.
+const TILE_SIZE: usize = 96;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Placed {
@@ -108,6 +167,9 @@ pub struct Params {
     pub floor_share: f64,
     /// The share of a lot a building leaves free on each side.
     pub gap: f32,
+    /// Weigh files by the bytes they take on the disk (a sparse file by
+    /// what it holds), not by their apparent size.
+    pub by_alloc: bool,
     /// Seconds since 1970 now (the glow's reference).
     pub now: i64,
 }
@@ -116,8 +178,11 @@ impl Default for Params {
     fn default() -> Params {
         Params {
             scale: 5.0,
-            floor_share: 0.04,
+            // (every file at least a sixth of the average's footprint: one
+            // huge file leaves the others room - no strips 0.4 m deep)
+            floor_share: 0.16,
             gap: 0.12,
+            by_alloc: true,
             now: now_secs(),
         }
     }
@@ -202,7 +267,13 @@ pub fn layout(nodes: &[LayoutNode], p: &Params) -> CityLayout {
     let children = |id: usize| &kids[start[id] as usize..start[id + 1] as usize];
     // weights, bottom-up (children come after their parents)
     let root = &nodes[0];
-    let avg = root.total as f64 / root.count.max(1) as f64;
+    let bytes = |node: &LayoutNode| if p.by_alloc { node.alloc } else { node.total };
+    let file_bytes: f64 = nodes
+        .iter()
+        .filter(|x| x.kind != Kind::Dir)
+        .map(|x| bytes(x) as f64)
+        .sum();
+    let avg = file_bytes / root.count.max(1) as f64;
     let floor = (avg * p.floor_share).max(1.0);
     let mut weight = vec![0f64; n];
     for id in (0..n).rev() {
@@ -218,7 +289,7 @@ pub fn layout(nodes: &[LayoutNode], p: &Params) -> CityLayout {
                 floor * 0.5
             };
         } else {
-            weight[id] = node.total as f64 + floor;
+            weight[id] = bytes(node) as f64 + floor;
         }
     }
     let side = p.scale * ((root.count as f32 + n as f32 * 0.25) + 40.0).sqrt();
@@ -271,6 +342,7 @@ pub fn layout(nodes: &[LayoutNode], p: &Params) -> CityLayout {
             ftype: FileType::Folder,
             glow: glow(node.newest, p.now),
             listing: node.listing,
+            tiles: (0, 0),
         });
         open.push(index);
         // the children, largest first
@@ -316,7 +388,83 @@ pub fn layout(nodes: &[LayoutNode], p: &Params) -> CityLayout {
         close(&mut out, d);
     }
     finish(&mut out);
+    make_tiles(&mut out);
     out
+}
+
+/// Cuts the own buildings of each big district into tiles of about
+/// [`TILE_SIZE`], by where they stand (a grid over the district): from afar
+/// a tile is one block, so a flat folder of 200 000 files is a few
+/// thousand boxes, not 200 000.
+fn make_tiles(out: &mut CityLayout) {
+    out.tile_of = vec![u32::MAX; out.buildings.len()];
+    for d in 0..out.districts.len() {
+        let (first, own_end) = (
+            out.districts[d].first as usize,
+            out.districts[d].own_end as usize,
+        );
+        let own = own_end - first;
+        if own < TILE_MIN {
+            continue;
+        }
+        let r = out.districts[d].rect;
+        let g = ((own as f32 / TILE_SIZE as f32).sqrt().ceil() as usize).max(2);
+        let mut cells: Vec<Vec<u32>> = vec![Vec::new(); g * g];
+        for (k, bld) in out.buildings[first..own_end].iter().enumerate() {
+            let b = first + k;
+            let (cx, cz) = bld.rect.center();
+            let gx =
+                (((cx - r.x0) / r.w().max(1e-6)) * g as f32).clamp(0.0, g as f32 - 1.0) as usize;
+            let gz =
+                (((cz - r.z0) / r.h().max(1e-6)) * g as f32).clamp(0.0, g as f32 - 1.0) as usize;
+            cells[gz * g + gx].push(b as u32);
+        }
+        let a = out.tiles.len() as u32;
+        for items in cells.into_iter().filter(|c| !c.is_empty()) {
+            let mut rect = Rect::new(f32::MAX, f32::MAX, f32::MIN, f32::MIN);
+            let (mut hsum, mut top, mut glow) = (0f64, 0f32, 0f32);
+            let mut types = [0f32; 11];
+            let base = out.buildings[items[0] as usize].base;
+            for &b in &items {
+                let bl = &out.buildings[b as usize];
+                rect = Rect::new(
+                    rect.x0.min(bl.rect.x0),
+                    rect.z0.min(bl.rect.z0),
+                    rect.x1.max(bl.rect.x1),
+                    rect.z1.max(bl.rect.z1),
+                );
+                let area = bl.rect.area() as f64;
+                hsum += bl.height as f64 * area;
+                top = top.max(bl.base + bl.height);
+                glow = glow.max(bl.glow);
+                types[bl.ftype as usize] += area as f32;
+            }
+            let ftype = types
+                .iter()
+                .enumerate()
+                .max_by(|x, y| x.1.total_cmp(y.1))
+                .map_or(FileType::Other, |(k, _)| FileType::from_u8(k as u8));
+            let ground = rect.area().max(1e-6) as f64;
+            let first_item = out.tile_items.len() as u32;
+            let index = out.tiles.len() as u32;
+            for &b in &items {
+                out.tile_of[b as usize] = index;
+            }
+            out.tile_items.extend_from_slice(&items);
+            out.tiles.push(Tile {
+                district: d as u32,
+                rect,
+                first: first_item,
+                end: out.tile_items.len() as u32,
+                base,
+                height: ((hsum / ground) as f32).max(0.15),
+                top,
+                ftype,
+                glow,
+            });
+        }
+        out.districts[d].tiles = (a, out.tiles.len() as u32);
+    }
 }
 
 /// Whether `a` is an ancestor of (or is) `b`.
@@ -417,6 +565,7 @@ mod tests {
                 name: OsStr::new(name).into(),
                 kind,
                 size,
+                alloc: size,
                 mtime: 1_000,
             })
             .unwrap()
@@ -522,6 +671,94 @@ mod tests {
     }
 
     #[test]
+    fn a_big_flat_folder_is_cut_into_tiles_that_cover_every_building_once() {
+        let mut t = Tree::new(OsStr::new("/"), 0);
+        for i in 0..20_000u64 {
+            t.push(Entry {
+                parent: 0,
+                name: OsStr::new(&format!("f{i}")).into(),
+                kind: Kind::File,
+                size: i % 1000,
+                alloc: i % 1000,
+                mtime: 0,
+            });
+        }
+        let l = layout(&snapshot(&t), &Params::default());
+        let (a, b) = l.districts[0].tiles;
+        assert!(b - a > 50, "{a}..{b}");
+        let mut seen = vec![0u8; l.buildings.len()];
+        for tile in &l.tiles[a as usize..b as usize] {
+            for &i in &l.tile_items[tile.first as usize..tile.end as usize] {
+                seen[i as usize] += 1;
+                let r = l.buildings[i as usize].rect;
+                assert!(
+                    r.x0 >= tile.rect.x0
+                        && r.x1 <= tile.rect.x1
+                        && r.z0 >= tile.rect.z0
+                        && r.z1 <= tile.rect.z1
+                );
+            }
+            assert!(tile.height > 0.0 && tile.top >= tile.height * 0.0);
+        }
+        assert!(seen.iter().all(|&n| n == 1));
+    }
+
+    #[test]
+    fn a_sparse_giant_leaves_the_others_room() {
+        let mut t = Tree::new(OsStr::new("/"), 0);
+        // 4 GB apparent, 4 KB on the disk
+        t.push(Entry {
+            parent: 0,
+            name: OsStr::new("sparse.img").into(),
+            kind: Kind::File,
+            size: 4 << 30,
+            alloc: 4096,
+            mtime: 0,
+        });
+        for i in 0..200u64 {
+            t.push(Entry {
+                parent: 0,
+                name: OsStr::new(&format!("f{i}")).into(),
+                kind: Kind::File,
+                size: 10_000,
+                alloc: 12_288,
+                mtime: 0,
+            });
+        }
+        let l = layout(&snapshot(&t), &Params::default());
+        let worst = l
+            .buildings
+            .iter()
+            .map(|b| b.rect.aspect())
+            .fold(0.0f32, f32::max);
+        assert!(worst < 12.0, "no slivers: worst aspect {worst}");
+        // by apparent size the giant takes most, but the others keep a
+        // minimum footprint
+        let p = Params {
+            by_alloc: false,
+            ..Params::default()
+        };
+        let l = layout(&snapshot(&t), &p);
+        let giant = l
+            .buildings
+            .iter()
+            .find(|b| b.node == 1)
+            .unwrap()
+            .rect
+            .area();
+        let small = l
+            .buildings
+            .iter()
+            .filter(|b| b.node != 1)
+            .map(|b| b.rect.area())
+            .sum::<f32>();
+        assert!(
+            small > giant * 0.05,
+            "the others keep room: {small} vs {giant}"
+        );
+    }
+
+    #[test]
     fn a_huge_flat_folder_lays_out() {
         let mut t = Tree::new(OsStr::new("/"), 0);
         for i in 0..50_000u64 {
@@ -530,6 +767,7 @@ mod tests {
                 name: OsStr::new(&format!("f{i}")).into(),
                 kind: Kind::File,
                 size: i % 1000,
+                alloc: i % 1000,
                 mtime: 0,
             });
         }
@@ -540,5 +778,34 @@ mod tests {
                 .iter()
                 .all(|b| b.rect.x0.is_finite() && b.rect.area() >= 0.0)
         );
+    }
+
+    #[test]
+    fn a_city_scales_as_a_whole() {
+        let t = sample_for_scale();
+        let l = layout(&snapshot(&t), &Params::default());
+        let k = l.scaled(3.0);
+        assert!((k.side - l.side * 3.0).abs() < 1e-3);
+        for (a, b) in l.buildings.iter().zip(&k.buildings) {
+            assert!((b.rect.x0 - a.rect.x0 * 3.0).abs() < 1e-3);
+            assert!((b.height - a.height * 3.0).abs() < 1e-3);
+        }
+        assert_eq!(k.districts.len(), l.districts.len());
+    }
+
+    fn sample_for_scale() -> Tree {
+        let mut t = Tree::new(std::ffi::OsStr::new("/"), 0);
+        for i in 0..40u64 {
+            t.push(crate::tree::Entry {
+                parent: 0,
+                name: std::ffi::OsString::from(format!("f{i}")).into_boxed_os_str(),
+                kind: Kind::File,
+                size: 1000 * (i + 1),
+                alloc: 4096 * (i + 1),
+                mtime: 0,
+            });
+        }
+        t.recount();
+        t
     }
 }

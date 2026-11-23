@@ -41,6 +41,7 @@ pub enum Tool {
     ListBackends,
     ListProfiles,
     OpenProfile,
+    CloseProfile,
 }
 
 impl Tool {
@@ -53,6 +54,7 @@ impl Tool {
             Tool::ListBackends => &["list_backends"],
             Tool::ListProfiles => &["list_remote_profiles", "remote_profiles"],
             Tool::OpenProfile => &["open_remote_profile", "remote_open"],
+            Tool::CloseProfile => &["close_remote_profile", "remote_close"],
         }
     }
 }
@@ -96,6 +98,104 @@ pub struct Backend {
     pub production: bool,
 }
 
+/// A saved connection of axross's connection manager, as
+/// `list_remote_profiles` gives it (never a secret).
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Profile {
+    pub name: String,
+    pub protocol: String,
+    /// The protocol's name in axross's registry.
+    pub protocol_name: Option<String>,
+    pub host: Option<String>,
+    pub port: Option<u64>,
+    pub username: Option<String>,
+    /// Its backend id while it is open in this session.
+    pub open_as: Option<String>,
+    pub openable: bool,
+    /// Why it cannot be opened (empty when it can).
+    pub reason: String,
+    /// Only a password or key passphrase to store in axross is missing.
+    pub needs_secret: bool,
+    pub production: bool,
+}
+
+/// A protocol axross has a backend for (its registry at run time).
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Protocol {
+    pub id: String,
+    pub name: String,
+    /// How it signs in: none, password, ssh, api_key, oauth.
+    pub credential: String,
+    pub default_port: u64,
+    pub is_local: bool,
+}
+
+/// The saved connections and the protocols.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Systems {
+    pub profiles: Vec<Profile>,
+    /// Empty from a server that does not list them (older axross).
+    pub protocols: Vec<Protocol>,
+}
+
+/// What opening a profile gave.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Opened {
+    /// Its backend id (`profile:<name>`).
+    pub backend: String,
+    pub protocol: Option<String>,
+    pub class: Option<String>,
+}
+
+fn parse_profile(v: &Value) -> Option<Profile> {
+    let name = v["name"].as_str()?.to_string();
+    if name.is_empty() || name.len() > 256 || name.chars().any(char::is_control) {
+        return None;
+    }
+    let text = |k: &str| v[k].as_str().map(String::from).filter(|s| !s.is_empty());
+    let openable = v["openable"].as_bool().unwrap_or(true);
+    let reason = v["reason"]
+        .as_str()
+        .unwrap_or("")
+        .chars()
+        .take(500)
+        .collect::<String>();
+    // (an older server says it only in the reason)
+    let needs_secret = v["needs_secret"].as_bool().unwrap_or_else(|| {
+        let r = reason.to_ascii_lowercase();
+        !openable && (r.contains("password") || r.contains("passphrase"))
+    });
+    Some(Profile {
+        protocol: v["protocol"].as_str().unwrap_or("").to_string(),
+        protocol_name: text("protocol_name"),
+        host: text("host"),
+        port: v["port"].as_u64(),
+        username: text("username"),
+        open_as: text("open_as"),
+        openable,
+        reason,
+        needs_secret,
+        production: v["production"].as_bool().unwrap_or(false),
+        name,
+    })
+}
+
+fn parse_protocol(v: &Value) -> Option<Protocol> {
+    Some(Protocol {
+        id: v["protocol"].as_str()?.to_string(),
+        name: v["name"].as_str().unwrap_or("").to_string(),
+        credential: v["credential"].as_str().unwrap_or("").to_string(),
+        default_port: v["default_port"].as_u64().unwrap_or(0),
+        is_local: v["is_local"].as_bool().unwrap_or(false),
+    })
+}
+
+/// Why a server lists no saved connections: said plainly, never an empty
+/// list.
+pub const NO_PROFILE_TOOLS: &str = "this axross's MCP server cannot list saved connections \
+     (no list_remote_profiles: it was started without the remote tool group, or it is \
+     older than axross 0.15.1)";
+
 /// One entry of a listing or a walk.
 #[derive(Clone, Debug, PartialEq)]
 pub struct RemoteEntry {
@@ -107,6 +207,8 @@ pub struct RemoteEntry {
     pub is_link: bool,
     pub size: u64,
     pub mtime: i64,
+    /// The backend told the size (a mail store or a database may not).
+    pub size_known: bool,
 }
 
 /// A page of a walk.
@@ -116,6 +218,18 @@ pub struct WalkPage {
     pub unreadable: Vec<String>,
     pub next_offset: Option<u64>,
     pub truncated: bool,
+    /// Entries left out: their names were not safe ([`safe_name`]).
+    pub rejected: usize,
+}
+
+/// The entries of an answer and how many were left out.
+fn parse_entries(list: Option<&Vec<Value>>) -> (Vec<RemoteEntry>, usize) {
+    let Some(list) = list else {
+        return (Vec::new(), 0);
+    };
+    let entries: Vec<RemoteEntry> = list.iter().filter_map(parse_entry).collect();
+    let rejected = list.len() - entries.len();
+    (entries, rejected)
 }
 
 impl Client {
@@ -188,9 +302,30 @@ impl Client {
             // CREATE_NO_WINDOW: no console window beside the city
             cmd.creation_flags(0x0800_0000);
         }
-        let mut child = cmd
-            .spawn()
-            .map_err(|e| format!("{}: {e}", Path::new(program).display()))?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::process::CommandExt;
+            // a process group of its own: what the server starts ends
+            // with it ([`Client::shutdown`] kills the group)
+            cmd.process_group(0);
+        }
+        #[cfg(target_os = "linux")]
+        {
+            use std::os::unix::process::CommandExt;
+            // SAFETY: prctl is async-signal-safe and touches no memory of
+            // the parent; it only asks the kernel to kill the server
+            // should this program die without ending it (a crash, SIGKILL).
+            // (The signal comes when the thread that started it ends:
+            // started from a thread that lasts - spawn_lasting.)
+            unsafe {
+                cmd.pre_exec(|| {
+                    libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL);
+                    Ok(())
+                });
+            }
+        }
+        let mut child =
+            spawn_lasting(cmd).map_err(|e| format!("{}: {e}", Path::new(program).display()))?;
         let stdin = child.stdin.take().ok_or("no stdin")?;
         let stdout = child.stdout.take().ok_or("no stdout")?;
         let stderr_lines = Arc::new(Mutex::new(Vec::new()));
@@ -360,28 +495,71 @@ impl Client {
     /// The saved remote profiles' names (`list_remote_profiles`; empty when
     /// the server has no such tool).
     pub fn profiles(&self, timeout: Duration) -> Result<Vec<String>, String> {
+        match self.systems(timeout) {
+            Ok(s) => Ok(s.profiles.into_iter().map(|p| p.name).collect()),
+            Err(e) if e == NO_PROFILE_TOOLS => Ok(Vec::new()),
+            Err(e) => Err(e),
+        }
+    }
+
+    /// The saved connections of axross's connection manager and the
+    /// protocols it has backends for (`list_remote_profiles`); Err with
+    /// [`NO_PROFILE_TOOLS`] when the server cannot list them.
+    pub fn systems(&self, timeout: Duration) -> Result<Systems, String> {
         if !self.has(Tool::ListProfiles) {
-            return Ok(Vec::new());
+            return Err(NO_PROFILE_TOOLS.into());
         }
         let v = self.call(Tool::ListProfiles, json!({}), timeout)?;
         let list = v.get("profiles").unwrap_or(&v);
-        Ok(list
+        let mut profiles: Vec<Profile> = list
             .as_array()
             .map(|a| {
                 a.iter()
-                    .filter_map(|p| {
-                        p.as_str()
-                            .map(String::from)
-                            .or_else(|| p["name"].as_str().map(String::from))
+                    .filter_map(|p| match p.as_str() {
+                        // (a server of names only)
+                        Some(n) => parse_profile(&json!({"name": n})),
+                        None => parse_profile(p),
                     })
+                    .take(4096)
                     .collect()
             })
-            .unwrap_or_default())
+            .unwrap_or_default();
+        profiles.sort_by(|a, b| a.name.cmp(&b.name));
+        profiles.dedup_by(|a, b| a.name == b.name);
+        let protocols = v["protocols"]
+            .as_array()
+            .map(|a| a.iter().filter_map(parse_protocol).take(1024).collect())
+            .unwrap_or_default();
+        Ok(Systems {
+            profiles,
+            protocols,
+        })
     }
 
-    /// Opens a saved remote profile (it becomes a backend).
-    pub fn open_profile(&self, name: &str, timeout: Duration) -> Result<Value, String> {
-        self.call(Tool::OpenProfile, json!({"name": name}), timeout)
+    /// Opens a saved remote profile: it becomes a backend of this session.
+    pub fn open_profile(&self, name: &str, timeout: Duration) -> Result<Opened, String> {
+        if !self.has(Tool::OpenProfile) {
+            return Err("this axross's MCP server cannot open saved connections".into());
+        }
+        let v = self.call(Tool::OpenProfile, json!({"profile": name}), timeout)?;
+        let backend = v["backend"]
+            .as_str()
+            .map(String::from)
+            .unwrap_or_else(|| format!("profile:{name}"));
+        Ok(Opened {
+            backend,
+            protocol: v["protocol"].as_str().map(String::from),
+            class: v["class"].as_str().map(String::from),
+        })
+    }
+
+    /// Closes a profile this session opened (best effort).
+    pub fn close_profile(&self, backend: &str, timeout: Duration) -> Result<(), String> {
+        if !self.has(Tool::CloseProfile) {
+            return Ok(());
+        }
+        self.call(Tool::CloseProfile, json!({"backend": backend}), timeout)
+            .map(|_| ())
     }
 
     /// One folder's entries (`list_directory`).
@@ -395,10 +573,55 @@ impl Client {
         with_backend(&mut args, backend);
         let v = self.call(Tool::ListDirectory, args, timeout)?;
         let list = v.get("entries").unwrap_or(&v);
-        Ok(list
-            .as_array()
-            .map(|a| a.iter().filter_map(parse_entry).collect())
-            .unwrap_or_default())
+        Ok(parse_entries(list.as_array()).0)
+    }
+
+    /// One folder's entries a page at a time (`walk_tree` one level deep,
+    /// paged by offset: a folder of any size, no answer over the bound);
+    /// `list_directory` in one go where the server has no walk.
+    pub fn list_page(
+        &self,
+        backend: &str,
+        path: &PathArg,
+        offset: u64,
+        page: u32,
+        timeout: Duration,
+    ) -> Result<WalkPage, String> {
+        if !self.has(Tool::Walk) {
+            if offset > 0 {
+                return Ok(WalkPage::default());
+            }
+            let mut args = path.args();
+            with_backend(&mut args, backend);
+            let v = self.call(Tool::ListDirectory, args, timeout)?;
+            let (entries, rejected) = parse_entries(v.get("entries").unwrap_or(&v).as_array());
+            return Ok(WalkPage {
+                entries,
+                rejected,
+                ..Default::default()
+            });
+        }
+        let mut p = self.walk(backend, path, 1, page, offset, timeout)?;
+        // (only the folder's own entries: a server that walks deeper than
+        // asked gives nothing twice)
+        let want = match path {
+            PathArg::Text(t) => t.clone(),
+            PathArg::Raw(b) => String::from_utf8_lossy(b).into_owned(),
+        };
+        let want = match want.trim_end_matches('/') {
+            "" => "/".to_string(),
+            w => w.to_string(),
+        };
+        p.entries.retain(|e| {
+            let full = e.path.trim_end_matches('/');
+            full.is_empty()
+                || match full.rfind('/') {
+                    Some(0) => want == "/",
+                    Some(i) => full[..i] == want,
+                    None => false,
+                }
+        });
+        Ok(p)
     }
 
     /// A page of a walk (`walk_tree`).
@@ -417,11 +640,10 @@ impl Client {
         args["max_entries"] = json!(max_entries);
         args["offset"] = json!(offset);
         let v = self.call(Tool::Walk, args, timeout)?;
+        let (entries, rejected) = parse_entries(v["entries"].as_array());
         Ok(WalkPage {
-            entries: v["entries"]
-                .as_array()
-                .map(|a| a.iter().filter_map(parse_entry).collect())
-                .unwrap_or_default(),
+            entries,
+            rejected,
             unreadable: v["unreadable"]
                 .as_array()
                 .map(|a| {
@@ -469,13 +691,41 @@ impl Client {
     }
 }
 
-impl Drop for Client {
-    fn drop(&mut self) {
+impl Client {
+    /// Ends the server now - its whole process group - and reaps it, also
+    /// while calls are still waiting (they fail at once). Called at the
+    /// program's end for every client, whoever still holds one.
+    pub fn shutdown(&self) {
         self.alive.store(false, Ordering::Relaxed);
         if let Some(mut child) = self.child.lock().unwrap_or_else(|p| p.into_inner()).take() {
+            #[cfg(unix)]
+            {
+                let pid = child.id() as libc::pid_t;
+                // SAFETY: a signal to the group this program made for the
+                // server (process_group(0): its id is the server's pid)
+                unsafe {
+                    libc::kill(-pid, libc::SIGKILL);
+                }
+            }
             let _ = child.kill();
             let _ = child.wait();
         }
+        fail_all(&self.waiters, "the server was ended");
+    }
+
+    /// The server's process id (tests).
+    pub fn pid(&self) -> Option<u32> {
+        self.child
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .as_ref()
+            .map(|c| c.id())
+    }
+}
+
+impl Drop for Client {
+    fn drop(&mut self) {
+        self.shutdown();
     }
 }
 
@@ -515,25 +765,149 @@ impl PathArg {
     }
 }
 
-fn read_loop(reader: impl Read, waiters: Waiters, alive: Arc<AtomicBool>, writer: Shared) {
-    let mut r = BufReader::new(reader);
-    let mut line = Vec::new();
+/// Starts `cmd` from a thread that lasts as long as the program (Linux:
+/// the parent-death signal follows the thread that started the child, and
+/// the threads that look for servers end).
+#[cfg(target_os = "linux")]
+fn spawn_lasting(cmd: Command) -> std::io::Result<std::process::Child> {
+    type Job = (
+        Command,
+        std::sync::mpsc::Sender<std::io::Result<std::process::Child>>,
+    );
+    static SPAWNER: std::sync::OnceLock<Mutex<std::sync::mpsc::Sender<Job>>> =
+        std::sync::OnceLock::new();
+    let tx = SPAWNER.get_or_init(|| {
+        let (tx, rx) = channel::<Job>();
+        let _ = std::thread::Builder::new()
+            .name("afm-spawner".into())
+            .spawn(move || {
+                for (mut cmd, answer) in rx {
+                    let _ = answer.send(cmd.spawn());
+                }
+            });
+        Mutex::new(tx)
+    });
+    let (atx, arx) = channel();
+    tx.lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .send((cmd, atx))
+        .map_err(|_| std::io::Error::other("the spawner is gone"))?;
+    arx.recv()
+        .map_err(|_| std::io::Error::other("the spawner is gone"))?
+}
+
+#[cfg(not(target_os = "linux"))]
+fn spawn_lasting(mut cmd: Command) -> std::io::Result<std::process::Child> {
+    cmd.spawn()
+}
+
+/// One line read from the server.
+#[derive(Debug, PartialEq)]
+pub enum Line {
+    /// A whole line (without its newline).
+    Text(Vec<u8>),
+    /// A line longer than the bound: dropped, read past in small pieces.
+    TooLong,
+    End,
+}
+
+/// Reads one line of at most `max` bytes. A longer one is read past in
+/// the reader's own pieces and dropped - the memory stays bounded however
+/// long it is - and `too_long` hears of it the moment it passes the bound
+/// (not at its end, which may never come).
+pub fn read_line_bounded(
+    r: &mut impl BufRead,
+    line: &mut Vec<u8>,
+    max: usize,
+    mut too_long: impl FnMut(),
+) -> std::io::Result<Line> {
+    line.clear();
+    let mut over = false;
     loop {
-        line.clear();
-        match (&mut r)
-            .take(MAX_LINE as u64 + 1)
-            .read_until(b'\n', &mut line)
-        {
-            Ok(0) | Err(_) => break,
-            Ok(_) => {}
+        let chunk = r.fill_buf()?;
+        if chunk.is_empty() {
+            return Ok(if over {
+                Line::TooLong
+            } else if line.is_empty() {
+                Line::End
+            } else {
+                Line::Text(std::mem::take(line))
+            });
         }
-        if line.len() > MAX_LINE {
-            // a line too long: the rest of it is skipped
-            let mut sink = Vec::new();
-            let _ = r.read_until(b'\n', &mut sink);
+        let (part, used, done) = match chunk.iter().position(|&c| c == b'\n') {
+            Some(i) => (&chunk[..i], i + 1, true),
+            None => (chunk, chunk.len(), false),
+        };
+        if !over {
+            if line.len() + part.len() > max {
+                over = true;
+                line.clear();
+                line.shrink_to(64 << 10);
+                too_long();
+            } else {
+                line.extend_from_slice(part);
+            }
+        }
+        r.consume(used);
+        if done {
+            return Ok(if over {
+                Line::TooLong
+            } else {
+                Line::Text(std::mem::take(line))
+            });
+        }
+    }
+}
+
+/// Answers that could not be read (too long, no JSON) before the server is
+/// taken for broken and ended.
+const BAD_LINES: u32 = 3;
+
+fn fail_all(waiters: &Waiters, why: &str) {
+    let waiting: Vec<_> = waiters
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .drain()
+        .collect();
+    for (_, tx) in waiting {
+        let _ = tx.send(Err(why.to_string()));
+    }
+}
+
+fn read_loop(reader: impl Read, waiters: Waiters, alive: Arc<AtomicBool>, writer: Shared) {
+    let mut r = BufReader::with_capacity(64 << 10, reader);
+    let mut line = Vec::new();
+    let mut bad = 0u32;
+    loop {
+        // (an answer over the bound fails what waits for it at once - no
+        // waiting out its timeout - and is read past without keeping it)
+        let read = read_line_bounded(&mut r, &mut line, MAX_LINE, || {
+            fail_all(&waiters, "the server's answer is over 32 MiB: refused")
+        });
+        let text = match read {
+            Ok(Line::Text(t)) => t,
+            Ok(Line::TooLong) => {
+                bad += 1;
+                if bad >= BAD_LINES {
+                    break;
+                }
+                continue;
+            }
+            Ok(Line::End) | Err(_) => break,
+        };
+        if text.iter().all(|c| c.is_ascii_whitespace()) {
             continue;
         }
-        let Ok(msg) = serde_json::from_slice::<Value>(&line) else {
+        let Ok(msg) = serde_json::from_slice::<Value>(&text) else {
+            // no JSON: whatever waits fails now, not at its timeout
+            fail_all(
+                &waiters,
+                "the server answered with something that is no JSON",
+            );
+            bad += 1;
+            if bad >= BAD_LINES {
+                break;
+            }
             continue;
         };
         if let (Some(method), Some(id)) = (msg.get("method").and_then(Value::as_str), msg.get("id"))
@@ -573,14 +947,7 @@ fn read_loop(reader: impl Read, waiters: Waiters, alive: Arc<AtomicBool>, writer
     }
     alive.store(false, Ordering::Relaxed);
     // everyone still waiting hears it now, not at their timeout
-    let waiting: Vec<_> = waiters
-        .lock()
-        .unwrap_or_else(|p| p.into_inner())
-        .drain()
-        .collect();
-    for (_, tx) in waiting {
-        let _ = tx.send(Err("the server has ended".into()));
-    }
+    fail_all(&waiters, "the server has ended");
 }
 
 fn parse_backend(v: &Value) -> Option<Backend> {
@@ -605,7 +972,7 @@ fn parse_entry(v: &Value) -> Option<RemoteEntry> {
         Some(raw) => String::from_utf8_lossy(&raw).into_owned(),
         None => v["path"].as_str().unwrap_or("").to_string(),
     };
-    if name.is_empty() || name == b"." || name == b".." {
+    if !safe_name(&name) {
         return None;
     }
     Some(RemoteEntry {
@@ -614,8 +981,20 @@ fn parse_entry(v: &Value) -> Option<RemoteEntry> {
         is_dir: v["is_dir"].as_bool().unwrap_or(false),
         is_link: v["is_link"].as_bool().unwrap_or(false),
         size: v["size"].as_u64().unwrap_or(0),
+        size_known: v["size"].is_u64(),
         mtime: v["modified"].as_str().map_or(0, parse_iso8601),
     })
+}
+
+/// A name a server may give for an entry: not empty, not `.` or `..`, no
+/// `/` (it would reach outside its folder), no NUL and no control
+/// character. Others are left out of the listing (and counted).
+pub fn safe_name(name: &[u8]) -> bool {
+    !name.is_empty()
+        && name != b"."
+        && name != b".."
+        && name.len() <= 4096
+        && !name.iter().any(|&c| c == b'/' || c < 0x20 || c == 0x7f)
 }
 
 /// Seconds since 1970 of an ISO 8601 time (`2026-11-23T10:45:55.03`,
@@ -1114,5 +1493,226 @@ pub(crate) mod tests {
             without_groups(&c),
             vec![OsString::from("x"), OsString::from("--y")]
         );
+    }
+
+    /// A server whose tools answer as `answer` says (by the tool's name and
+    /// arguments; a `tools/call` result).
+    pub fn tool_server(answer: fn(&str, &Value) -> Value) -> Client {
+        let (to_server_r, to_server_w) = std::io::pipe().unwrap();
+        let (from_server_r, from_server_w) = std::io::pipe().unwrap();
+        std::thread::spawn(move || {
+            let mut out = from_server_w;
+            for line in BufReader::new(to_server_r).lines() {
+                let Ok(line) = line else { return };
+                let m: Value = serde_json::from_str(&line).unwrap();
+                let Some(id) = m.get("id").cloned() else {
+                    continue;
+                };
+                let result = match m["method"].as_str() {
+                    Some("initialize") => json!({"serverInfo": {"name": "tools"}}),
+                    Some("tools/list") => {
+                        json!({"tools": [{"name": "walk_tree"}, {"name": "list_directory"}, {"name": "list_backends"}, {"name": "read_file"}, {"name": "get_path_info"}]})
+                    }
+                    _ => answer(
+                        m["params"]["name"].as_str().unwrap_or(""),
+                        &m["params"]["arguments"],
+                    ),
+                };
+                if writeln!(
+                    out,
+                    "{}",
+                    json!({"jsonrpc": "2.0", "id": id, "result": result})
+                )
+                .is_err()
+                {
+                    return;
+                }
+            }
+        });
+        Client::over(from_server_r, to_server_w, Duration::from_secs(5)).unwrap()
+    }
+
+    /// A reader of `n` bytes of `x` and then `tail` (made as it is read).
+    struct Endless {
+        left: u64,
+        tail: std::io::Cursor<Vec<u8>>,
+    }
+
+    impl Read for Endless {
+        fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+            if self.left == 0 {
+                return self.tail.read(buf);
+            }
+            let n = (buf.len() as u64).min(self.left) as usize;
+            buf[..n].fill(b'x');
+            self.left -= n as u64;
+            Ok(n)
+        }
+    }
+
+    #[test]
+    fn an_endless_line_is_read_past_in_bounded_memory() {
+        let mut r = BufReader::with_capacity(
+            64 << 10,
+            Endless {
+                left: 50 << 20,
+                tail: std::io::Cursor::new(b"\n{\"ok\": 1}\n".to_vec()),
+            },
+        );
+        let mut line = Vec::new();
+        let mut heard = 0;
+        let first = read_line_bounded(&mut r, &mut line, 1 << 20, || heard += 1).unwrap();
+        assert_eq!(first, Line::TooLong);
+        assert_eq!(heard, 1, "said the moment it passed the bound");
+        assert!(
+            line.capacity() <= (1 << 20) + (64 << 10),
+            "{}",
+            line.capacity()
+        );
+        let next = read_line_bounded(&mut r, &mut line, 1 << 20, || {}).unwrap();
+        assert_eq!(next, Line::Text(b"{\"ok\": 1}".to_vec()));
+        assert_eq!(
+            read_line_bounded(&mut r, &mut line, 1 << 20, || {}).unwrap(),
+            Line::End
+        );
+    }
+
+    /// A server that answers the handshake, then answers every call with
+    /// `answer` (bytes written as they are).
+    fn server_answering(answer: fn(u64) -> Vec<u8>) -> Client {
+        let (to_server_r, to_server_w) = std::io::pipe().unwrap();
+        let (from_server_r, from_server_w) = std::io::pipe().unwrap();
+        std::thread::spawn(move || {
+            let mut out = from_server_w;
+            for line in BufReader::new(to_server_r).lines() {
+                let Ok(line) = line else { return };
+                let m: Value = serde_json::from_str(&line).unwrap();
+                let Some(id) = m.get("id").and_then(Value::as_u64) else {
+                    continue;
+                };
+                let reply = match m["method"].as_str() {
+                    Some("initialize") => json!({"jsonrpc": "2.0", "id": id, "result": {"serverInfo": {"name": "x"}}}).to_string().into_bytes(),
+                    Some("tools/list") => json!({"jsonrpc": "2.0", "id": id, "result": {"tools": [{"name": "list_backends"}]}}).to_string().into_bytes(),
+                    _ => answer(id),
+                };
+                if out
+                    .write_all(&reply)
+                    .and_then(|_| out.write_all(b"\n"))
+                    .is_err()
+                {
+                    return;
+                }
+            }
+        });
+        Client::over(from_server_r, to_server_w, Duration::from_secs(5)).unwrap()
+    }
+
+    #[test]
+    fn an_oversize_answer_fails_the_call_at_once() {
+        let c = server_answering(|_| vec![b'x'; MAX_LINE + 4096]);
+        let t = std::time::Instant::now();
+        let e = c.backends(Duration::from_secs(60)).unwrap_err();
+        assert!(t.elapsed() < Duration::from_secs(20), "{:?}", t.elapsed());
+        assert!(e.contains("32 MiB"), "{e}");
+    }
+
+    #[test]
+    fn an_answer_that_is_no_json_fails_the_call_at_once() {
+        let c = server_answering(|_| b"this is { not json".to_vec());
+        let t = std::time::Instant::now();
+        let e = c.backends(Duration::from_secs(60)).unwrap_err();
+        assert!(t.elapsed() < Duration::from_secs(5), "{:?}", t.elapsed());
+        assert!(e.contains("no JSON"), "{e}");
+    }
+
+    #[test]
+    fn names_that_reach_outside_are_refused() {
+        for bad in [
+            &b"../../etc/passwd"[..],
+            b"/etc/shadow",
+            b"a/b/c",
+            b"..",
+            b".",
+            b"",
+            b"a\nb",
+            b"nul\0x",
+            b"del\x7f",
+        ] {
+            assert!(!safe_name(bad), "{bad:?}");
+        }
+        for good in [
+            &b"x.txt"[..],
+            b"..hidden",
+            b"bad\xff\xfe.txt",
+            "café".as_bytes(),
+        ] {
+            assert!(safe_name(good), "{good:?}");
+        }
+        let list = json!([
+            {"name": "../../etc/passwd", "path": "/x"},
+            {"name": "ok.txt", "path": "/ok.txt", "size": 3},
+            {"name": "a/b", "path": "/a/b"},
+        ]);
+        let (entries, rejected) = parse_entries(list.as_array());
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].name, b"ok.txt");
+        assert_eq!(rejected, 2);
+    }
+
+    /// A server as a program: answers the handshake (ids 1 and 2), then
+    /// hangs in every call - with a child of its own.
+    #[cfg(unix)]
+    fn hanging_server() -> Vec<OsString> {
+        let script = r#"read a; printf '%s\n' '{"jsonrpc":"2.0","id":1,"result":{"serverInfo":{"name":"hang"}}}'; read b; read c; printf '%s\n' '{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"list_backends"}]}}'; sleep 600 & wait"#;
+        vec!["/bin/sh".into(), "-c".into(), script.into()]
+    }
+
+    #[cfg(unix)]
+    fn gone(pid: i32) -> bool {
+        // SAFETY: signal 0 only asks whether the process (group) exists
+        unsafe { libc::kill(pid, 0) != 0 }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn shutdown_reaps_the_server_with_a_call_pending() {
+        let c = Arc::new(Client::spawn(&hanging_server(), Duration::from_secs(10)).unwrap());
+        let pid = c.pid().unwrap() as i32;
+        let c2 = c.clone();
+        let call = std::thread::spawn(move || {
+            let t = std::time::Instant::now();
+            (c2.backends(Duration::from_secs(120)), t.elapsed())
+        });
+        std::thread::sleep(Duration::from_millis(300));
+        c.shutdown();
+        let (r, took) = call.join().unwrap();
+        assert!(r.is_err());
+        assert!(took < Duration::from_secs(10), "{took:?}");
+        assert!(gone(pid), "the server is reaped");
+        // (the group's other members are killed too; they are reaped by
+        // init, which may take a moment)
+        let start = std::time::Instant::now();
+        while !gone(-pid) && start.elapsed() < Duration::from_secs(5) {
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        assert!(gone(-pid), "and its group (the sleep it started)");
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn a_server_outlives_the_thread_that_started_it() {
+        // (the parent-death signal follows the thread: started from one
+        // that ends, the server must still live)
+        let c = std::thread::spawn(|| {
+            Client::spawn(&hanging_server(), Duration::from_secs(10)).unwrap()
+        })
+        .join()
+        .unwrap();
+        std::thread::sleep(Duration::from_millis(300));
+        let pid = c.pid().unwrap() as i32;
+        assert!(!gone(pid), "still running");
+        assert!(c.is_alive());
+        c.shutdown();
+        assert!(gone(pid));
     }
 }

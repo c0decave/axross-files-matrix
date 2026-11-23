@@ -3,9 +3,16 @@
 //! Windows `%LOCALAPPDATA%`) so that the city stands at once on the next
 //! start while the new walk runs.
 //!
-//! A file: `AFMWALK1`, a JSON header's length and the header (what was
+//! A file: `AFMWALK2`, a JSON header's length and the header (what was
 //! walked, when, how many nodes), the nodes (parent, kind, listing, size,
-//! time, name - variable-length integers), and the SHA-256 of all that.
+//! bytes on the disk, time, name - variable-length integers), and the
+//! SHA-256 of all that.
+//!
+//! Private: the folder is made 0700 and every file 0600 (the names of
+//! private folders, removable media and remote backends are in them).
+//! Pruned: files not written for [`MAX_AGE_DAYS`] go, and the oldest while
+//! the folder is over its size; half-written files of a crash are swept.
+//! Remote and removable islands are cached only when the setting says so.
 //! Read back, every field is checked (a parent before its child and a
 //! folder, sizes in bounds, the checksum): a file that is cut, corrupt or
 //! from another version is ignored - the walk simply starts from nothing.
@@ -14,7 +21,7 @@ use crate::tree::{Entry, Kind, Listing, Tree, os_from_bytes, os_to_bytes};
 use ring::digest::{SHA256, digest};
 use std::path::{Path, PathBuf};
 
-const MAGIC: &[u8; 8] = b"AFMWALK1";
+const MAGIC: &[u8; 8] = b"AFMWALK2";
 /// No cache file is read beyond this many nodes.
 pub const MAX_NODES: usize = 8_000_000;
 const MAX_NAME: usize = 4096;
@@ -120,6 +127,7 @@ pub fn encode(tree: &Tree, source: &str, saved: i64) -> Vec<u8> {
         };
         out.push(listing as u8);
         put_varint(&mut out, n.size);
+        put_varint(&mut out, n.alloc);
         put_varint(&mut out, zigzag(n.mtime));
         let name = os_to_bytes(&n.name);
         let name = &name[..name.len().min(MAX_NAME)];
@@ -156,6 +164,7 @@ pub fn decode(bytes: &[u8]) -> Option<(Header, Tree)> {
         let kind = Kind::from_u8(r.byte()?)?;
         let listing = Listing::from_u8(r.byte()?)?;
         let size = r.varint()?;
+        let alloc = r.varint()?;
         let mtime = unzigzag(r.varint()?);
         let len = r.varint()? as usize;
         if len > MAX_NAME {
@@ -178,6 +187,7 @@ pub fn decode(bytes: &[u8]) -> Option<(Header, Tree)> {
                 name: name.into_boxed_os_str(),
                 kind,
                 size,
+                alloc,
                 mtime,
             })?;
         }
@@ -195,13 +205,50 @@ pub fn decode(bytes: &[u8]) -> Option<(Header, Tree)> {
     Some((header, tree))
 }
 
+/// The folder, made if need be and kept private (0700).
+pub fn make_private_dir(dir: &Path) -> std::io::Result<()> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
+        std::fs::DirBuilder::new()
+            .recursive(true)
+            .mode(0o700)
+            .create(dir)?;
+        // (one made before, by an older version or a looser umask)
+        let mode = std::fs::metadata(dir)?.permissions().mode() & 0o777;
+        if mode != 0o700 {
+            std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))?;
+        }
+        Ok(())
+    }
+    #[cfg(not(unix))]
+    {
+        std::fs::create_dir_all(dir)
+    }
+}
+
 /// Writes the tree's cache file (a file beside it first, then renamed over:
-/// a crash leaves the old one or the new one, never half of one).
+/// a crash leaves the old one or the new one, never half of one), private
+/// (0600) in a private folder.
 pub fn save(dir: &Path, source: &str, bytes: &[u8]) -> std::io::Result<()> {
-    std::fs::create_dir_all(dir)?;
+    make_private_dir(dir)?;
     let target = path_for(dir, source);
     let tmp = target.with_extension(format!("tmp{}", std::process::id()));
-    std::fs::write(&tmp, bytes)?;
+    let mut opts = std::fs::OpenOptions::new();
+    opts.write(true).create(true).truncate(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        opts.mode(0o600);
+    }
+    let written = opts.open(&tmp).and_then(|mut f| {
+        use std::io::Write;
+        f.write_all(bytes)
+    });
+    if let Err(e) = written {
+        let _ = std::fs::remove_file(&tmp);
+        return Err(e);
+    }
     std::fs::rename(&tmp, &target).inspect_err(|_| {
         let _ = std::fs::remove_file(&tmp);
     })
@@ -221,6 +268,92 @@ pub fn load(dir: &Path, source: &str) -> Option<(Header, Tree)> {
     (h.source == source).then_some((h, t))
 }
 
+/// Cache files older than this (days since written) are removed.
+pub const MAX_AGE_DAYS: u64 = 60;
+
+/// What [`prune`] removed.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Pruned {
+    pub files: usize,
+    pub bytes: u64,
+}
+
+/// Keeps the cache folder in bounds: half-written files (`*.tmp*`) and
+/// files older than `max_age` go, then the oldest while the folder holds
+/// more than `max_bytes`; the folder is made private again.
+pub fn prune(dir: &Path, max_bytes: u64, max_age: std::time::Duration) -> Pruned {
+    let mut pruned = Pruned::default();
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return pruned;
+    };
+    let _ = make_private_dir(dir);
+    let now = std::time::SystemTime::now();
+    let mut kept: Vec<(std::time::SystemTime, u64, PathBuf)> = Vec::new();
+    for e in entries.flatten() {
+        let path = e.path();
+        let Ok(meta) = e.metadata() else { continue };
+        if !meta.is_file() {
+            continue;
+        }
+        let name = e.file_name().to_string_lossy().into_owned();
+        let ours =
+            name.ends_with(".afmwalk") || name.contains(".tmp") || name.ends_with(".afmwalk1");
+        if !ours {
+            continue;
+        }
+        let modified = meta.modified().unwrap_or(now);
+        let age = now.duration_since(modified).unwrap_or_default();
+        let half_written = name.contains(".tmp") && age > std::time::Duration::from_secs(600);
+        if half_written || age > max_age || !name.ends_with(".afmwalk") {
+            if !name.ends_with(".afmwalk") && !half_written && name.contains(".tmp") {
+                continue; // (a save under way right now)
+            }
+            if std::fs::remove_file(&path).is_ok() {
+                pruned.files += 1;
+                pruned.bytes += meta.len();
+            }
+            continue;
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if meta.permissions().mode() & 0o077 != 0 {
+                let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
+            }
+        }
+        kept.push((modified, meta.len(), path));
+    }
+    let mut total: u64 = kept.iter().map(|k| k.1).sum();
+    kept.sort_by_key(|k| k.0);
+    for (_, len, path) in kept {
+        if total <= max_bytes {
+            break;
+        }
+        if std::fs::remove_file(&path).is_ok() {
+            total -= len;
+            pruned.files += 1;
+            pruned.bytes += len;
+        }
+    }
+    pruned
+}
+
+/// Removes every cache file (Settings > Clear the cache); how many.
+pub fn clear(dir: &Path) -> Pruned {
+    prune(dir, 0, std::time::Duration::ZERO)
+}
+
+/// The cache folder's size (bytes) and files.
+pub fn usage(dir: &Path) -> (u64, usize) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return (0, 0);
+    };
+    entries
+        .flatten()
+        .filter_map(|e| e.metadata().ok().filter(|m| m.is_file()))
+        .fold((0, 0), |(b, n), m| (b + m.len(), n + 1))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -235,6 +368,7 @@ mod tests {
                 name: OsStr::new("a").into(),
                 kind: Kind::Dir,
                 size: 4096,
+                alloc: 4096,
                 mtime: -5,
             })
             .unwrap();
@@ -243,6 +377,7 @@ mod tests {
             name: os_from_bytes(b"odd\nname\xff").into_boxed_os_str(),
             kind: Kind::File,
             size: u64::MAX / 3,
+            alloc: u64::MAX / 3,
             mtime: 1_700_000_000,
         });
         t.push(Entry {
@@ -250,6 +385,7 @@ mod tests {
             name: OsStr::new("link").into(),
             kind: Kind::Link,
             size: 12,
+            alloc: 12,
             mtime: 0,
         });
         t.nodes[0].listing = Listing::Listed;
@@ -309,6 +445,7 @@ mod tests {
             body.push(kind);
             body.push(3);
             put_varint(&mut body, 1);
+            put_varint(&mut body, 1);
             put_varint(&mut body, 0);
             put_varint(&mut body, 1);
             body.push(b'x');
@@ -316,6 +453,66 @@ mod tests {
         let sum = digest(&SHA256, &body);
         body.extend_from_slice(sum.as_ref());
         assert!(decode(&body).is_none());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn the_cache_is_private() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = Scratch::new("cache-private");
+        let walks = dir.path().join("walks");
+        // (a folder an older version left open to everyone)
+        std::fs::create_dir_all(&walks).unwrap();
+        std::fs::set_permissions(&walks, std::fs::Permissions::from_mode(0o755)).unwrap();
+        save(&walks, "local:/p", &encode(&sample(), "local:/p", 1)).unwrap();
+        let mode = |p: &Path| std::fs::metadata(p).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode(&walks), 0o700);
+        assert_eq!(mode(&path_for(&walks, "local:/p")), 0o600);
+    }
+
+    #[test]
+    fn pruning_sweeps_old_half_written_and_too_much() {
+        let dir = Scratch::new("cache-prune");
+        let d = dir.path();
+        for k in 0..5 {
+            save(d, &format!("s{k}"), &vec![7u8; 1000]).unwrap();
+        }
+        std::fs::write(d.join("x.tmp123"), b"half").unwrap();
+        std::fs::write(d.join("unrelated.txt"), b"keep").unwrap();
+        let old = std::time::SystemTime::now() - std::time::Duration::from_secs(90 * 86_400);
+        let f = std::fs::File::options()
+            .write(true)
+            .open(path_for(d, "s0"))
+            .unwrap();
+        f.set_modified(old).unwrap();
+        let t = std::fs::File::options()
+            .write(true)
+            .open(d.join("x.tmp123"))
+            .unwrap();
+        t.set_modified(old).unwrap();
+        // the old one and the half-written one go; then the oldest while
+        // over 2500 bytes
+        let p = prune(
+            d,
+            2500,
+            std::time::Duration::from_secs(MAX_AGE_DAYS * 86_400),
+        );
+        assert_eq!(p.files, 4, "{p:?}");
+        assert!(!path_for(d, "s0").exists());
+        assert!(!d.join("x.tmp123").exists());
+        assert!(d.join("unrelated.txt").exists(), "only its own files");
+        assert_eq!(usage(d).1, 3, "two cache files and the unrelated one");
+        assert_eq!(clear(d).files, 2);
+        assert_eq!(usage(d).1, 1);
+    }
+
+    #[test]
+    fn sparse_sizes_round_trip() {
+        let mut t = sample();
+        t.nodes[2].alloc = 4096;
+        let (_, back) = decode(&encode(&t, "s", 1)).unwrap();
+        assert_eq!(back.nodes[2].alloc, 4096);
+        assert_eq!(back.nodes[2].size, t.nodes[2].size);
     }
 
     #[test]

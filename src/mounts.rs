@@ -29,6 +29,9 @@ pub struct Mount {
     /// The device numbers (Linux; 0:0 elsewhere): ties the island to its
     /// disk on the machine's island.
     pub dev: (u32, u32),
+    /// The folder of the file system mounted here (`/` for a whole file
+    /// system, a subfolder for a bind mount or a btrfs subvolume).
+    pub root: String,
     pub read_only: bool,
     pub kind: MountKind,
 }
@@ -185,6 +188,7 @@ pub fn parse_mountinfo(text: &str) -> Vec<Mount> {
         let fs_type = String::from_utf8_lossy(&unescape(r[0])).into_owned();
         let source = String::from_utf8_lossy(&unescape(r[1])).into_owned();
         let read_only = l[5].split(',').any(|o| o == "ro");
+        let root = String::from_utf8_lossy(&unescape(l[3])).into_owned();
         let kind = classify(&fs_type, &mount_point);
         out.retain(|m| m.mount_point != mount_point);
         out.push(Mount {
@@ -192,6 +196,7 @@ pub fn parse_mountinfo(text: &str) -> Vec<Mount> {
             fs_type,
             source,
             dev: (maj, min),
+            root,
             read_only,
             kind,
         });
@@ -229,6 +234,7 @@ fn root_only() -> Mount {
         fs_type: "root".into(),
         source: String::new(),
         dev: (0, 0),
+        root: "/".into(),
         read_only: false,
         kind: MountKind::Local,
     }
@@ -242,6 +248,7 @@ pub fn macos_volumes(volumes: &Path) -> Vec<Mount> {
         fs_type: "apfs".into(),
         source: String::new(),
         dev: (0, 0),
+        root: "/".into(),
         read_only: false,
         kind: MountKind::Local,
     }];
@@ -260,6 +267,7 @@ pub fn macos_volumes(volumes: &Path) -> Vec<Mount> {
             fs_type: "volume".into(),
             source: String::new(),
             dev: (0, 0),
+            root: "/".into(),
             read_only: false,
             kind: MountKind::Removable,
         });
@@ -296,6 +304,7 @@ fn windows_drives() -> Vec<Mount> {
             fs_type: fs_type.into(),
             source: String::new(),
             dev: (0, 0),
+            root: "/".into(),
             read_only: false,
             kind,
         });
@@ -310,6 +319,36 @@ pub fn visible(mounts: &[Mount], show_pseudo: bool) -> Vec<Mount> {
         .filter(|m| show_pseudo || m.kind != MountKind::Pseudo)
         .cloned()
         .collect()
+}
+
+/// Bind mounts left out where they show what an island shows already: a
+/// mount of a subfolder (`root` other than `/`) of a file system that is
+/// mounted whole too, and a second mount of the very same folder of a
+/// file system (the first kept). A bind mount of a file system mounted
+/// nowhere whole stays (it is all there is of it).
+pub fn hide_binds(mounts: &[Mount]) -> Vec<Mount> {
+    let whole: std::collections::HashSet<(u32, u32)> = mounts
+        .iter()
+        .filter(|m| m.root == "/" && m.dev != (0, 0))
+        .map(|m| m.dev)
+        .collect();
+    let mut seen: std::collections::HashSet<((u32, u32), String)> =
+        std::collections::HashSet::new();
+    let mut out = Vec::new();
+    for m in mounts {
+        let known = m.dev != (0, 0);
+        if known && m.root != "/" && whole.contains(&m.dev) && m.mount_point != Path::new("/") {
+            continue;
+        }
+        if known && m.mount_point != Path::new("/") && !seen.insert((m.dev, m.root.clone())) {
+            continue;
+        }
+        if known && m.mount_point == Path::new("/") {
+            seen.insert((m.dev, m.root.clone()));
+        }
+        out.push(m.clone());
+    }
+    out
 }
 
 /// The mountpoints strictly below `root` (a walk of `root` stops there:
@@ -394,6 +433,28 @@ garbage line without a separator
             ]
         );
         assert_eq!(visible(&all, true).len(), all.len());
+    }
+
+    #[test]
+    fn bind_mounts_of_what_is_shown_are_left_out() {
+        let text = "\
+1 0 8:2 / / rw - ext4 /dev/sda2 rw
+2 1 8:2 /srv/src/project /srv/project rw - ext4 /dev/sda2 rw
+3 1 8:3 / /data rw - ext4 /dev/sda3 rw
+4 1 7:0 /x/c0de /work rw - ext4 /dev/loop0 rw
+5 1 7:0 /x/c0de /mirror rw - ext4 /dev/loop0 rw
+6 1 7:0 /x/other /workspaces/other rw - ext4 /dev/loop0 rw
+7 1 8:3 / /data2 rw - ext4 /dev/sda3 rw
+";
+        let all = parse_mountinfo(text);
+        assert_eq!(all[1].root, "/srv/src/project");
+        let kept: Vec<String> = hide_binds(&all)
+            .iter()
+            .map(|m| m.mount_point.to_string_lossy().into_owned())
+            .collect();
+        // the subfolder of the root's file system: shown in the root's island;
+        // /mirror: the same folder as /work; /data2: the same file system as /data
+        assert_eq!(kept, ["/", "/data", "/work", "/workspaces/other"]);
     }
 
     #[test]

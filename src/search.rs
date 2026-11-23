@@ -152,7 +152,9 @@ impl Search {
             island: 0,
             seen: Vec::new(),
             done: query.trim().is_empty(),
-            max_hits: 5000,
+            // (no limit: every hit is kept - eight bytes each - and the
+            // window pages through them)
+            max_hits: usize::MAX,
             looked: 0,
         }
     }
@@ -266,6 +268,7 @@ mod tests {
                     .into(),
                 kind: Kind::File,
                 size: 0,
+                alloc: 0,
                 mtime: 0,
             });
         }
@@ -285,6 +288,7 @@ mod tests {
             name: OsStr::new("late.rs").into(),
             kind: Kind::File,
             size: 0,
+            alloc: 0,
             mtime: 0,
         });
         s.resume();
@@ -294,5 +298,25 @@ mod tests {
         }
         assert_eq!(s.hits.len(), 101);
         assert!(Search::new("  ").done);
+    }
+
+    #[test]
+    fn every_hit_is_kept() {
+        let mut t = Tree::new(std::ffi::OsStr::new("/"), 0);
+        for i in 0..12_000u32 {
+            t.push(crate::tree::Entry {
+                parent: 0,
+                name: std::ffi::OsString::from(format!("p{i}.png")).into_boxed_os_str(),
+                kind: crate::tree::Kind::File,
+                size: 1,
+                alloc: 1,
+                mtime: 0,
+            });
+        }
+        let mut s = Search::new("*.png");
+        while !s.done {
+            s.step(&[Some(&t)], Duration::from_millis(50));
+        }
+        assert_eq!(s.hits.len(), 12_000);
     }
 }

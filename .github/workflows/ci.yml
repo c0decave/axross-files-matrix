@@ -70,14 +70,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-latest, windows-2022]
+        os: [ubuntu-24.04, macos-15, windows-2022]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Rust (rustup, stable, with clippy and rustfmt)
-        run: rustup toolchain install stable --profile minimal --component clippy,rustfmt && rustup default stable
+      - name: Rust 1.100.0 (rustup, with clippy and rustfmt)
+        run: rustup toolchain install 1.100.0 --profile minimal --component clippy,rustfmt && rustup default 1.100.0
       # (the screenshot and flash tests render with Mesa's software Vulkan,
       # lavapipe; winit loads the X libraries by name)
       - name: Linux libraries (Mesa's software Vulkan, Xvfb and the X libraries)

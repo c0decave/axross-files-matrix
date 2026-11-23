@@ -35,6 +35,9 @@ pub enum Source {
         client: Arc<Client>,
         backend: String,
         root: String,
+        /// Folder by folder, only as they are approached (a backend that
+        /// lists slowly or cannot walk: mail, databases, ...).
+        lazy: bool,
     },
     /// A made-up tree of `files` files (the frame-time measurements, the
     /// screenshots, `--synthetic`).
@@ -60,9 +63,10 @@ impl Default for Limits {
     fn default() -> Limits {
         Limits {
             budget: 1_500_000,
-            per_dir: 200_000,
-            hard_cap: 4_000_000,
-            max_depth: 256,
+            // (no folder is cut: a huge one is read in pieces)
+            per_dir: usize::MAX,
+            hard_cap: 8_000_000,
+            max_depth: u32::MAX,
             workers: 4,
         }
     }
@@ -76,6 +80,16 @@ pub struct Status {
     /// The walk could not start (the root is gone, the server ended).
     pub error: Option<String>,
     pub seconds: f32,
+    /// Entries a server named unsafely (`/`, `..`, control characters):
+    /// left out, and said so.
+    pub skipped_names: u64,
+    /// The walk stopped short of everything (the entry limit): said so.
+    pub note: Option<String>,
+    /// Files whose size the backend did not tell (they get equal
+    /// footprints; said on the island).
+    pub unknown_sizes: u64,
+    /// Read folder by folder as they are approached (a slow backend).
+    pub lazy: bool,
 }
 
 #[derive(Debug)]
@@ -125,6 +139,10 @@ impl Walker {
             started: Instant::now(),
             entries: 0,
             cancel: cancel.clone(),
+            skipped_names: 0,
+            note: None,
+            unknown_sizes: 0,
+            lazy: false,
         };
         let c = cancel.clone();
         let _ = std::thread::Builder::new()
@@ -139,7 +157,8 @@ impl Walker {
                     client,
                     backend,
                     root,
-                } => walk_mcp(client, backend, root, limits, out, req_rx, c),
+                    lazy,
+                } => walk_mcp(client, backend, root, lazy, limits, out, req_rx, c),
                 Source::Synthetic { files, seed } => synthetic(files, seed, out),
             });
         Walker {
@@ -177,6 +196,10 @@ struct Out {
     started: Instant,
     entries: u64,
     cancel: Arc<AtomicBool>,
+    skipped_names: u64,
+    note: Option<String>,
+    unknown_sizes: u64,
+    lazy: bool,
 }
 
 const BATCH: usize = 4096;
@@ -234,6 +257,10 @@ impl Out {
                 done,
                 error,
                 seconds: self.started.elapsed().as_secs_f32(),
+                skipped_names: self.skipped_names,
+                note: self.note.clone(),
+                unknown_sizes: self.unknown_sizes,
+                lazy: self.lazy,
             }),
         });
         (self.wake)();
@@ -266,22 +293,44 @@ struct Found {
     name: OsString,
     kind: Kind,
     size: u64,
+    alloc: u64,
     mtime: i64,
     /// A folder on another device (a mountpoint).
     foreign: bool,
 }
 
-/// Reads one local folder: its entries (at most `cap`), and whether it was
-/// cut short.
-fn read_local(path: &Path, cap: usize, device: Option<u64>) -> std::io::Result<(Vec<Found>, bool)> {
+#[cfg(unix)]
+fn alloc_of(m: &std::fs::Metadata) -> u64 {
+    use std::os::unix::fs::MetadataExt;
+    m.blocks().saturating_mul(512)
+}
+#[cfg(not(unix))]
+fn alloc_of(m: &std::fs::Metadata) -> u64 {
+    m.len()
+}
+
+/// The entries of a local folder are handed on in pieces of this many: a
+/// folder of millions streams like a tree of them.
+const PIECE: usize = 8192;
+
+/// Reads one local folder, handing its entries on in pieces (`piece(found,
+/// more)`; false from it stops): at most `cap`, and whether it was cut.
+fn read_local(
+    path: &Path,
+    cap: usize,
+    device: Option<u64>,
+    mut piece: impl FnMut(Vec<Found>, bool) -> bool,
+) -> std::io::Result<bool> {
     let mut out = Vec::new();
+    let mut seen = 0usize;
     let mut cut = false;
     for e in std::fs::read_dir(path)? {
         let Ok(e) = e else { continue };
-        if out.len() >= cap {
+        if seen >= cap {
             cut = true;
             break;
         }
+        seen += 1;
         let name = e.file_name();
         // (lstat: a link is the link)
         let meta = e.metadata();
@@ -296,23 +345,29 @@ fn read_local(path: &Path, cap: usize, device: Option<u64>) -> std::io::Result<(
             Some(_) => Kind::Other,
             None => Kind::Other,
         };
-        let (size, mtime, foreign) = match &meta {
+        let (size, alloc, mtime, foreign) = match &meta {
             Ok(m) => (
                 if kind == Kind::Dir { 0 } else { m.len() },
+                if kind == Kind::Dir { 0 } else { alloc_of(m) },
                 mtime_of(m),
                 kind == Kind::Dir && device.is_some_and(|d| d != device_of(m)),
             ),
-            Err(_) => (0, 0, false),
+            Err(_) => (0, 0, 0, false),
         };
         out.push(Found {
             name,
             kind,
             size,
+            alloc,
             mtime,
             foreign,
         });
+        if out.len() >= PIECE && !piece(std::mem::take(&mut out), true) {
+            return Ok(true);
+        }
     }
-    Ok((out, cut))
+    piece(out, false);
+    Ok(cut)
 }
 
 fn listing_of(e: &std::io::Error) -> Listing {
@@ -330,7 +385,11 @@ struct Job {
 
 struct Done {
     dir: NodeId,
-    result: std::io::Result<(Vec<Found>, bool)>,
+    /// A piece of its entries, and whether more follow; or how it ended
+    /// (Ok(cut) after the last piece, or the error).
+    found: Vec<Found>,
+    more: bool,
+    result: Option<std::io::Result<bool>>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -382,11 +441,33 @@ fn walk_local(
                     if c.load(Ordering::Relaxed) {
                         break;
                     }
-                    let result = read_local(&job.path, cap, device);
+                    let dir = job.dir;
+                    let result = read_local(&job.path, cap, device, |found, more| {
+                        // (the last piece goes with the result below)
+                        if !more {
+                            let _ = tx.send(Done {
+                                dir,
+                                found,
+                                more: true,
+                                result: None,
+                            });
+                            return true;
+                        }
+                        tx.send(Done {
+                            dir,
+                            found,
+                            more,
+                            result: None,
+                        })
+                        .is_ok()
+                            && !c.load(Ordering::Relaxed)
+                    });
                     if tx
                         .send(Done {
-                            dir: job.dir,
-                            result,
+                            dir,
+                            found: Vec::new(),
+                            more: false,
+                            result: Some(result),
                         })
                         .is_err()
                     {
@@ -401,6 +482,9 @@ fn walk_local(
     loop {
         if out.cancelled() {
             break;
+        }
+        if out.entries >= limits.hard_cap as u64 {
+            queue.clear();
         }
         // folders asked for: first in line
         while let Ok(dir) = requests.try_recv() {
@@ -456,46 +540,60 @@ fn walk_local(
             }
             Err(RecvTimeoutError::Disconnected) => break,
         };
-        inflight -= 1;
+        if !done.more {
+            inflight -= 1;
+        }
         let Some((path, depth)) = dirs.get(&done.dir).cloned() else {
             continue;
         };
+        for f in done.found {
+            if out.entries >= limits.hard_cap as u64 {
+                // (the limit of all: said so, the folder read in part)
+                out.note = Some(format!(
+                    "stopped at the limit of {} entries: the rest is not shown",
+                    limits.hard_cap
+                ));
+                out.listing(done.dir, Listing::Partial);
+                break;
+            }
+            let child_path = path.join(&f.name);
+            let is_dir = f.kind == Kind::Dir;
+            let id = out.push(Entry {
+                parent: done.dir,
+                name: f.name.into_boxed_os_str(),
+                kind: f.kind,
+                size: f.size,
+                alloc: f.alloc,
+                mtime: f.mtime,
+            });
+            if !is_dir {
+                continue;
+            }
+            if f.foreign || skip.contains(&child_path) {
+                out.listing(id, Listing::Skipped);
+                continue;
+            }
+            let d = depth.saturating_add(1);
+            if d > limits.max_depth {
+                continue;
+            }
+            dirs.insert(id, (child_path, d));
+            let auto = auto_depth.is_none_or(|a| d < a);
+            if auto && out.entries < limits.budget as u64 {
+                queue.push_back(id);
+            }
+        }
         match done.result {
-            Err(e) => out.listing(done.dir, listing_of(&e)),
-            Ok((found, cut)) => {
-                for f in found {
-                    let child_path = path.join(&f.name);
-                    let is_dir = f.kind == Kind::Dir;
-                    let id = out.push(Entry {
-                        parent: done.dir,
-                        name: f.name.into_boxed_os_str(),
-                        kind: f.kind,
-                        size: f.size,
-                        mtime: f.mtime,
-                    });
-                    if !is_dir {
-                        continue;
-                    }
-                    if f.foreign || skip.contains(&child_path) {
-                        out.listing(id, Listing::Skipped);
-                        continue;
-                    }
-                    let d = depth + 1;
-                    if d > limits.max_depth {
-                        continue;
-                    }
-                    dirs.insert(id, (child_path, d));
-                    let auto = auto_depth.is_none_or(|a| d < a);
-                    if auto && out.entries < limits.budget as u64 {
-                        queue.push_back(id);
-                    }
-                }
+            None => {}
+            Some(Err(e)) => out.listing(done.dir, listing_of(&e)),
+            Some(Ok(cut)) => {
+                let full = !cut && out.note.is_none();
                 out.listing(
                     done.dir,
-                    if cut {
-                        Listing::Partial
-                    } else {
+                    if full {
                         Listing::Listed
+                    } else {
+                        Listing::Partial
                     },
                 );
             }
@@ -523,6 +621,8 @@ const MCP_TIMEOUT: Duration = Duration::from_secs(120);
 const MCP_AUTO_DEPTH: u32 = 3;
 /// And how many entries at most, by itself.
 const MCP_BUDGET: u64 = 20_000;
+/// Entries a page of a remote folder.
+const MCP_PAGE: u32 = 5000;
 
 fn remote_kind(e: &RemoteEntry) -> Kind {
     if e.is_link {
@@ -534,10 +634,16 @@ fn remote_kind(e: &RemoteEntry) -> Kind {
     }
 }
 
+/// A first walk slower than this: the backend lists slowly - the rest is
+/// read folder by folder as it is approached.
+const MCP_SLOW: Duration = Duration::from_secs(8);
+
+#[allow(clippy::too_many_arguments)]
 fn walk_mcp(
     client: Arc<Client>,
     backend: String,
     root: String,
+    lazy: bool,
     limits: Limits,
     mut out: Out,
     requests: Receiver<NodeId>,
@@ -546,68 +652,93 @@ fn walk_mcp(
     let mut dirs: HashMap<NodeId, (Vec<u8>, u32)> = HashMap::new();
     dirs.insert(0, (root.as_bytes().to_vec(), 0));
     let mut queue: VecDeque<NodeId> = VecDeque::new();
-    // first a shallow walk in one call; whatever it does not settle is read
-    // folder by folder
-    let first = client.walk(
-        &backend,
-        &PathArg::Text(root.clone()),
-        2,
-        5000,
-        0,
-        MCP_TIMEOUT,
-    );
+    let mut lazy = lazy;
+    out.lazy = lazy;
+    // first a shallow walk in one call (not for a backend read lazily);
+    // whatever it does not settle is read folder by folder
+    let asked = Instant::now();
+    let first = (!lazy).then(|| {
+        client.walk(
+            &backend,
+            &PathArg::Text(root.clone()),
+            2,
+            5000,
+            0,
+            MCP_TIMEOUT,
+        )
+    });
+    if asked.elapsed() > MCP_SLOW {
+        // (a slow backend: the rest as it is approached)
+        lazy = true;
+        out.lazy = true;
+    }
+    // (the walk's error, kept: said when the root cannot be read either)
+    let mut first_error: Option<String> = None;
     match first {
-        Ok(page) if page.next_offset.is_none() => {
-            let mut by_path: HashMap<Vec<u8>, NodeId> = HashMap::new();
-            by_path.insert(root.trim_end_matches('/').as_bytes().to_vec(), 0);
+        None => queue.push_back(0),
+        Some(Ok(page)) if page.next_offset.is_none() => {
+            out.skipped_names += page.rejected as u64;
+            // (keyed by the paths as the server shows them; the folders'
+            // real paths are their parent's and their raw names)
+            let mut by_path: HashMap<String, NodeId> = HashMap::new();
+            by_path.insert(root.trim_end_matches('/').to_string(), 0);
             let unreadable: HashSet<String> = page.unreadable.iter().cloned().collect();
             for e in page.entries {
-                let full = e.path.trim_end_matches('/').as_bytes().to_vec();
-                let parent_path = match full.iter().rposition(|&b| b == b'/') {
-                    Some(0) => Vec::new(),
-                    Some(i) => full[..i].to_vec(),
+                let full = e.path.trim_end_matches('/').to_string();
+                let parent_path = match full.rfind('/') {
+                    Some(0) => String::new(),
+                    Some(i) => full[..i].to_string(),
                     None => continue,
                 };
                 let Some(&parent) = by_path.get(&parent_path) else {
                     continue;
                 };
                 // (deeper than asked: a server that ignores the depth)
-                if dirs.get(&parent).map_or(0, |d| d.1) >= 2 {
+                let Some((parent_raw, parent_depth)) = dirs.get(&parent).cloned() else {
+                    continue;
+                };
+                if parent_depth >= 2 {
                     continue;
                 }
                 let kind = remote_kind(&e);
+                if kind == Kind::File && !e.size_known {
+                    out.unknown_sizes += 1;
+                }
                 let id = out.push(Entry {
                     parent,
                     name: crate::tree::os_from_bytes(&e.name).into_boxed_os_str(),
                     kind,
                     size: e.size,
+                    alloc: e.size,
                     mtime: e.mtime,
                 });
                 if kind == Kind::Dir {
-                    let depth = dirs.get(&parent).map_or(0, |d| d.1) + 1;
                     by_path.insert(full.clone(), id);
-                    dirs.insert(id, (full, depth));
+                    if unreadable.contains(&full) {
+                        out.listing(id, Listing::Failed);
+                    }
+                    dirs.insert(id, (remote_child(&parent_raw, &e.name), parent_depth + 1));
                 }
             }
-            for (id, (path, depth)) in &dirs {
-                let shown = String::from_utf8_lossy(path).into_owned();
-                if unreadable.contains(&shown) {
-                    out.listing(*id, Listing::Failed);
-                } else if *depth < 2 {
+            for (id, (_, depth)) in &dirs {
+                if *depth < 2 {
                     out.listing(*id, Listing::Listed);
-                } else if *depth < MCP_AUTO_DEPTH {
+                } else if *depth < MCP_AUTO_DEPTH && !lazy {
                     queue.push_back(*id);
                 }
             }
         }
-        Ok(_) => queue.push_back(0),
-        Err(e) if !client.is_alive() => {
+        Some(Ok(_)) => queue.push_back(0),
+        Some(Err(e)) if !client.is_alive() => {
             out.listing(0, Listing::Failed);
             out.flush(true);
             out.status(0, true, Some(e), true);
             return;
         }
-        Err(_) => queue.push_back(0),
+        Some(Err(e)) => {
+            first_error = Some(e);
+            queue.push_back(0);
+        }
     }
     out.flush(true);
     let mut reported_done = false;
@@ -641,49 +772,87 @@ fn walk_mcp(
         let Some((path, depth)) = dirs.get(&dir).cloned() else {
             continue;
         };
-        if out.entries >= limits.hard_cap as u64 {
-            continue;
-        }
-        match client.list(&backend, &PathArg::from_bytes(&path), MCP_TIMEOUT) {
-            Err(e) => {
-                let denied = e.to_ascii_lowercase().contains("permission");
-                out.listing(
-                    dir,
-                    if denied {
+        // the folder a page at a time: a folder of any size, no answer
+        // over the bound, each page shown as it comes
+        let mut offset = 0u64;
+        let mut ended = Listing::Listed;
+        loop {
+            if out.entries >= limits.hard_cap as u64 {
+                out.note = Some(format!(
+                    "stopped at the limit of {} entries: the rest is not shown",
+                    limits.hard_cap
+                ));
+                ended = Listing::Partial;
+                break;
+            }
+            let asked = Instant::now();
+            let got = client.list_page(
+                &backend,
+                &PathArg::from_bytes(&path),
+                offset,
+                MCP_PAGE,
+                MCP_TIMEOUT,
+            );
+            if asked.elapsed() > MCP_SLOW && !lazy {
+                // (a slow backend: from here on folder by folder as approached)
+                lazy = true;
+                out.lazy = true;
+            }
+            match got {
+                Err(e) => {
+                    let denied = e.to_ascii_lowercase().contains("permission");
+                    ended = if denied {
                         Listing::Denied
                     } else {
                         Listing::Failed
-                    },
-                );
-            }
-            Ok(entries) => {
-                let cut = entries.len() > limits.per_dir;
-                for e in entries.into_iter().take(limits.per_dir) {
-                    let kind = remote_kind(&e);
-                    let child = remote_child(&path, &e.name);
-                    let id = out.push(Entry {
-                        parent: dir,
-                        name: crate::tree::os_from_bytes(&e.name).into_boxed_os_str(),
-                        kind,
-                        size: e.size,
-                        mtime: e.mtime,
-                    });
-                    if kind == Kind::Dir && depth < limits.max_depth {
-                        dirs.insert(id, (child, depth + 1));
-                        if depth + 1 < MCP_AUTO_DEPTH && out.entries < MCP_BUDGET {
-                            queue.push_back(id);
+                    };
+                    if dir == 0 {
+                        // the root cannot be read: said on the island
+                        let why = match first_error.take() {
+                            Some(w) if w != e => format!("{w}; {e}"),
+                            _ => e,
+                        };
+                        out.listing(0, ended);
+                        out.flush(true);
+                        out.status(0, true, Some(why), true);
+                        reported_done = true;
+                    }
+                    break;
+                }
+                Ok(page) => {
+                    out.skipped_names += page.rejected as u64;
+                    let n = page.entries.len() as u64;
+                    for e in page.entries {
+                        let kind = remote_kind(&e);
+                        if kind == Kind::File && !e.size_known {
+                            out.unknown_sizes += 1;
+                        }
+                        let child = remote_child(&path, &e.name);
+                        let id = out.push(Entry {
+                            parent: dir,
+                            name: crate::tree::os_from_bytes(&e.name).into_boxed_os_str(),
+                            kind,
+                            size: e.size,
+                            alloc: e.size,
+                            mtime: e.mtime,
+                        });
+                        if kind == Kind::Dir && depth < limits.max_depth {
+                            dirs.insert(id, (child, depth + 1));
+                            if depth + 1 < MCP_AUTO_DEPTH && out.entries < MCP_BUDGET && !lazy {
+                                queue.push_back(id);
+                            }
                         }
                     }
+                    out.flush(false);
+                    match page.next_offset {
+                        Some(next) if next > offset && n > 0 => offset = next,
+                        _ => break,
+                    }
                 }
-                out.listing(
-                    dir,
-                    if cut {
-                        Listing::Partial
-                    } else {
-                        Listing::Listed
-                    },
-                );
             }
+        }
+        if dir != 0 || ended == Listing::Listed || ended == Listing::Partial {
+            out.listing(dir, ended);
         }
         out.flush(false);
         out.status(queue.len(), false, None, false);
@@ -779,6 +948,7 @@ pub fn synthetic_entries(files: usize, seed: u64) -> Vec<Entry> {
                 name: OsString::from(name).into_boxed_os_str(),
                 kind: Kind::Dir,
                 size: 4096,
+                alloc: 4096,
                 mtime: now - rng.below(86_400 * 900) as i64,
             });
             queue.push_back((next_id, depth + 1));
@@ -796,6 +966,7 @@ pub fn synthetic_entries(files: usize, seed: u64) -> Vec<Entry> {
                     .into_boxed_os_str(),
                 kind: Kind::File,
                 size,
+                alloc: size,
                 mtime: now - age,
             });
             next_id += 1;
@@ -878,6 +1049,7 @@ pub fn walk_blocking(
 mod tests {
     use super::*;
     use crate::testdir::Scratch;
+    use serde_json::json;
     use std::ffi::OsStr;
 
     fn local(root: &Path) -> Source {
@@ -996,6 +1168,63 @@ mod tests {
     }
 
     #[test]
+    fn a_folder_bigger_than_a_piece_is_read_whole() {
+        // (a big folder streams in pieces of PIECE entries: none is cut)
+        let dir = Scratch::new("big-folder");
+        let n = PIECE * 2 + 500;
+        for i in 0..n {
+            std::fs::File::create(dir.path().join(format!("f{i:06}"))).unwrap();
+        }
+        let (t, status) = walk_blocking(local(dir.path()), Limits::default(), OsStr::new("r"));
+        assert_eq!(t.root().children.len(), n);
+        assert_eq!(t.root().listing, Listing::Listed);
+        assert_eq!(status.note, None);
+    }
+
+    #[test]
+    fn the_limit_of_all_is_said() {
+        let dir = Scratch::new("hard-cap");
+        for i in 0..3000 {
+            std::fs::File::create(dir.path().join(format!("f{i}"))).unwrap();
+        }
+        let limits = Limits {
+            hard_cap: 1000,
+            ..Limits::default()
+        };
+        let (t, status) = walk_blocking(local(dir.path()), limits, OsStr::new("r"));
+        assert!(t.len() <= 1001);
+        assert_eq!(t.root().listing, Listing::Partial);
+        assert!(
+            status.note.as_deref().is_some_and(|n| n.contains("1000")),
+            "{:?}",
+            status.note
+        );
+    }
+
+    #[test]
+    fn folders_hundreds_deep_are_read_to_the_bottom() {
+        let dir = Scratch::new("deep");
+        let mut p = dir.path().to_path_buf();
+        for _ in 0..400 {
+            p.push("d");
+        }
+        std::fs::create_dir_all(&p).unwrap();
+        std::fs::write(p.join("bottom.txt"), b"x").unwrap();
+        let (t, _) = walk_blocking(local(dir.path()), Limits::default(), OsStr::new("r"));
+        let b = t
+            .nodes
+            .iter()
+            .position(|n| n.name.as_ref() == OsStr::new("bottom.txt"))
+            .expect("found at the bottom");
+        assert_eq!(t.depth(b as NodeId), 401);
+        assert!(
+            t.nodes
+                .iter()
+                .all(|n| n.kind != Kind::Dir || n.listing == Listing::Listed)
+        );
+    }
+
+    #[test]
     fn a_folder_is_read_when_asked() {
         let dir = Scratch::new("lazy");
         std::fs::create_dir_all(dir.path().join("a/b")).unwrap();
@@ -1067,6 +1296,7 @@ mod tests {
                 client,
                 backend: "sftp-1".into(),
                 root: "/".into(),
+                lazy: false,
             },
             Limits::default(),
             OsStr::new("/"),
@@ -1082,6 +1312,65 @@ mod tests {
         }
         assert_eq!(find(&t, "y.bin").unwrap().size, 2048);
         assert_eq!(t.root().total, 11 + 2048 + 99);
+    }
+
+    #[test]
+    fn a_failing_remote_walk_is_said_on_the_island() {
+        let client = Arc::new(crate::mcp::tests::tool_server(|name, _| {
+            let text = match name {
+                "walk_tree" => "walk failed: boom",
+                _ => "no such folder",
+            };
+            json!({"content": [{"type": "text", "text": text}], "isError": true})
+        }));
+        let (t, status) = walk_blocking(
+            Source::Mcp {
+                client,
+                backend: "b".into(),
+                root: "/gone".into(),
+                lazy: false,
+            },
+            Limits::default(),
+            OsStr::new("/gone"),
+        );
+        assert!(status.done);
+        let e = status.error.expect("an error, not an empty island");
+        assert_eq!(e, "walk failed: boom");
+        assert_eq!(t.root().listing, Listing::Failed);
+    }
+
+    #[test]
+    fn remote_names_that_reach_outside_are_left_out_and_counted() {
+        let client = Arc::new(crate::mcp::tests::tool_server(|name, _| {
+            let entries = json!([
+                {"path": "/ok.txt", "name": "ok.txt", "size": 5},
+                {"path": "/../../etc/passwd", "name": "../../etc/passwd", "size": 1},
+                {"path": "/a/b", "name": "a/b", "size": 1},
+            ]);
+            let v = match name {
+                "walk_tree" => json!({"entries": entries, "next_offset": null}),
+                _ => entries,
+            };
+            json!({"content": [{"type": "text", "text": v.to_string()}], "isError": false})
+        }));
+        let (t, status) = walk_blocking(
+            Source::Mcp {
+                client,
+                backend: "b".into(),
+                root: "/".into(),
+                lazy: false,
+            },
+            Limits::default(),
+            OsStr::new("/"),
+        );
+        let names: Vec<String> = t
+            .nodes
+            .iter()
+            .skip(1)
+            .map(|n| n.name.to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(names, ["ok.txt"]);
+        assert!(status.skipped_names >= 2, "{}", status.skipped_names);
     }
 
     #[test]

@@ -205,6 +205,8 @@ pub struct Node {
     /// The entry's own size in bytes (a folder's own entry size is not
     /// counted in its total).
     pub size: u64,
+    /// The bytes it takes on the disk (files).
+    pub alloc: u64,
     /// Bytes below (folders), the size (files).
     pub total: u64,
     /// Files below (folders), 1 (files and links).
@@ -225,6 +227,9 @@ pub struct Entry {
     pub name: Box<OsStr>,
     pub kind: Kind,
     pub size: u64,
+    /// The bytes it takes on the disk (a sparse file takes fewer than its
+    /// size; where it is not known, its size).
+    pub alloc: u64,
     pub mtime: i64,
 }
 
@@ -260,6 +265,7 @@ impl Tree {
                 listing: Listing::Unlisted,
                 ftype: FileType::Folder,
                 size: 0,
+                alloc: 0,
                 total: 0,
                 count: 0,
                 mtime,
@@ -268,6 +274,14 @@ impl Tree {
                 children: Vec::new(),
             }],
         }
+    }
+
+    /// A tree with room for `n` nodes made at once (untouched memory: used
+    /// only as they come - no copy of a big tree while it grows).
+    pub fn with_room(name: &OsStr, n: usize) -> Tree {
+        let mut t = Tree::new(name, 0);
+        t.nodes.reserve(n);
+        t
     }
 
     pub fn len(&self) -> usize {
@@ -312,6 +326,7 @@ impl Tree {
             },
             ftype,
             size: e.size,
+            alloc: e.alloc,
             total,
             count,
             mtime: e.mtime,
@@ -393,6 +408,25 @@ impl Tree {
         p
     }
 
+    /// The path of `id` below `root` as raw bytes (names that are no UTF-8
+    /// kept as the server gave them: reads and opens find the very file).
+    pub fn remote_path_bytes(&self, root: &str, id: NodeId) -> Vec<u8> {
+        let mut p = root.trim_end_matches('/').as_bytes().to_vec();
+        let chain = self.chain(id);
+        if chain.len() <= 1 {
+            return if p.is_empty() {
+                b"/".to_vec()
+            } else {
+                root.as_bytes().to_vec()
+            };
+        }
+        for name in chain.into_iter().skip(1) {
+            p.push(b'/');
+            p.extend_from_slice(&os_to_bytes(name));
+        }
+        p
+    }
+
     /// How deep `id` lies (the root: 0).
     pub fn depth(&self, id: NodeId) -> usize {
         let mut d = 0;
@@ -448,26 +482,53 @@ impl Tree {
 /// A name as it is shown: lossy UTF-8, control characters (a newline in a
 /// file name) as visible escapes, never more than `max` characters.
 pub fn display_name(name: &OsStr, max: usize) -> String {
-    let lossy = name.to_string_lossy();
-    let mut out = String::with_capacity(lossy.len().min(max * 4));
-    for (n, c) in lossy.chars().enumerate() {
+    // (bytes that are no UTF-8 shown as \xNN - exact, and drawn with any
+    // font: U+FFFD has no glyph in egui's)
+    let raw = os_to_bytes(name);
+    let mut out = String::with_capacity(raw.len().min(max.saturating_mul(4)));
+    let mut n = 0usize;
+    let mut push = |out: &mut String, s: &str| -> bool {
         if n >= max {
             out.push('…');
-            break;
+            return false;
         }
-        match c {
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            c if c.is_control() => out.push_str(&format!("\\u{{{:x}}}", c as u32)),
-            // (bidirectional overrides and invisible formatting: shown)
-            '\u{200b}'..='\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}' => {
-                out.push_str(&format!("\\u{{{:x}}}", c as u32))
+        n += 1;
+        out.push_str(s);
+        true
+    };
+    for chunk in raw.utf8_chunks() {
+        for c in chunk.valid().chars() {
+            let piece = match c {
+                '\n' => "\\n".to_string(),
+                '\r' => "\\r".to_string(),
+                '\t' => "\\t".to_string(),
+                c if c.is_control() => format!("\\u{{{:x}}}", c as u32),
+                // (bidirectional overrides and invisible formatting: shown)
+                '\u{200b}'..='\u{200f}'
+                | '\u{202a}'..='\u{202e}'
+                | '\u{2066}'..='\u{2069}'
+                | '\u{feff}' => {
+                    format!("\\u{{{:x}}}", c as u32)
+                }
+                c => c.to_string(),
+            };
+            if !push(&mut out, &piece) {
+                return out;
             }
-            c => out.push(c),
+        }
+        for b in chunk.invalid() {
+            if !push(&mut out, &format!("\\x{b:02x}")) {
+                return out;
+            }
         }
     }
     out
+}
+
+/// Text made safe to show in a label (a path, a link's target): control
+/// characters, invisible formatting and bytes that are no UTF-8 escaped.
+pub fn display_text(text: &OsStr) -> String {
+    display_name(text, usize::MAX)
 }
 
 /// An `OsString` from raw bytes as a remote backend or the cache gives them
@@ -508,6 +569,7 @@ mod tests {
             name: OsStr::new(name).into(),
             kind,
             size,
+            alloc: size,
             mtime,
         }
     }
@@ -570,7 +632,11 @@ mod tests {
         #[cfg(unix)]
         {
             let raw = os_from_bytes(b"caf\xe9");
-            assert_eq!(display_name(&raw, 80), "caf\u{fffd}");
+            assert_eq!(
+                display_name(&raw, 80),
+                "caf\\xe9",
+                "exact, and drawable with any font"
+            );
             assert_eq!(os_to_bytes(&raw), b"caf\xe9");
         }
     }

@@ -313,7 +313,7 @@ fn dev_of(root: &Path, rel: &str) -> Option<(u32, u32)> {
 pub fn disks(root: &Path) -> Vec<Disk> {
     let mut out = Vec::new();
     for name in list(root, "/sys/block") {
-        if ["loop", "ram", "zram", "fd", "sr"]
+        if ["ram", "zram", "fd", "sr"]
             .iter()
             .any(|p| name.starts_with(p))
         {
@@ -348,6 +348,8 @@ pub fn disks(root: &Path) -> Vec<Disk> {
             "virtual"
         } else if name.starts_with("dm-") || name.starts_with("md") {
             "mapped"
+        } else if name.starts_with("loop") {
+            "loop (a file)"
         } else if removable {
             "USB / removable"
         } else {
@@ -462,26 +464,112 @@ pub fn cpu_times(root: &Path) -> Vec<(u64, u64)> {
 /// Which disk (by name) holds the file system on device `dev`: a disk, a
 /// partition of one, or a mapped device on one.
 pub fn disk_of(disks: &[Disk], dev: (u32, u32)) -> Option<usize> {
-    let direct = |dev: (u32, u32)| {
-        disks
-            .iter()
-            .position(|d| d.dev == dev || d.partitions.iter().any(|p| p.dev == dev))
-    };
-    let i = direct(dev)?;
-    if disks[i].below.is_empty() {
-        return Some(i);
+    physical_disks(disks, dev).first().copied()
+}
+
+/// The disk (or partition) named `name`.
+fn by_name(disks: &[Disk], name: &str) -> Option<usize> {
+    disks
+        .iter()
+        .position(|d| d.name == name || d.partitions.iter().any(|p| p.name == name))
+}
+
+/// The physical disks under a block device: itself, or - for a mapped
+/// device (LVM, LUKS, LVM on LUKS), an MD RAID - every disk its layers
+/// rest on, down to the bottom.
+fn resolve(disks: &[Disk], i: usize, depth: usize, out: &mut Vec<usize>) {
+    if depth > 16 {
+        return;
     }
-    // a mapped device: the first disk below it that is one
+    if disks[i].below.is_empty() {
+        if !out.contains(&i) {
+            out.push(i);
+        }
+        return;
+    }
     for b in &disks[i].below {
-        if let Some(j) = disks
-            .iter()
-            .position(|d| &d.name == b || d.partitions.iter().any(|p| &p.name == b))
+        if let Some(j) = by_name(disks, b)
             && j != i
         {
-            return Some(j);
+            resolve(disks, j, depth + 1, out);
         }
     }
-    Some(i)
+}
+
+/// The physical disks the file system on device `dev` lives on.
+pub fn physical_disks(disks: &[Disk], dev: (u32, u32)) -> Vec<usize> {
+    let mut out = Vec::new();
+    if let Some(i) = disks
+        .iter()
+        .position(|d| d.dev == dev || d.partitions.iter().any(|p| p.dev == dev))
+    {
+        resolve(disks, i, 0, &mut out);
+    }
+    out
+}
+
+/// The physical disks of a mount: by its device numbers, or - btrfs and
+/// ZFS show none of a disk (major 0) - by its source: btrfs's devices (all
+/// of a multi-device file system, `/sys/fs/btrfs/*/devices`), a ZFS pool's
+/// members (udev's `ID_FS_LABEL` of its `zfs_member` partitions).
+pub fn disks_of_mount(root: &Path, disks: &[Disk], m: &crate::mounts::Mount) -> Vec<usize> {
+    if m.dev.0 != 0 {
+        return physical_disks(disks, m.dev);
+    }
+    let mut out = Vec::new();
+    let add = |name: &str, out: &mut Vec<usize>| {
+        if let Some(i) = by_name(disks, name) {
+            resolve(disks, i, 0, out);
+        }
+    };
+    if m.fs_type == "btrfs" {
+        // the source device (a /dev/mapper name is a link to dm-N)
+        let mut name = m.source.rsplit('/').next().unwrap_or("").to_string();
+        if m.source.starts_with("/dev/mapper/")
+            && let Ok(target) = fs::read_link(root.join(m.source.trim_start_matches('/')))
+        {
+            name = target
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or(name);
+        }
+        let mut members = vec![name.clone()];
+        for fsid in list(root, "/sys/fs/btrfs") {
+            let devs = list(root, &format!("/sys/fs/btrfs/{fsid}/devices"));
+            if devs.contains(&name) {
+                members = devs;
+                break;
+            }
+        }
+        for n in members {
+            add(&n, &mut out);
+        }
+    } else if m.fs_type == "zfs" {
+        let pool = m.source.split('/').next().unwrap_or("");
+        for f in list(root, "/run/udev/data") {
+            let Some(numbers) = f.strip_prefix('b') else {
+                continue;
+            };
+            let text =
+                fs::read_to_string(root.join(format!("run/udev/data/{f}"))).unwrap_or_default();
+            let member = text.lines().any(|l| l == "E:ID_FS_TYPE=zfs_member");
+            let label = text
+                .lines()
+                .any(|l| l.strip_prefix("E:ID_FS_LABEL=") == Some(pool));
+            if member
+                && label
+                && let Some((a, b)) = numbers.split_once(':')
+                && let (Ok(a), Ok(b)) = (a.parse(), b.parse())
+            {
+                for i in physical_disks(disks, (a, b)) {
+                    if !out.contains(&i) {
+                        out.push(i);
+                    }
+                }
+            }
+        }
+    }
+    out
 }
 
 #[cfg(test)]
@@ -647,16 +735,17 @@ pub(crate) mod tests {
         assert_eq!(m.board.name.as_deref(), Some("Z-Board 1"));
         assert_eq!(m.board.version, None, "a placeholder is no version");
         let names: Vec<&str> = m.disks.iter().map(|d| d.name.as_str()).collect();
-        assert_eq!(names, ["dm-0", "nvme0n1", "sda"]);
-        let nvme = &m.disks[1];
+        // (a loop device is a disk of the city's: a file holds it)
+        assert_eq!(names, ["dm-0", "loop0", "nvme0n1", "sda"]);
+        let nvme = &m.disks[2];
         assert_eq!(nvme.transport, "NVMe");
         assert_eq!(nvme.partitions.len(), 2);
         assert_eq!(nvme.size, 1_953_525_168 * 512);
-        assert!(m.disks[2].rotational);
+        assert!(m.disks[3].rotational);
         // a mount on the mapped device lives on the NVMe disk
-        assert_eq!(disk_of(&m.disks, (253, 0)), Some(1));
-        assert_eq!(disk_of(&m.disks, (259, 1)), Some(1));
-        assert_eq!(disk_of(&m.disks, (8, 0)), Some(2));
+        assert_eq!(disk_of(&m.disks, (253, 0)), Some(2));
+        assert_eq!(disk_of(&m.disks, (259, 1)), Some(2));
+        assert_eq!(disk_of(&m.disks, (8, 0)), Some(3));
         assert_eq!(disk_of(&m.disks, (1, 1)), None);
         assert_eq!(m.pci.len(), 2);
         assert_eq!(m.pci[0].kind(), PciKind::Display);
@@ -671,6 +760,99 @@ pub(crate) mod tests {
         let t = cpu_times(dir.path());
         assert_eq!(t.len(), 4);
         assert_eq!(t[3], (50, 100));
+    }
+
+    #[test]
+    fn layered_and_pooled_storage_reaches_its_disks() {
+        let dir = Scratch::new("hw-layers");
+        let r = dir.path();
+        let disk = |name: &str, dev: &str, parts: &[(&str, &str)], slaves: &[&str]| {
+            put(r, &format!("/sys/block/{name}/size"), "1000000\n");
+            put(r, &format!("/sys/block/{name}/dev"), &format!("{dev}\n"));
+            for (p, d) in parts {
+                put(r, &format!("/sys/block/{name}/{p}/dev"), &format!("{d}\n"));
+                put(r, &format!("/sys/block/{name}/{p}/size"), "1000\n");
+            }
+            for s in slaves {
+                put(r, &format!("/sys/block/{name}/slaves/{s}/x"), "");
+            }
+        };
+        disk(
+            "nvme0n1",
+            "259:0",
+            &[("nvme0n1p1", "259:1"), ("nvme0n1p2", "259:2")],
+            &[],
+        );
+        disk("sda", "8:0", &[("sda1", "8:1")], &[]);
+        disk("sdb", "8:16", &[("sdb1", "8:17")], &[]);
+        disk("sdc", "8:32", &[("sdc1", "8:33")], &[]);
+        // LVM on LUKS: dm-1 (the volume) on dm-0 (the encryption) on nvme0n1p2
+        disk("dm-0", "253:0", &[], &["nvme0n1p2"]);
+        disk("dm-1", "253:1", &[], &["dm-0"]);
+        // MD RAID 1 of sda1 and sdb1
+        disk("md0", "9:0", &[], &["sda1", "sdb1"]);
+        disk("loop0", "7:0", &[], &[]);
+        // btrfs over sdb1 and sdc1; ZFS pool "tank" on sda1 and sdc1
+        put(r, "/sys/fs/btrfs/1234-abcd/devices/sdb1", "");
+        put(r, "/sys/fs/btrfs/1234-abcd/devices/sdc1", "");
+        put(
+            r,
+            "/run/udev/data/b8:1",
+            "E:ID_FS_TYPE=zfs_member\nE:ID_FS_LABEL=tank\n",
+        );
+        put(
+            r,
+            "/run/udev/data/b8:33",
+            "E:ID_FS_TYPE=zfs_member\nE:ID_FS_LABEL=tank\n",
+        );
+        put(r, "/run/udev/data/b8:17", "E:ID_FS_TYPE=btrfs\n");
+        let disks = disks(r);
+        let name = |is: Vec<usize>| -> Vec<String> {
+            let mut v: Vec<String> = is.into_iter().map(|i| disks[i].name.clone()).collect();
+            v.sort();
+            v
+        };
+        let mount = |dev: (u32, u32), fs_type: &str, source: &str| crate::mounts::Mount {
+            mount_point: "/m".into(),
+            fs_type: fs_type.into(),
+            source: source.into(),
+            dev,
+            root: "/".into(),
+            read_only: false,
+            kind: crate::mounts::MountKind::Local,
+        };
+        assert_eq!(name(physical_disks(&disks, (253, 1))), ["nvme0n1"]);
+        assert_eq!(name(physical_disks(&disks, (9, 0))), ["sda", "sdb"]);
+        assert_eq!(name(physical_disks(&disks, (7, 0))), ["loop0"]);
+        assert_eq!(
+            disks.iter().find(|d| d.name == "loop0").unwrap().transport,
+            "loop (a file)"
+        );
+        assert_eq!(
+            name(disks_of_mount(
+                r,
+                &disks,
+                &mount((0, 40), "btrfs", "/dev/sdb1")
+            )),
+            ["sdb", "sdc"]
+        );
+        assert_eq!(
+            name(disks_of_mount(
+                r,
+                &disks,
+                &mount((0, 41), "zfs", "tank/home")
+            )),
+            ["sda", "sdc"]
+        );
+        assert!(disks_of_mount(r, &disks, &mount((0, 42), "zfs", "other/x")).is_empty());
+        assert_eq!(
+            name(disks_of_mount(
+                r,
+                &disks,
+                &mount((253, 1), "ext4", "/dev/mapper/vg-root")
+            )),
+            ["nvme0n1"]
+        );
     }
 
     #[test]

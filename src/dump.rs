@@ -75,8 +75,8 @@ pub fn render(
     layout_secs: f64,
 ) -> String {
     let root = tree.root();
-    let summary = json!({
-        "root": root.name.to_string_lossy(),
+    let mut summary = json!({
+        "root": exact(&root.name),
         "nodes": tree.len(),
         "files": root.count,
         "bytes": root.total,
@@ -88,6 +88,9 @@ pub fn render(
         "layout_seconds": (layout_secs * 1000.0).round() / 1000.0,
         "walk_error": status.error,
     });
+    if let Some(b) = raw_b64(&root.name) {
+        summary["root_b64"] = json!(b);
+    }
     // depth-first, children by layout order (largest first)
     let mut order: Vec<(NodeId, usize)> = Vec::new();
     let mut stack: Vec<(NodeId, usize)> = vec![(0, 0)];
@@ -136,9 +139,16 @@ pub fn render(
             .map(|&(id, depth)| {
                 let n = &tree.nodes[id as usize];
                 let (rect, base, height) = item(id);
-                json!({
-                    "path": tree.chain(id).iter().skip(1).map(|s| s.to_string_lossy().into_owned()).collect::<Vec<_>>().join("/"),
-                    "name": display_name(&n.name, 200),
+                let mut path = std::ffi::OsString::new();
+                for (k, part) in tree.chain(id).iter().skip(1).enumerate() {
+                    if k > 0 {
+                        path.push("/");
+                    }
+                    path.push(part);
+                }
+                let mut v = json!({
+                    "path": exact(&path),
+                    "name": exact(&n.name),
                     "kind": kind(n.kind),
                     "type": n.ftype.label(),
                     "depth": depth,
@@ -148,7 +158,16 @@ pub fn render(
                     "rect": rect,
                     "base": base,
                     "height": height,
-                })
+                });
+                // (a name that is no UTF-8: its bytes too, so a script gets
+                // it back exactly)
+                if let Some(b) = raw_b64(&n.name) {
+                    v["name_b64"] = json!(b);
+                }
+                if let Some(b) = raw_b64(&path) {
+                    v["path_b64"] = json!(b);
+                }
+                v
             })
             .collect();
         let mut out = serde_json::to_string_pretty(&json!({"city": summary, "nodes": nodes}))
@@ -195,6 +214,22 @@ pub fn render(
         ));
     }
     out
+}
+
+/// A name as JSON text: exactly (JSON escapes what needs escaping) when it
+/// is UTF-8, else shown escaped (`\xNN`) - its bytes then in `*_b64`.
+fn exact(name: &std::ffi::OsStr) -> String {
+    match name.to_str() {
+        Some(s) => s.to_string(),
+        None => crate::tree::display_text(name),
+    }
+}
+
+/// The name's bytes in base64 when it is no UTF-8.
+fn raw_b64(name: &std::ffi::OsStr) -> Option<String> {
+    name.to_str()
+        .is_none()
+        .then(|| crate::mcp::b64_encode(&crate::tree::os_to_bytes(name)))
 }
 
 #[cfg(test)]
@@ -246,5 +281,45 @@ mod tests {
             s,
         );
         assert_eq!(top.lines().count(), 2);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn json_names_come_back_exactly() {
+        use std::os::unix::ffi::OsStrExt;
+        let dir = Scratch::new("dump-exact");
+        std::fs::write(dir.path().join("new\nline.txt"), b"1").unwrap();
+        let bad = std::ffi::OsStr::from_bytes(b"bad\xff\xfeutf8.bin");
+        std::fs::write(dir.path().join(bad), b"22").unwrap();
+        let (tree, l, status, w, s) = city_of(dir.path(), None);
+        let out = render(
+            &tree,
+            &l,
+            &status,
+            &DumpOptions {
+                json: true,
+                ..Default::default()
+            },
+            w,
+            s,
+        );
+        let json: Value = serde_json::from_str(&out).unwrap();
+        let nodes = json["nodes"].as_array().unwrap();
+        assert!(
+            nodes
+                .iter()
+                .any(|n| n["name"] == "new\nline.txt" && n["path"] == "new\nline.txt")
+        );
+        let b = nodes
+            .iter()
+            .find(|n| n.get("name_b64").is_some())
+            .expect("the raw bytes");
+        let raw = crate::mcp::b64_decode(b["name_b64"].as_str().unwrap()).unwrap();
+        assert_eq!(raw, b"bad\xff\xfeutf8.bin");
+        assert_eq!(b["name"], "bad\\xff\\xfeutf8.bin");
+        assert_eq!(
+            crate::mcp::b64_decode(b["path_b64"].as_str().unwrap()).unwrap(),
+            raw
+        );
     }
 }

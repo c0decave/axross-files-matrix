@@ -13,6 +13,19 @@ use std::path::{Path, PathBuf};
 pub const FILE: &str = "settings.json";
 const MAX_BYTES: u64 = 1 << 20;
 
+/// What `axross --help` said, kept for that program file (its path,
+/// size and time): asked again only when the file changes.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct AxrossProbe {
+    pub path: String,
+    pub size: u64,
+    pub mtime: i64,
+    pub opens_paths: bool,
+    /// `--connection-manager [NAME]` (axross 0.15.186 and later).
+    pub connection_manager: bool,
+}
+
 /// A saved spot (Ctrl+1..9) - where the camera was and where it looked.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -21,6 +34,11 @@ pub struct Spot {
     pub yaw: f32,
     pub pitch: f32,
     pub label: String,
+    /// A spot inside a system of axross's connection manager: its saved
+    /// profile's name, and the path there (its bytes, base64) - jumping
+    /// to it opens the system again if needed.
+    pub system: Option<String>,
+    pub path_b64: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -63,6 +81,8 @@ pub struct Settings {
     pub ask_mode_before_flight: bool,
     /// Show proc, sysfs, cgroup, tmpfs and the like as islands.
     pub show_pseudo_mounts: bool,
+    /// Show bind mounts of a folder another island shows already.
+    pub show_bind_mounts: bool,
     /// The machine's own island.
     pub hardware_island: bool,
     pub theme: String,
@@ -70,6 +90,15 @@ pub struct Settings {
     /// Entries a local island reads by itself (the rest on demand).
     pub walk_budget: usize,
     pub walk_workers: usize,
+    /// Size buildings by the space a file takes on the disk (a sparse
+    /// file is small) rather than by its length.
+    pub size_by_allocated: bool,
+    /// Keep the walk cache of islands on removable media and network or
+    /// remote file systems too (off: only local disks are cached).
+    pub cache_sensitive: bool,
+    /// The cache's limits: its size (MiB) and how old a file may get (days).
+    pub cache_max_mb: u64,
+    pub cache_max_days: u64,
     pub mouse_sensitivity: f32,
     pub invert_y: bool,
     /// The flight speed (metres a second; the wheel changes it).
@@ -78,6 +107,12 @@ pub struct Settings {
     pub bloom: bool,
     pub scanlines: bool,
     pub rain: bool,
+    /// How often the rain moves on when nothing else does (frames a
+    /// second; the window draws only then while idle). 0: the rain is
+    /// still while idle.
+    pub idle_fps: u32,
+    /// Smooth edges (four samples a pixel).
+    pub msaa: bool,
     /// Less motion: no warp streaks, slower camera flights, still rain.
     pub reduce_motion: bool,
     /// Which GPU: "auto", "high" (a dedicated one) or "low" (an integrated
@@ -91,6 +126,7 @@ pub struct Settings {
     pub update_last_check: Option<i64>,
     pub update_last_failed: bool,
     pub window: Option<[f32; 2]>,
+    pub axross_probe: Option<AxrossProbe>,
 }
 
 impl Default for Settings {
@@ -99,11 +135,16 @@ impl Default for Settings {
             read_only: true,
             ask_mode_before_flight: false,
             show_pseudo_mounts: false,
+            show_bind_mounts: false,
             hardware_island: true,
             theme: "matrix".into(),
             mcp: McpSettings::default(),
             walk_budget: 1_500_000,
             walk_workers: 4,
+            size_by_allocated: true,
+            cache_sensitive: false,
+            cache_max_mb: 512,
+            cache_max_days: 60,
             mouse_sensitivity: 1.0,
             invert_y: false,
             fly_speed: 25.0,
@@ -111,6 +152,8 @@ impl Default for Settings {
             bloom: true,
             scanlines: true,
             rain: true,
+            idle_fps: 8,
+            msaa: true,
             reduce_motion: false,
             gpu: "auto".into(),
             bookmarks: vec![None; 9],
@@ -118,6 +161,7 @@ impl Default for Settings {
             update_last_check: None,
             update_last_failed: false,
             window: None,
+            axross_probe: None,
         }
     }
 }
@@ -140,6 +184,9 @@ impl Settings {
         }
         self.walk_budget = self.walk_budget.clamp(1_000, 20_000_000);
         self.walk_workers = self.walk_workers.clamp(1, 16);
+        self.cache_max_mb = self.cache_max_mb.clamp(16, 1 << 20);
+        self.cache_max_days = self.cache_max_days.clamp(1, 3650);
+        self.idle_fps = self.idle_fps.min(30);
         self.bookmarks.resize(9, None);
         for s in self.bookmarks.iter_mut().flatten() {
             if !s.pos.iter().all(|v| v.is_finite() && v.abs() < 1e7)
@@ -149,6 +196,13 @@ impl Settings {
                 *s = Spot::default();
             }
             s.label = s.label.chars().take(120).collect();
+            if s.system
+                .as_ref()
+                .is_some_and(|n| n.len() > 256 || n.chars().any(char::is_control))
+            {
+                s.system = None;
+                s.path_b64 = None;
+            }
         }
         if !["auto", "high", "low"].contains(&self.gpu.as_str()) {
             self.gpu = d.gpu.clone();
@@ -258,7 +312,7 @@ mod tests {
         let p = dir.path().join(FILE);
         std::fs::write(
             &p,
-            br#"{"mouse_sensitivity": 1e30, "fly_speed": -4, "walk_workers": 999, "update_mode": "sometimes",
+            br#"{"mouse_sensitivity": 1e30, "fly_speed": -4, "walk_workers": 999, "cache_max_mb": 0, "idle_fps": 1000, "update_mode": "sometimes",
                  "bookmarks": [{"pos": [1e30, 0, 0], "yaw": 1}], "window": [10, 10], "read_only": false}"#,
         )
         .unwrap();
@@ -266,6 +320,8 @@ mod tests {
         assert_eq!(s.mouse_sensitivity, 1.0);
         assert_eq!(s.fly_speed, 25.0);
         assert_eq!(s.walk_workers, 16);
+        assert_eq!(s.cache_max_mb, 16);
+        assert_eq!(s.idle_fps, 30);
         assert_eq!(s.update_mode, "notify");
         assert_eq!(s.bookmarks[0], Some(Spot::default()));
         assert_eq!(s.window, None);
@@ -284,6 +340,8 @@ mod tests {
             yaw: 0.5,
             pitch: -0.2,
             label: "home".into(),
+            system: Some("nas".into()),
+            path_b64: Some("c3J2L2RhdGE=".into()),
         });
         s.mcp.command = vec![
             "/opt/axross-headless-mcp".into(),

@@ -22,6 +22,7 @@ pub mod preview;
 pub mod render;
 pub mod search;
 pub mod settings;
+pub mod systems;
 #[doc(hidden)]
 pub mod testdir;
 pub mod theme;

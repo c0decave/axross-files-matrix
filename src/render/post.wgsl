@@ -163,11 +163,14 @@ fn fs_final(in: FullOut) -> @location(0) vec4<f32> {
     // vignette
     let q = in.uv * 2.0 - 1.0;
     o *= mix(1.0, smoothstep(1.6, 0.35, length(q)), 0.4);
-    // the flash guard's veil: towards the picture's own slow average
+    // the flash guard's veil: towards the picture's own slow average,
+    // darkened as the veil deepens - a fade through black, not a ghost of
+    // the view before
     if (g.params.z > 0.5) {
-        let v = veil_at(in.uv);
+        let v = clamp(veil_at(in.uv), 0.0, 0.95);
         let slow = textureSampleLevel(t2, s, in.uv, 0.0).rgb;
-        o = mix(o, slow, clamp(v, 0.0, 0.95));
+        let ground = slow * mix(1.0, 0.2, v);
+        o = mix(o, ground, v);
     }
     return vec4<f32>(clamp(o, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0);
 }

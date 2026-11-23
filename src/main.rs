@@ -12,15 +12,16 @@
 use axross_files_matrix::{app, dump, update};
 use std::path::PathBuf;
 
-const USAGE: &str = "axross-files-matrix [OPTIONS] [FOLDER ...]
+const USAGE: &str = "axross-files-matrix [OPTIONS] [--] [FOLDER ...]
        axross-files-matrix --dump-city FOLDER [--json] [--depth N]
-       axross-files-matrix --benchmark [FILES] [--frames N] [--size WxH] [--all] [--json]
+       axross-files-matrix --benchmark [FILES] [--frames N] [--size WxH] [--all] [--flat] [--no-msaa] [--json]
        axross-files-matrix --help | --version | --self-test
 
 Without folders every mountpoint the system shows is an island (pseudo file
 systems hidden), with axross's remote backends when axross-headless-mcp or
 axross is installed, and the machine's own island in the middle. With
-folders: islands of those alone.
+folders: islands of those alone. After `--` everything is a folder, even
+a name that starts with a dash.
 
   --synthetic N     a made-up city of N files (to look at, to measure)
   --no-mcp          do not look for axross's MCP server
@@ -35,7 +36,9 @@ folders: islands of those alone.
                     --frames frames (600) at --size (1920x1080), offscreen,
                     no vsync: the adapter, boxes and draw calls per frame,
                     CPU and whole-frame times (median, p95, p99); --all
-                    draws every building (no level of detail); --json
+                    draws every building (no level of detail), --flat
+                    puts the files in one folder, --no-msaa draws without
+                    smooth edges; --json
 
 The GPU: a dedicated one by default (Settings > GPU); WGPU_ADAPTER_NAME
 picks one by a part of its name, WGPU_BACKEND the API (vulkan, metal,
@@ -44,7 +47,7 @@ dx12, gl), WGPU_POWER_PREF (high, low) the preference.
 Keys: W A S D fly, Q / E down and up, Shift faster, the wheel sets the
 speed, right drag or M looks around, F switches free flight and orbit,
 / searches, N the next hit, T teleports, 1-9 saved spots (Ctrl saves),
-Home the overview, O opens in axross, H the help. Read-only: nothing on
+Home the overview, O opens in axross, L the legend, H the help. Read-only: nothing on
 any disk is changed.";
 
 fn value_after(args: &[String], name: &str) -> Option<String> {
@@ -55,11 +58,17 @@ fn value_after(args: &[String], name: &str) -> Option<String> {
 fn main() -> eframe::Result {
     #[cfg(windows)]
     attach_to_the_terminal();
-    let args: Vec<String> = std::env::args_os()
-        .skip(1)
-        .map(|a| axross_files_matrix::fspath::os_to_string(&a))
+    let all: Vec<std::ffi::OsString> = std::env::args_os().skip(1).collect();
+    // (options only before `--`; after it, folders - whatever they look like)
+    let (raw, rest): (Vec<std::ffi::OsString>, Vec<std::ffi::OsString>) =
+        match all.iter().position(|a| a == "--") {
+            Some(i) => (all[..i].to_vec(), all[i + 1..].to_vec()),
+            None => (all.clone(), Vec::new()),
+        };
+    let args: Vec<String> = raw
+        .iter()
+        .map(|a| axross_files_matrix::fspath::os_to_string(a))
         .collect();
-    let raw: Vec<std::ffi::OsString> = std::env::args_os().skip(1).collect();
     if args.iter().any(|a| a == "-h" || a == "--help") {
         println!("{USAGE}");
         return Ok(());
@@ -97,6 +106,8 @@ fn main() -> eframe::Result {
                 .unwrap_or(600),
             size,
             all: args.iter().any(|a| a == "--all"),
+            flat: args.iter().any(|a| a == "--flat"),
+            msaa: !args.iter().any(|a| a == "--no-msaa"),
             preference: axross_files_matrix::gpu::Preference::from_key(
                 &axross_files_matrix::settings::load(&settings_path).0.gpu,
             ),
@@ -114,7 +125,12 @@ fn main() -> eframe::Result {
         return Ok(());
     }
     if let Some(i) = raw.iter().position(|a| a == "--dump-city") {
-        let Some(dir) = raw.get(i + 1) else {
+        // (the folder: right after the option, or after `--`)
+        let Some(dir) = raw
+            .get(i + 1)
+            .filter(|a| !a.to_string_lossy().starts_with('-'))
+            .or(rest.first())
+        else {
             eprintln!("axross-files-matrix: --dump-city needs a folder");
             std::process::exit(2);
         };
@@ -145,7 +161,7 @@ fn main() -> eframe::Result {
         let s = a.to_string_lossy();
         match s.as_ref() {
             "--frames" | "--size" | "--depth" => skip_next = true,
-            "--all" | "--json" => {}
+            "--all" | "--json" | "--flat" | "--no-msaa" => {}
             "--synthetic" => {
                 opts.synthetic = args.get(k + 1).and_then(|v| v.parse().ok());
                 skip_next = true;
@@ -163,9 +179,10 @@ fn main() -> eframe::Result {
             _ => opts.paths.push(PathBuf::from(a)),
         }
     }
+    opts.paths.extend(rest.iter().map(PathBuf::from));
     // (from a terminal: to the background)
     if axross_files_matrix::detach::wanted(&args) {
-        match axross_files_matrix::detach::spawn(&raw) {
+        match axross_files_matrix::detach::spawn(&all) {
             axross_files_matrix::detach::Start::Exit(0) => return Ok(()),
             axross_files_matrix::detach::Start::Exit(code) => std::process::exit(code),
             axross_files_matrix::detach::Start::Run => {}

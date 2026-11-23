@@ -1,0 +1,282 @@
+[
+ {
+  "protocol": "adb",
+  "name": "ADB (Android)",
+  "credential": "none",
+  "default_port": 5555,
+  "is_local": false
+ },
+ {
+  "protocol": "azure_blob",
+  "name": "Azure Blob",
+  "credential": "api_key",
+  "default_port": 443,
+  "is_local": false
+ },
+ {
+  "protocol": "azure_files",
+  "name": "Azure Files",
+  "credential": "api_key",
+  "default_port": 443,
+  "is_local": false
+ },
+ {
+  "protocol": "cisco-telnet",
+  "name": "Cisco IOS / IOS-XE (Telnet, read-only)",
+  "credential": "password",
+  "default_port": 23,
+  "is_local": false
+ },
+ {
+  "protocol": "dfsn",
+  "name": "DFS-N (Distributed Namespace)",
+  "credential": "password",
+  "default_port": 445,
+  "is_local": false
+ },
+ {
+  "protocol": "dropbox",
+  "name": "Dropbox",
+  "credential": "oauth",
+  "default_port": 443,
+  "is_local": false
+ },
+ {
+  "protocol": "exchange",
+  "name": "Exchange (EWS)",
+  "credential": "password",
+  "default_port": 443,
+  "is_local": false
+ },
+ {
+  "protocol": "ftp",
+  "name": "FTP",
+  "credential": "password",
+  "default_port": 21,
+  "is_local": false
+ },
+ {
+  "protocol": "ftps",
+  "name": "FTPS",
+  "credential": "password",
+  "default_port": 21,
+  "is_local": false
+ },
+ {
+  "protocol": "gdrive",
+  "name": "Google Drive",
+  "credential": "oauth",
+  "default_port": 443,
+  "is_local": false
+ },
+ {
+  "protocol": "git",
+  "name": "Git (repo-as-FS)",
+  "credential": "none",
+  "default_port": 0,
+  "is_local": false
+ },
+ {
+  "protocol": "gopher",
+  "name": "Gopher (RFC 1436, read-only)",
+  "credential": "none",
+  "default_port": 70,
+  "is_local": false
+ },
+ {
+  "protocol": "imap",
+  "name": "IMAP (Mail)",
+  "credential": "password",
+  "default_port": 993,
+  "is_local": false
+ },
+ {
+  "protocol": "iscsi",
+  "name": "iSCSI",
+  "credential": "password",
+  "default_port": 3260,
+  "is_local": false
+ },
+ {
+  "protocol": "ldap",
+  "name": "LDAP (directory-as-FS, read-only)",
+  "credential": "password",
+  "default_port": 389,
+  "is_local": false
+ },
+ {
+  "protocol": "mongodb",
+  "name": "MongoDB GridFS",
+  "credential": "password",
+  "default_port": 27017,
+  "is_local": false
+ },
+ {
+  "protocol": "mtp",
+  "name": "MTP (Android Phone)",
+  "credential": "none",
+  "default_port": 0,
+  "is_local": true
+ },
+ {
+  "protocol": "nfs",
+  "name": "NFS",
+  "credential": "none",
+  "default_port": 2049,
+  "is_local": false
+ },
+ {
+  "protocol": "nntp",
+  "name": "NNTP / Usenet",
+  "credential": "password",
+  "default_port": 563,
+  "is_local": false
+ },
+ {
+  "protocol": "onedrive",
+  "name": "OneDrive",
+  "credential": "oauth",
+  "default_port": 443,
+  "is_local": false
+ },
+ {
+  "protocol": "pjl",
+  "name": "PJL (Printer FS, port 9100)",
+  "credential": "none",
+  "default_port": 9100,
+  "is_local": false
+ },
+ {
+  "protocol": "pop3",
+  "name": "POP3 (Mail, read-only)",
+  "credential": "password",
+  "default_port": 995,
+  "is_local": false
+ },
+ {
+  "protocol": "postgres",
+  "name": "PostgreSQL (table-as-FS)",
+  "credential": "password",
+  "default_port": 5432,
+  "is_local": false
+ },
+ {
+  "protocol": "ramfs",
+  "name": "RAM Workspace (volatile)",
+  "credential": "none",
+  "default_port": 0,
+  "is_local": false
+ },
+ {
+  "protocol": "redis",
+  "name": "Redis (hash-as-FS)",
+  "credential": "password",
+  "default_port": 6379,
+  "is_local": false
+ },
+ {
+  "protocol": "rsh",
+  "name": "rsh / rcp (legacy plaintext)",
+  "credential": "none",
+  "default_port": 514,
+  "is_local": false
+ },
+ {
+  "protocol": "rsync",
+  "name": "Rsync",
+  "credential": "password",
+  "default_port": 873,
+  "is_local": false
+ },
+ {
+  "protocol": "s3",
+  "name": "S3-compatible",
+  "credential": "api_key",
+  "default_port": 443,
+  "is_local": false
+ },
+ {
+  "protocol": "scp",
+  "name": "SCP (Shell over SSH)",
+  "credential": "ssh",
+  "default_port": 22,
+  "is_local": false
+ },
+ {
+  "protocol": "sftp",
+  "name": "SFTP",
+  "credential": "ssh",
+  "default_port": 22,
+  "is_local": false
+ },
+ {
+  "protocol": "sharepoint",
+  "name": "SharePoint",
+  "credential": "oauth",
+  "default_port": 443,
+  "is_local": false
+ },
+ {
+  "protocol": "slp",
+  "name": "SLP (Service Discovery, read-only)",
+  "credential": "none",
+  "default_port": 427,
+  "is_local": false
+ },
+ {
+  "protocol": "smb",
+  "name": "SMB / CIFS",
+  "credential": "password",
+  "default_port": 445,
+  "is_local": false
+ },
+ {
+  "protocol": "sqlite",
+  "name": "SQLite (file-as-FS)",
+  "credential": "none",
+  "default_port": 0,
+  "is_local": false
+ },
+ {
+  "protocol": "svn",
+  "name": "Subversion (read-only)",
+  "credential": "password",
+  "default_port": 0,
+  "is_local": false
+ },
+ {
+  "protocol": "telnet",
+  "name": "Telnet (Shell)",
+  "credential": "password",
+  "default_port": 23,
+  "is_local": false
+ },
+ {
+  "protocol": "tftp",
+  "name": "TFTP (UDP, opt-in file-list)",
+  "credential": "none",
+  "default_port": 69,
+  "is_local": false
+ },
+ {
+  "protocol": "webdav",
+  "name": "WebDAV",
+  "credential": "password",
+  "default_port": 443,
+  "is_local": false
+ },
+ {
+  "protocol": "winrm",
+  "name": "WinRM (PowerShell-Remoting)",
+  "credential": "password",
+  "default_port": 5986,
+  "is_local": false
+ },
+ {
+  "protocol": "wmi",
+  "name": "WMI / DCOM (Read-only)",
+  "credential": "password",
+  "default_port": 135,
+  "is_local": false
+ }
+]

@@ -94,23 +94,139 @@ pub enum Ring {
     Remote,
 }
 
-/// An island's world data: its tree, layout, instances and picking.
+/// An island's boxes in world coordinates, made off the window's thread
+/// (the layout thread) for one layout at one place: per building, per
+/// district (as a block from afar, as its floor), per tile, and the
+/// island's ground.
+#[derive(Clone, Debug, Default)]
+pub struct IslandInstances {
+    pub offset: [f32; 2],
+    pub buildings: Vec<Instance>,
+    pub blocks: Vec<Instance>,
+    pub plates: Vec<Instance>,
+    pub tiles: Vec<Instance>,
+    pub ground: Instance,
+}
+
+fn ring_flags(ring: Ring) -> u32 {
+    match ring {
+        Ring::Hardware => flags::HARDWARE,
+        Ring::Remote => flags::REMOTE,
+        Ring::Local => 0,
+    }
+}
+
+/// The instances of a layout placed at `offset`.
+pub fn make_instances(
+    l: &CityLayout,
+    ring: Ring,
+    offset: [f32; 2],
+    theme: &Theme,
+) -> IslandInstances {
+    let [ox, oz] = offset;
+    let ring_flags = ring_flags(ring);
+    let listing_flags = |listing: Listing| {
+        let unread = matches!(listing, Listing::Unlisted | Listing::Pending);
+        let denied = matches!(listing, Listing::Denied | Listing::Failed);
+        ring_flags | if unread { flags::UNREAD } else { 0 } | if denied { flags::DENIED } else { 0 }
+    };
+    let buildings = l
+        .buildings
+        .iter()
+        .map(|b| {
+            Instance::new(
+                Shape::Building,
+                vec3(ox + b.rect.x0, b.base, oz + b.rect.z0),
+                vec3(b.rect.w().max(0.0), b.height, b.rect.h().max(0.0)),
+                pack_color(theme.type_color(b.ftype)),
+                b.glow,
+                ring_flags,
+            )
+        })
+        .collect();
+    let blocks = l
+        .districts
+        .iter()
+        .map(|d| {
+            let r = d.rect.shrunk(0.06);
+            Instance::new(
+                Shape::Block,
+                vec3(ox + r.x0, d.floor, oz + r.z0),
+                vec3(r.w().max(0.0), d.block_height, r.h().max(0.0)),
+                pack_color(theme.type_color(d.ftype)),
+                d.glow,
+                listing_flags(d.listing),
+            )
+        })
+        .collect();
+    let plates = l
+        .districts
+        .iter()
+        .map(|d| {
+            let r = d.rect;
+            Instance::new(
+                Shape::Plate,
+                vec3(ox + r.x0, d.floor - 0.05, oz + r.z0),
+                vec3(r.w().max(0.0), 0.05, r.h().max(0.0)),
+                pack_color(theme.type_color(crate::tree::FileType::Folder)),
+                (d.depth as f32 / 12.0).min(1.0),
+                listing_flags(d.listing),
+            )
+        })
+        .collect();
+    let tiles = l
+        .tiles
+        .iter()
+        .map(|t| {
+            Instance::new(
+                Shape::Block,
+                vec3(ox + t.rect.x0, t.base, oz + t.rect.z0),
+                vec3(t.rect.w().max(0.0), t.height, t.rect.h().max(0.0)),
+                pack_color(theme.type_color(t.ftype)),
+                t.glow,
+                ring_flags,
+            )
+        })
+        .collect();
+    let s = l.side.max(1.0);
+    let ground = Instance::new(
+        Shape::Island,
+        vec3(ox - 4.0, -2.0, oz - 4.0),
+        vec3(s + 8.0, 2.0, s + 8.0),
+        pack_color(theme.type_color(crate::tree::FileType::Folder)),
+        0.5,
+        ring_flags,
+    );
+    IslandInstances {
+        offset,
+        buildings,
+        blocks,
+        plates,
+        tiles,
+        ground,
+    }
+}
+
+/// An island's world data: its layout, instances and picking.
 pub struct IslandCity {
     pub ring: Ring,
     pub layout: Arc<CityLayout>,
     pub bvh: Arc<Bvh>,
     /// The buildings' boxes (island coordinates; the BVH's items).
     pub boxes: Arc<Vec<Aabb>>,
+    /// Where the instances stand (picking and culling follow them).
     pub offset: [f32; 2],
-    /// Instances in world coordinates: per building, per district (block),
-    /// per district (plate), the island's ground.
-    pub buildings: Vec<Instance>,
-    pub blocks: Vec<Instance>,
-    pub plates: Vec<Instance>,
-    pub ground: Instance,
+    pub inst: Arc<IslandInstances>,
     /// This frame's level of detail: the collapsed districts (sorted by
-    /// index; their building ranges are hidden).
+    /// index; their building ranges are hidden) and tiles.
     pub collapsed: Vec<u32>,
+    pub collapsed_tiles: Vec<u32>,
+    tile_hidden: Vec<bool>,
+    /// Where the island is to stand (instances for it asked of the layout
+    /// thread; None: where it stands).
+    pub target: Option<[f32; 2]>,
+    /// Drawn: a new island only once it stands where it belongs.
+    pub shown: bool,
 }
 
 /// The building boxes of a layout (island coordinates).
@@ -131,17 +247,19 @@ impl IslandCity {
         bvh: Arc<Bvh>,
         boxes: Arc<Vec<Aabb>>,
     ) -> IslandCity {
+        let tiles = layout.tiles.len();
         IslandCity {
             ring,
             layout,
             bvh,
             boxes,
             offset: [0.0, 0.0],
-            buildings: Vec::new(),
-            blocks: Vec::new(),
-            plates: Vec::new(),
-            ground: Instance::default(),
+            inst: Arc::new(IslandInstances::default()),
             collapsed: Vec::new(),
+            collapsed_tiles: Vec::new(),
+            tile_hidden: vec![false; tiles],
+            target: None,
+            shown: true,
         }
     }
 
@@ -169,82 +287,32 @@ impl IslandCity {
         )
     }
 
-    /// Makes the instances (after a new layout or a move).
+    /// Makes the instances here, now (tests, the machine's small island;
+    /// the window has the layout thread make them).
     pub fn rebuild(&mut self, theme: &Theme) {
-        let l = &self.layout;
-        let [ox, oz] = self.offset;
-        let ring_flags = match self.ring {
-            Ring::Hardware => flags::HARDWARE,
-            Ring::Remote => flags::REMOTE,
-            Ring::Local => 0,
-        };
-        self.buildings = l
-            .buildings
-            .iter()
-            .map(|b| {
-                Instance::new(
-                    Shape::Building,
-                    vec3(ox + b.rect.x0, b.base, oz + b.rect.z0),
-                    vec3(b.rect.w().max(0.0), b.height, b.rect.h().max(0.0)),
-                    pack_color(theme.type_color(b.ftype)),
-                    b.glow,
-                    ring_flags,
-                )
-            })
-            .collect();
-        self.blocks = l
-            .districts
-            .iter()
-            .map(|d| {
-                let r = d.rect.shrunk(0.06);
-                let unread = matches!(d.listing, Listing::Unlisted | Listing::Pending);
-                let denied = matches!(d.listing, Listing::Denied | Listing::Failed);
-                let f = ring_flags
-                    | if unread { flags::UNREAD } else { 0 }
-                    | if denied { flags::DENIED } else { 0 };
-                Instance::new(
-                    Shape::Block,
-                    vec3(ox + r.x0, d.floor, oz + r.z0),
-                    vec3(r.w().max(0.0), d.block_height, r.h().max(0.0)),
-                    pack_color(theme.type_color(d.ftype)),
-                    d.glow,
-                    f,
-                )
-            })
-            .collect();
-        self.plates = l
-            .districts
-            .iter()
-            .map(|d| {
-                let r = d.rect;
-                let unread = matches!(d.listing, Listing::Unlisted | Listing::Pending);
-                let denied = matches!(d.listing, Listing::Denied | Listing::Failed);
-                let f = ring_flags
-                    | if unread { flags::UNREAD } else { 0 }
-                    | if denied { flags::DENIED } else { 0 };
-                Instance::new(
-                    Shape::Plate,
-                    vec3(ox + r.x0, d.floor - 0.05, oz + r.z0),
-                    vec3(r.w().max(0.0), 0.05, r.h().max(0.0)),
-                    pack_color(theme.type_color(crate::tree::FileType::Folder)),
-                    (d.depth as f32 / 12.0).min(1.0),
-                    f,
-                )
-            })
-            .collect();
-        let s = self.side();
-        self.ground = Instance::new(
-            Shape::Island,
-            vec3(ox - 4.0, -2.0, oz - 4.0),
-            vec3(s + 8.0, 2.0, s + 8.0),
-            pack_color(theme.type_color(crate::tree::FileType::Folder)),
-            0.5,
-            ring_flags,
-        );
+        let inst = make_instances(&self.layout, self.ring, self.offset, theme);
+        self.set_instances(Arc::new(inst));
     }
 
-    /// Whether building `b` is hidden in a collapsed district this frame.
+    /// Takes instances made for this layout; the island stands where they
+    /// were made for.
+    pub fn set_instances(&mut self, inst: Arc<IslandInstances>) {
+        self.offset = inst.offset;
+        if self.target.is_some_and(|t| t == inst.offset) {
+            self.shown = true;
+        }
+        self.inst = inst;
+    }
+
+    /// Whether building `b` is hidden in a collapsed district or tile this
+    /// frame.
     pub fn hidden(&self, b: u32) -> bool {
+        if let Some(&t) = self.layout.tile_of.get(b as usize)
+            && t != u32::MAX
+            && self.tile_hidden.get(t as usize).copied().unwrap_or(false)
+        {
+            return true;
+        }
         // the collapsed districts' building ranges are disjoint and in
         // order of their index - which is depth-first, so in order of range
         let ds = &self.layout.districts;
@@ -335,25 +403,44 @@ pub fn select(
     out.collapsed = 0;
     for (k, island) in islands.iter_mut().enumerate() {
         island.collapsed.clear();
+        for &t in &island.collapsed_tiles {
+            if let Some(h) = island.tile_hidden.get_mut(t as usize) {
+                *h = false;
+            }
+        }
+        island.collapsed_tiles.clear();
+        if island.tile_hidden.len() != island.layout.tiles.len() {
+            island.tile_hidden = vec![false; island.layout.tiles.len()];
+        }
         let ab = island.aabb();
-        if !frustum.intersects(&ab) {
+        if !island.shown || !frustum.intersects(&ab) {
             continue;
         }
-        out.opaque.push(island.ground);
+        let inst = island.inst.clone();
+        // (instances of another layout: not drawn until theirs come)
+        if inst.blocks.len() != island.layout.districts.len()
+            || inst.buildings.len() != island.layout.buildings.len()
+        {
+            continue;
+        }
+        out.opaque.push(inst.ground);
         let size = island.side();
         let d = distance_to(&ab, eye).max(1.0);
+        let [ox, oz] = island.offset;
+        // the title at the island's edge nearest the eye (never floating
+        // over the middle of the city one flies in)
+        let margin = size * 0.08;
         out.labels.push(LabelCand {
             island: k,
             node: 0,
             at: vec3(
-                island.offset[0] + size * 0.5,
-                island.layout.top.max(8.0) + size * 0.04,
-                island.offset[1] + size * 0.5,
+                eye.x.clamp(ox + margin, ox + size - margin),
+                2.0,
+                eye.z.clamp(oz + margin, oz + size - margin),
             ),
             weight: 10.0 + size / d,
             kind: LabelKind::Island,
         });
-        let [ox, oz] = island.offset;
         let layout = island.layout.clone();
         let ds = &layout.districts;
         let mut i = 0usize;
@@ -376,8 +463,9 @@ pub fn select(
             if unread && angle > lod.open && dist.listing == Listing::Unlisted {
                 out.want.push((k, dist.node));
             }
-            if i > 0 && (angle < lod.collapse || !has_content) {
-                out.opaque.push(island.blocks[i]);
+            // (the root too: a whole island far off is one block)
+            if angle < lod.collapse || (i > 0 && !has_content) {
+                out.opaque.push(inst.blocks[i]);
                 island.collapsed.push(i as u32);
                 out.collapsed += 1;
                 i = dist.end as usize;
@@ -385,7 +473,7 @@ pub fn select(
             }
             out.districts_drawn += 1;
             if i > 0 {
-                out.opaque.push(island.plates[i]);
+                out.opaque.push(inst.plates[i]);
                 if angle > lod.label_district {
                     let (cx, cz) = r.center();
                     out.labels.push(LabelCand {
@@ -398,11 +486,40 @@ pub fn select(
                 }
             }
             let own = dist.first as usize..dist.own_end as usize;
-            out.opaque.extend_from_slice(&island.buildings[own.clone()]);
+            if dist.tiles.1 > dist.tiles.0 {
+                // a big district: tile by tile, far ones as one block
+                for t in dist.tiles.0..dist.tiles.1 {
+                    let tile = &layout.tiles[t as usize];
+                    let tr = tile.rect;
+                    let tb = Aabb {
+                        min: vec3(ox + tr.x0, tile.base, oz + tr.z0),
+                        max: vec3(ox + tr.x1, tile.top.max(tile.base + 0.2), oz + tr.z1),
+                    };
+                    if !frustum.intersects(&tb) {
+                        continue;
+                    }
+                    let ta = tr.w().max(tr.h()) / distance_to(&tb, eye).max(0.5);
+                    if ta < lod.collapse {
+                        out.opaque.push(inst.tiles[t as usize]);
+                        island.collapsed_tiles.push(t);
+                        island.tile_hidden[t as usize] = true;
+                        out.collapsed += 1;
+                    } else {
+                        for &bi in &layout.tile_items[tile.first as usize..tile.end as usize] {
+                            out.opaque.push(inst.buildings[bi as usize]);
+                        }
+                    }
+                }
+            } else {
+                out.opaque.extend_from_slice(&inst.buildings[own.clone()]);
+            }
             // labels for the buildings that are big on the screen (checked
             // for the larger ones only: they come largest first)
             if angle > lod.label_building * 2.0 {
-                for b in layout.buildings[own].iter().take(12) {
+                for (bi, b) in layout.buildings[own.clone()].iter().enumerate().take(12) {
+                    if island.hidden((own.start + bi) as u32) {
+                        continue;
+                    }
                     let (cx, cz) = b.rect.center();
                     let top = vec3(ox + cx, b.base + b.height, oz + cz);
                     let s = b.rect.w().max(b.rect.h()).max(b.height * 0.5);
@@ -423,6 +540,38 @@ pub fn select(
     }
 }
 
+/// The most boxes the window draws a frame (about 5 MB of instances).
+pub const FRAME_BUDGET: usize = 160_000;
+
+/// [`select`] within a budget of boxes: where it chose more, again with
+/// far things collapsing sooner (at most three times). The knob it ended
+/// with.
+pub fn select_within(
+    islands: &mut [&mut IslandCity],
+    eye: Vec3,
+    frustum: &Frustum,
+    lod: &Lod,
+    budget: usize,
+    out: &mut FrameSet,
+) -> Lod {
+    let mut l = *lod;
+    select(islands, eye, frustum, &l, out);
+    for _ in 0..4 {
+        if out.opaque.len() <= budget {
+            return l;
+        }
+        let over = out.opaque.len() as f32 / budget.max(1) as f32;
+        l.collapse = (l.collapse * over.sqrt() * 1.3).max(l.collapse * 1.3);
+        select(islands, eye, frustum, &l, out);
+    }
+    if out.opaque.len() > budget {
+        // (the hard bound: every district a block, every island its root)
+        l.collapse = f32::MAX;
+        select(islands, eye, frustum, &l, out);
+    }
+    l
+}
+
 /// What a ray hits first.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Hit {
@@ -437,7 +586,7 @@ pub struct Hit {
 pub fn pick(islands: &[&IslandCity], ray: &Ray) -> Option<Hit> {
     let mut best: Option<Hit> = None;
     for (k, island) in islands.iter().enumerate() {
-        if ray.hit_aabb(&island.aabb(), f32::MAX).is_none() {
+        if !island.shown || ray.hit_aabb(&island.aabb(), f32::MAX).is_none() {
             continue;
         }
         let [ox, oz] = island.offset;
@@ -459,8 +608,25 @@ pub fn pick(islands: &[&IslandCity], ray: &Ray) -> Option<Hit> {
                 aabb,
             });
         }
+        for &t in &island.collapsed_tiles {
+            let Some(inst) = island.inst.tiles.get(t as usize) else {
+                continue;
+            };
+            let aabb = inst.aabb();
+            if let Some(tt) = ray.hit_aabb(&aabb, best.map_or(f32::MAX, |h| h.t)) {
+                let tile = &island.layout.tiles[t as usize];
+                best = Some(Hit {
+                    island: k,
+                    node: island.layout.districts[tile.district as usize].node,
+                    t: tt,
+                    aabb,
+                });
+            }
+        }
         for &d in &island.collapsed {
-            let inst = &island.blocks[d as usize];
+            let Some(inst) = island.inst.blocks.get(d as usize) else {
+                continue;
+            };
             let aabb = inst.aabb();
             if let Some(t) = ray.hit_aabb(&aabb, best.map_or(f32::MAX, |h| h.t)) {
                 best = Some(Hit {
@@ -578,10 +744,13 @@ pub fn solid(islands: &[&IslandCity], p: Vec3) -> bool {
         ];
         near.iter()
             .any(|d| island.bvh.contains(local + *d, &island.boxes, &grown))
-            || island
-                .collapsed
-                .iter()
-                .any(|&d| island.blocks[d as usize].aabb().grown(0.4).contains(p))
+            || island.collapsed.iter().any(|&d| {
+                island
+                    .inst
+                    .blocks
+                    .get(d as usize)
+                    .is_some_and(|b| b.aabb().grown(0.4).contains(p))
+            })
     })
 }
 
@@ -941,6 +1110,7 @@ mod tests {
             name: OsStr::new("x").into(),
             kind: Kind::File,
             size: 0,
+            alloc: 0,
             mtime: 0,
         };
     }

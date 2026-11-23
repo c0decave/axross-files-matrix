@@ -18,6 +18,10 @@ pub const IMAGE_FILE_BYTES: u64 = 32 << 20;
 pub const REMOTE_IMAGE_BYTES: u32 = 4 << 20;
 /// The largest picture shown (pixels on the long side).
 pub const IMAGE_SIDE: u32 = 1024;
+/// The most memory a picture may take while it is decoded.
+pub const IMAGE_ALLOC: u64 = 128 << 20;
+/// The most lines of a text preview (each line costs every frame).
+pub const TEXT_LINES: usize = 2000;
 
 #[derive(Clone, Debug)]
 pub enum Content {
@@ -77,11 +81,24 @@ pub fn looks_like_text(b: &[u8]) -> bool {
 /// Text made safe to show: control characters and bidirectional or
 /// invisible formatting as visible escapes (newlines and tabs kept).
 pub fn safe_text(b: &[u8]) -> String {
+    safe_text_lines(b, usize::MAX).0
+}
+
+/// [`safe_text`], at most `max_lines` lines; whether it was cut.
+pub fn safe_text_lines(b: &[u8], max_lines: usize) -> (String, bool) {
     let text = String::from_utf8_lossy(b);
     let mut out = String::with_capacity(text.len());
+    let mut lines = 0usize;
     for c in text.chars() {
         match c {
-            '\n' | '\t' => out.push(c),
+            '\n' => {
+                lines += 1;
+                if lines >= max_lines {
+                    return (out, true);
+                }
+                out.push(c);
+            }
+            '\t' => out.push(c),
             '\r' => {}
             c if c.is_control() => out.push_str(&format!("\\x{:02x}", c as u32)),
             '\u{200b}'..='\u{200f}'
@@ -91,7 +108,7 @@ pub fn safe_text(b: &[u8]) -> String {
             c => out.push(c),
         }
     }
-    out
+    (out, false)
 }
 
 /// A hex dump: offset, sixteen bytes, their printable characters.
@@ -121,17 +138,31 @@ pub fn hex_dump(b: &[u8], max: usize) -> String {
     out
 }
 
-/// A picture from a file's bytes, at most [`IMAGE_SIDE`] on its long side.
-pub fn decode_image(bytes: &[u8]) -> Result<(egui::ColorImage, [u32; 2]), String> {
-    let mut reader = image::ImageReader::new(std::io::Cursor::new(bytes))
-        .with_guessed_format()
-        .map_err(|e| e.to_string())?;
+/// A picture from a file's bytes, at most [`IMAGE_SIDE`] on its long side;
+/// one that would take more than [`IMAGE_ALLOC`] to decode is refused
+/// before anything is allocated.
+pub fn decode_image(bytes: &[u8]) -> Result<(egui::ColorImage, [u32; 2]), image::ImageError> {
+    let reader = || {
+        image::ImageReader::new(std::io::Cursor::new(bytes))
+            .with_guessed_format()
+            .map_err(image::ImageError::IoError)
+    };
+    // (its size from the header first: the decoded picture, as RGBA, and
+    // its copy must fit)
+    let (w, h) = reader()?.into_dimensions()?;
+    let need = u64::from(w) * u64::from(h) * 4 * 2;
+    if need > IMAGE_ALLOC {
+        return Err(image::ImageError::Limits(
+            image::error::LimitError::from_kind(image::error::LimitErrorKind::InsufficientMemory),
+        ));
+    }
+    let mut r = reader()?;
     let mut limits = image::Limits::default();
     limits.max_image_width = Some(20_000);
     limits.max_image_height = Some(20_000);
-    limits.max_alloc = Some(512 << 20);
-    reader.limits(limits);
-    let img = reader.decode().map_err(|e| e.to_string())?;
+    limits.max_alloc = Some(IMAGE_ALLOC);
+    r.limits(limits);
+    let img = r.decode()?;
     let size = [img.width(), img.height()];
     let thumb = if img.width().max(img.height()) > IMAGE_SIDE {
         img.thumbnail(IMAGE_SIDE, IMAGE_SIDE)
@@ -150,15 +181,24 @@ fn classify(bytes: &[u8], name: &str, total: u64) -> (Content, bool) {
     if bytes.is_empty() {
         return (Content::Empty, false);
     }
-    if is_image_name(name)
-        && let Ok((img, size)) = decode_image(bytes)
-    {
-        return (Content::Image(Arc::new(img), size), false);
+    if is_image_name(name) {
+        match decode_image(bytes) {
+            Ok((img, size)) => return (Content::Image(Arc::new(img), size), false),
+            Err(image::ImageError::Limits(_)) => {
+                return (
+                    Content::Error("the picture is too big to preview here".into()),
+                    false,
+                );
+            }
+            // (not a picture after all: its bytes)
+            Err(_) => {}
+        }
     }
     let shown = &bytes[..bytes.len().min(TEXT_BYTES)];
     let truncated = total > shown.len() as u64 || bytes.len() > shown.len();
     if looks_like_text(shown) {
-        (Content::Text(safe_text(shown)), truncated)
+        let (text, cut) = safe_text_lines(shown, TEXT_LINES);
+        (Content::Text(text), truncated || cut)
     } else {
         (Content::Hex(hex_dump(shown, 4096)), truncated)
     }
@@ -219,6 +259,43 @@ pub fn time_string(secs: i64) -> String {
     )
 }
 
+/// The local time's offset from UTC at `secs` (seconds; None where it
+/// cannot be known).
+pub fn local_offset(secs: i64) -> Option<i64> {
+    #[cfg(unix)]
+    {
+        let t = secs as libc::time_t;
+        // SAFETY: localtime_r writes only into the tm given
+        let mut tm: libc::tm = unsafe { std::mem::zeroed() };
+        let ok = unsafe { !libc::localtime_r(&t, &mut tm).is_null() };
+        ok.then_some(tm.tm_gmtoff)
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = secs;
+        None
+    }
+}
+
+/// A time for people: local (with its offset) where the offset is known,
+/// else UTC.
+pub fn time_local(secs: i64) -> String {
+    match local_offset(secs) {
+        Some(off) if secs > 0 && off != 0 => {
+            let s = time_string(secs + off);
+            let sign = if off < 0 { '-' } else { '+' };
+            let a = off.abs();
+            format!(
+                "{} (UTC{sign}{:02}:{:02})",
+                s.trim_end_matches(" UTC"),
+                a / 3600,
+                (a / 60) % 60
+            )
+        }
+        _ => time_string(secs),
+    }
+}
+
 fn system_time(t: std::io::Result<std::time::SystemTime>) -> i64 {
     t.ok()
         .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
@@ -227,7 +304,10 @@ fn system_time(t: std::io::Result<std::time::SystemTime>) -> i64 {
 
 /// A local file's details (lstat: a link is described as the link).
 pub fn local_details(path: &Path) -> Details {
-    let mut rows = vec![("path".to_string(), path.to_string_lossy().into_owned())];
+    let mut rows = vec![(
+        "path".to_string(),
+        crate::tree::display_text(path.as_os_str()),
+    )];
     match std::fs::symlink_metadata(path) {
         Err(e) => rows.push(("error".into(), e.to_string())),
         Ok(m) => {
@@ -247,7 +327,10 @@ pub fn local_details(path: &Path) -> Details {
             if ft.is_symlink()
                 && let Ok(target) = std::fs::read_link(path)
             {
-                rows.push(("points to".into(), target.to_string_lossy().into_owned()));
+                rows.push((
+                    "points to".into(),
+                    crate::tree::display_text(target.as_os_str()),
+                ));
             }
             if !ft.is_dir() {
                 rows.push((
@@ -255,10 +338,10 @@ pub fn local_details(path: &Path) -> Details {
                     format!("{} ({} bytes)", crate::hw::human_bytes(m.len()), m.len()),
                 ));
             }
-            rows.push(("changed".into(), time_string(system_time(m.modified()))));
-            rows.push(("accessed".into(), time_string(system_time(m.accessed()))));
+            rows.push(("changed".into(), time_local(system_time(m.modified()))));
+            rows.push(("accessed".into(), time_local(system_time(m.accessed()))));
             if let Ok(t) = m.created() {
-                rows.push(("created".into(), time_string(system_time(Ok(t)))));
+                rows.push(("created".into(), time_local(system_time(Ok(t)))));
             }
             #[cfg(unix)]
             {
@@ -285,6 +368,33 @@ pub fn local_details(path: &Path) -> Details {
     Details { rows }
 }
 
+/// Up to `cap` bytes of a regular file - nothing of a pipe, a device, a
+/// socket or a link. Opened without following a link and without waiting
+/// (a FIFO opens at once), then checked on the handle itself: what is read
+/// is what was checked.
+pub fn read_regular(path: &Path, cap: u64) -> std::io::Result<Vec<u8>> {
+    let mut o = std::fs::OpenOptions::new();
+    o.read(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        o.custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW | libc::O_NOCTTY);
+    }
+    let f = match o.open(path) {
+        Ok(f) => f,
+        // (a link: O_NOFOLLOW refuses it - nothing to show)
+        #[cfg(unix)]
+        Err(e) if e.raw_os_error() == Some(libc::ELOOP) => return Ok(Vec::new()),
+        Err(e) => return Err(e),
+    };
+    if !f.metadata()?.is_file() {
+        return Ok(Vec::new());
+    }
+    let mut b = Vec::new();
+    f.take(cap).read_to_end(&mut b)?;
+    Ok(b)
+}
+
 /// Reads a preview of `at` (named `name`, `size` bytes as the walk saw it).
 pub fn load(at: &Where, name: &str, size: u64, is_dir: bool) -> Preview {
     match at {
@@ -303,18 +413,7 @@ pub fn load(at: &Where, name: &str, size: u64, is_dir: bool) -> Preview {
             } else {
                 TEXT_BYTES as u64
             };
-            // (no blocking on a pipe or a device: only regular files)
-            let regular = std::fs::symlink_metadata(path)
-                .map(|m| m.is_file())
-                .unwrap_or(false);
-            let read = if regular {
-                std::fs::File::open(path).and_then(|f| {
-                    let mut b = Vec::new();
-                    f.take(cap).read_to_end(&mut b).map(|_| b)
-                })
-            } else {
-                Ok(Vec::new())
-            };
+            let read = read_regular(path, cap);
             let (content, truncated) = match read {
                 Ok(b) => classify(&b, name, size),
                 Err(e) => (Content::Error(e.to_string()), false),
@@ -330,7 +429,7 @@ pub fn load(at: &Where, name: &str, size: u64, is_dir: bool) -> Preview {
             backend,
             path,
         } => {
-            let shown = String::from_utf8_lossy(path).into_owned();
+            let shown = crate::tree::display_text(&crate::tree::os_from_bytes(path));
             let mut rows = vec![
                 ("path".to_string(), shown),
                 ("backend".to_string(), backend.clone()),
@@ -344,7 +443,7 @@ pub fn load(at: &Where, name: &str, size: u64, is_dir: bool) -> Preview {
                     ));
                 }
                 if let Some(m) = v["modified"].as_str() {
-                    rows.push(("changed".into(), time_string(crate::mcp::parse_iso8601(m))));
+                    rows.push(("changed".into(), time_local(crate::mcp::parse_iso8601(m))));
                 }
                 if let Some(m) = v["mode"].as_str() {
                     rows.push(("mode".into(), m.to_string()));

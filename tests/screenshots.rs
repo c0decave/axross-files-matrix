@@ -381,3 +381,98 @@ fn the_teleport_menu() {
     let after = h.state_mut().camera.pos;
     assert!((after - before).length() > 1.0, "{before:?} {after:?}");
 }
+
+#[test]
+fn small_windows_keep_their_bars_and_panels() {
+    if !support::gpu_available() {
+        return;
+    }
+    for (name, size) in [
+        ("small-640x420", egui::vec2(640.0, 420.0)),
+        ("small-800x600", egui::vec2(800.0, 600.0)),
+    ] {
+        let s = Scratch::new(name);
+        let mut opts = options(&s);
+        opts.synthetic = Some(20_000);
+        let mut h = harness(opts, size);
+        settle(&mut h);
+        h.state_mut().overview(false);
+        h.state_mut().run_search("*.iso");
+        h.state_mut().finish_search();
+        // a file chosen: the inspect panel beside the view
+        let (i, n) = h.state_mut().search.as_ref().unwrap().hits[0];
+        h.state_mut().select(i, n);
+        frames(&mut h, 3);
+        let img = shot(&mut h, name);
+        let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, size);
+        for label in [" READ-ONLY ", "Menu", "Fly", "Orbit"] {
+            let r = h.get_by_label(label).rect();
+            assert!(screen.contains_rect(r), "{name}: {label} at {r:?}");
+        }
+        let l = look(&img, (0.02, 0.15, 0.5, 0.85));
+        eprintln!("{name}: {l:?}");
+        assert_matrix(&l, name);
+        // the settings, scrolled to their end
+        h.state_mut().settings_open = true;
+        frames(&mut h, 2);
+        h.get_by_label("Check for updates…").scroll_to_me();
+        h.run_steps(6);
+        let r = h.get_by_label("Check for updates…").rect();
+        assert!(screen.contains_rect(r), "{name}: the settings' end {r:?}");
+        shot(&mut h, &format!("{name}-settings"));
+    }
+}
+
+#[test]
+fn the_teleport_menu_with_the_systems_of_axross() {
+    if !support::gpu_available() {
+        return;
+    }
+    let s = Scratch::new("teleport-systems");
+    let (client, _seen) = support::fake_mcp::start();
+    let mut opts = options(&s);
+    opts.synthetic = Some(3000);
+    opts.mcp = true;
+    opts.mcp_client = Some(client);
+    let mut h = harness(opts, SIZE);
+    let wait = |h: &mut Harness<'static, App>, cond: &dyn Fn(&App) -> bool| {
+        let start = std::time::Instant::now();
+        while !cond(h.state_mut()) {
+            assert!(start.elapsed() < std::time::Duration::from_secs(60));
+            h.state_mut().pump(std::time::Duration::from_millis(5));
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+    };
+    wait(&mut h, &|a| !a.system_profiles().is_empty());
+    use axross_files_matrix::systems::SysState;
+    for n in [
+        "sftp-box", "s3-box", "nfs-box", "adb-box", "imap-box", "git-box", "broken",
+    ] {
+        h.state_mut().teleport_system(n, Vec::new());
+    }
+    wait(&mut h, &|a| {
+        [
+            "sftp-box", "s3-box", "nfs-box", "adb-box", "imap-box", "git-box",
+        ]
+        .iter()
+        .all(|n| a.system_state(n) == SysState::Open)
+            && matches!(a.system_state("broken"), SysState::Failed(_))
+    });
+    assert!(h.state_mut().settle(std::time::Duration::from_secs(60)));
+    // one still connecting while the picture is taken
+    h.state_mut().teleport_system("slow", Vec::new());
+    for _ in 0..10 {
+        h.state_mut().pump(std::time::Duration::from_millis(5));
+    }
+    h.state_mut().pending_fly = None;
+    h.state_mut().selected = None;
+    h.state_mut().overview(false);
+    h.state_mut().teleport_filter = String::new();
+    h.state_mut().teleport_open = true;
+    frames(&mut h, 4);
+    shot(&mut h, "teleport-systems");
+    h.get_by_label("Systems (axross's connection manager)");
+    h.get_by_label_contains("connecting…");
+    h.get_by_label_contains("needs unlocking in axross");
+    h.get_by_label_contains("failed: cannot open");
+}

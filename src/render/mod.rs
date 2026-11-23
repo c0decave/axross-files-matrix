@@ -46,6 +46,9 @@ pub struct FrameData {
     pub version: u64,
     pub guard: bool,
     pub dt: f32,
+    /// Smooth edges: the scene drawn with four samples a pixel (where the
+    /// GPU can).
+    pub msaa: bool,
 }
 
 /// What the renderer tells the window (the flash guard's state, the GPU).
@@ -57,6 +60,8 @@ pub struct Stats {
     pub software: bool,
     pub instances: u32,
     pub size: (u32, u32),
+    /// Samples a pixel the scene was drawn with.
+    pub samples: u32,
 }
 
 const SCENE: wgpu::TextureFormat = wgpu::TextureFormat::Rgba16Float;
@@ -84,6 +89,9 @@ struct Staging {
 
 struct Targets {
     size: (u32, u32),
+    samples: u32,
+    /// The scene with four samples a pixel, resolved into `scene`.
+    scene_ms: Option<wgpu::TextureView>,
     scene: wgpu::TextureView,
     depth: wgpu::TextureView,
     bloom: Vec<wgpu::TextureView>,
@@ -110,6 +118,9 @@ pub struct Renderer {
     sea: wgpu::RenderPipeline,
     boxes: wgpu::RenderPipeline,
     glow: wgpu::RenderPipeline,
+    /// sky, sea, boxes and glow for four samples a pixel (None: the GPU
+    /// cannot).
+    scene_ms: Option<[wgpu::RenderPipeline; 4]>,
     bright: wgpu::RenderPipeline,
     down: wgpu::RenderPipeline,
     up: wgpu::RenderPipeline,
@@ -174,6 +185,17 @@ fn color(
     })
 }
 
+/// Whether the adapter draws the scene's formats with four samples a
+/// pixel.
+pub fn msaa_supported(adapter: &wgpu::Adapter) -> bool {
+    [SCENE, DEPTH].iter().all(|f| {
+        adapter
+            .get_texture_format_features(*f)
+            .flags
+            .sample_count_supported(4)
+    })
+}
+
 fn view(t: &wgpu::Texture) -> wgpu::TextureView {
     t.create_view(&wgpu::TextureViewDescriptor::default())
 }
@@ -182,7 +204,8 @@ impl Renderer {
     /// Sets the renderer up in egui's wgpu renderer (once, as the window
     /// is made); `stats` is what it reports back.
     pub fn install(rs: &egui_wgpu::RenderState) -> Arc<Mutex<Stats>> {
-        let r = Renderer::new(&rs.device, rs.target_format);
+        let msaa_ok = msaa_supported(&rs.adapter);
+        let r = Renderer::new(&rs.device, rs.target_format, msaa_ok);
         let info = rs.adapter.get_info();
         if let Ok(mut s) = r.stats.lock() {
             s.adapter = crate::gpu::describe(&info);
@@ -193,7 +216,7 @@ impl Renderer {
         stats
     }
 
-    pub fn new(device: &wgpu::Device, target: wgpu::TextureFormat) -> Renderer {
+    pub fn new(device: &wgpu::Device, target: wgpu::TextureFormat, msaa_ok: bool) -> Renderer {
         let city = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("afm city"),
             source: wgpu::ShaderSource::Wgsl(include_str!("city.wgsl").into()),
@@ -306,7 +329,8 @@ impl Renderer {
                         blend: Option<wgpu::BlendState>,
                         depth_stencil: Option<wgpu::DepthStencilState>,
                         buffers: &[Option<wgpu::VertexBufferLayout>],
-                        cull: Option<wgpu::Face>| {
+                        cull: Option<wgpu::Face>,
+                        samples: u32| {
             device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some(label),
                 layout: Some(layout),
@@ -321,7 +345,10 @@ impl Renderer {
                     ..Default::default()
                 },
                 depth_stencil,
-                multisample: wgpu::MultisampleState::default(),
+                multisample: wgpu::MultisampleState {
+                    count: samples,
+                    ..Default::default()
+                },
                 fragment: Some(wgpu::FragmentState {
                     module,
                     entry_point: Some(fs),
@@ -348,6 +375,7 @@ impl Renderer {
             depth(false, C::Always),
             &[],
             None,
+            1,
         );
         let sea = pipeline(
             "afm sea",
@@ -360,6 +388,7 @@ impl Renderer {
             depth(true, C::Greater),
             &[],
             None,
+            1,
         );
         let boxes = pipeline(
             "afm boxes",
@@ -372,6 +401,7 @@ impl Renderer {
             depth(true, C::Greater),
             &[Some(inst_layout.clone())],
             Some(wgpu::Face::Back),
+            1,
         );
         let glow = pipeline(
             "afm glow",
@@ -384,7 +414,64 @@ impl Renderer {
             depth(false, C::Greater),
             &[Some(inst_layout.clone())],
             None,
+            1,
         );
+        let scene_ms = msaa_ok.then(|| {
+            [
+                pipeline(
+                    "afm sky 4x",
+                    &scene_layout,
+                    &city,
+                    "vs_full",
+                    "fs_sky",
+                    SCENE,
+                    None,
+                    depth(false, C::Always),
+                    &[],
+                    None,
+                    4,
+                ),
+                pipeline(
+                    "afm sea 4x",
+                    &scene_layout,
+                    &city,
+                    "vs_full",
+                    "fs_sea",
+                    SCENE,
+                    None,
+                    depth(true, C::Greater),
+                    &[],
+                    None,
+                    4,
+                ),
+                pipeline(
+                    "afm boxes 4x",
+                    &scene_layout,
+                    &city,
+                    "vs_box",
+                    "fs_box",
+                    SCENE,
+                    None,
+                    depth(true, C::Greater),
+                    &[Some(inst_layout.clone())],
+                    Some(wgpu::Face::Back),
+                    4,
+                ),
+                pipeline(
+                    "afm glow 4x",
+                    &scene_layout,
+                    &city,
+                    "vs_box",
+                    "fs_box",
+                    SCENE,
+                    Some(additive),
+                    depth(false, C::Greater),
+                    &[Some(inst_layout.clone())],
+                    None,
+                    4,
+                ),
+            ]
+        });
         let bright = pipeline(
             "afm bright",
             &post_layout,
@@ -396,6 +483,7 @@ impl Renderer {
             None,
             &[],
             None,
+            1,
         );
         let down = pipeline(
             "afm down",
@@ -408,6 +496,7 @@ impl Renderer {
             None,
             &[],
             None,
+            1,
         );
         let up = pipeline(
             "afm up",
@@ -420,6 +509,7 @@ impl Renderer {
             None,
             &[],
             None,
+            1,
         );
         let final_pipe = pipeline(
             "afm final",
@@ -432,6 +522,7 @@ impl Renderer {
             None,
             &[],
             None,
+            1,
         );
         let history = pipeline(
             "afm history",
@@ -444,6 +535,7 @@ impl Renderer {
             None,
             &[],
             None,
+            1,
         );
         let luma = pipeline(
             "afm luma",
@@ -456,6 +548,7 @@ impl Renderer {
             None,
             &[],
             None,
+            1,
         );
         let blit = pipeline(
             "afm blit",
@@ -468,6 +561,7 @@ impl Renderer {
             None,
             &[],
             None,
+            1,
         );
         let capacity = 4096u64;
         let instances = device.create_buffer(&wgpu::BufferDescriptor {
@@ -519,6 +613,7 @@ impl Renderer {
             sea,
             boxes,
             glow,
+            scene_ms,
             bright,
             down,
             up,
@@ -573,10 +668,30 @@ impl Renderer {
         })
     }
 
-    fn ensure_targets(&mut self, device: &wgpu::Device, size: (u32, u32)) {
-        if self.targets.as_ref().is_some_and(|t| t.size == size) {
+    fn ensure_targets(&mut self, device: &wgpu::Device, size: (u32, u32), samples: u32) {
+        if self
+            .targets
+            .as_ref()
+            .is_some_and(|t| t.size == size && t.samples == samples)
+        {
             return;
         }
+        let scene_ms = (samples > 1).then(|| {
+            view(&device.create_texture(&wgpu::TextureDescriptor {
+                label: Some("afm scene 4x"),
+                size: wgpu::Extent3d {
+                    width: size.0.max(1),
+                    height: size.1.max(1),
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count: samples,
+                dimension: wgpu::TextureDimension::D2,
+                format: SCENE,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                view_formats: &[],
+            }))
+        });
         let scene_t = texture(
             device,
             "afm scene",
@@ -592,7 +707,7 @@ impl Renderer {
                 depth_or_array_layers: 1,
             },
             mip_level_count: 1,
-            sample_count: 1,
+            sample_count: samples,
             dimension: wgpu::TextureDimension::D2,
             format: DEPTH,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -663,6 +778,8 @@ impl Renderer {
         let blit_bg = self.group(device, [&final_view, d, d, d]);
         self.targets = Some(Targets {
             size,
+            samples,
+            scene_ms,
             scene,
             depth: view(&depth_t),
             bloom,
@@ -748,7 +865,12 @@ impl Renderer {
         f: &FrameData,
         size: (u32, u32),
     ) {
-        self.ensure_targets(device, size);
+        let samples = if f.msaa && self.scene_ms.is_some() {
+            4
+        } else {
+            1
+        };
+        self.ensure_targets(device, size, samples);
         self.frame += 1;
         if f.guard {
             self.read_guard(device, queue);
@@ -789,9 +911,27 @@ impl Renderer {
         let cur = t.current;
         // the scene
         {
+            let attachment = match &t.scene_ms {
+                // (four samples a pixel, resolved into the scene the
+                // post passes read)
+                Some(ms) => Some(wgpu::RenderPassColorAttachment {
+                    view: ms,
+                    depth_slice: None,
+                    resolve_target: Some(&t.scene),
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Discard,
+                    },
+                }),
+                None => color(&t.scene, wgpu::LoadOp::Clear(wgpu::Color::BLACK)),
+            };
+            let [sky, sea, boxes, glow] = match (&t.scene_ms, &self.scene_ms) {
+                (Some(_), Some([a, b, c, d])) => [a, b, c, d],
+                _ => [&self.sky, &self.sea, &self.boxes, &self.glow],
+            };
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("afm scene"),
-                color_attachments: &[color(&t.scene, wgpu::LoadOp::Clear(wgpu::Color::BLACK))],
+                color_attachments: &[attachment],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &t.depth,
                     depth_ops: Some(wgpu::Operations {
@@ -805,18 +945,18 @@ impl Renderer {
                 multiview_mask: None,
             });
             pass.set_bind_group(0, &self.globals_bg, &[]);
-            pass.set_pipeline(&self.sky);
+            pass.set_pipeline(sky);
             pass.draw(0..3, 0..1);
-            pass.set_pipeline(&self.sea);
+            pass.set_pipeline(sea);
             pass.draw(0..3, 0..1);
             if self.count > 0 {
                 pass.set_vertex_buffer(0, self.instances.slice(..));
                 if self.opaque > 0 {
-                    pass.set_pipeline(&self.boxes);
+                    pass.set_pipeline(boxes);
                     pass.draw(0..30, 0..self.opaque);
                 }
                 if self.count > self.opaque {
-                    pass.set_pipeline(&self.glow);
+                    pass.set_pipeline(glow);
                     pass.draw(0..30, self.opaque..self.count);
                 }
             }
@@ -929,6 +1069,7 @@ impl Renderer {
         if let Ok(mut s) = self.stats.lock() {
             s.instances = self.count;
             s.size = size;
+            s.samples = samples;
         }
     }
 }
