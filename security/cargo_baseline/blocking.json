@@ -1,0 +1,56 @@
+{
+ "name": "blocking",
+ "versions": {
+  "1.7.0": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/lib.rs|000f4f6b33d02a4d",
+    "yara|capability_process_spawn|tests/unblock.rs|ba651779be7b7be0"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 11,
+    "links": "",
+    "manifest": "ada53e16d5afc05a458c1f0628283604bed251ab420fe0dff4ac1b90c79f6f09",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "a70e4329df6cb94385eed412ec92375c3cdd8a6e502493d1229b6414e4036dfa",
+    "vcs": {
+     "git": {
+      "sha1": "e29a5e6979f56c7537b04ab17ca7bdceee66ef5f"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "a70e4329df6cb94385eed412ec92375c3cdd8a6e502493d1229b6414e4036dfa",
+    "crate_size": 18136,
+    "created_at": "2026-08-23T09:00:11.479384Z",
+    "description": "A thread pool for isolating blocking I/O in async programs",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "fogti",
+    "repository": "https://github.com/smol-rs/blocking",
+    "rust_version": "1.68"
+   },
+   "name": "blocking",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by fogti on 2026-08-23."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/lib.rs|000f4f6b33d02a4d",
+     "yara|capability_process_spawn|tests/unblock.rs|ba651779be7b7be0"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/lib.rs",
+     "capability_process_spawn:capability_process_spawn tests/unblock.rs"
+    ]
+   },
+   "version": "1.7.0"
+  }
+ }
+}

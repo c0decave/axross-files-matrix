@@ -1,0 +1,47 @@
+{
+ "name": "wgpu-core-deps-apple",
+ "versions": {
+  "30.0.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 8,
+    "links": "",
+    "manifest": "4f9be487bf0a4181719b84c05cbed238c7542f62cc40d8ff092f34c75d388272",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "061f3d319a40d39d00b1ecc2c33b89fe21d4e6fe01859df3500a3a8ecccd6b68",
+    "vcs": {
+     "git": {
+      "sha1": "40f4a34ebaf56f9a046231f54125ad046239d3f3"
+     },
+     "path_in_vcs": "wgpu-core/platform-deps/apple"
+    }
+   },
+   "crates_io": {
+    "checksum": "061f3d319a40d39d00b1ecc2c33b89fe21d4e6fe01859df3500a3a8ecccd6b68",
+    "crate_size": 12523,
+    "created_at": "2026-08-22T02:53:33.261654Z",
+    "description": "Feature unification helper crate for Apple platforms",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "cwfitzgerald",
+    "repository": "https://github.com/gfx-rs/wgpu",
+    "rust_version": "1.76"
+   },
+   "name": "wgpu-core-deps-apple",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by cwfitzgerald on 2026-08-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "30.0.1"
+  }
+ }
+}

@@ -1,0 +1,85 @@
+{
+ "name": "open",
+ "versions": {
+  "5.4.5": {
+   "accepted_findings": [
+    "hidden-process|src/lib.rs|9963cfd7773571ed",
+    "hidden-process|src/lib.rs|f0d546ad273eab47",
+    "hidden-process|src/windows.rs|1baaab16edfe23cc",
+    "hidden-process|src/windows.rs|1f31a3341026607a",
+    "hidden-process|src/windows.rs|4ab9004718b17b55",
+    "hidden-process|src/windows.rs|f0d546ad273eab47",
+    "rs-download-tool|src/windows.rs|4a2b0ba62792a762",
+    "rs-download-tool|src/wsl.rs|4a2b0ba62792a762",
+    "yara|capability_process_spawn|src/haiku.rs|882235252ac1232e",
+    "yara|capability_process_spawn|src/ios.rs|7409f3630f137e14",
+    "yara|capability_process_spawn|src/lib.rs|8452f7b0d75cbcc9",
+    "yara|capability_process_spawn|src/macos.rs|1aa17ee0249ea875",
+    "yara|capability_process_spawn|src/redox.rs|d885e78bc3aae168",
+    "yara|capability_process_spawn|src/unix.rs|c4c2ad1d3883b298",
+    "yara|capability_process_spawn|src/windows.rs|883fcfd302f0e261",
+    "yara|capability_process_spawn|src/wsl.rs|e8802d8506cbb850"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 17,
+    "links": "",
+    "manifest": "ba12015dcdfc63e525ad1f1a9979325712e49db5cfda36d0d8a77c5dfcb8ad1d",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "8d8c8b8e725ad26404d6896eb2f064294a0a7b4f1d9120210d85544684c4ca95",
+    "vcs": {
+     "git": {
+      "sha1": "a60a9d508e24417d62e924fb133aaeec0e96f222"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "bin_names": [
+     "open"
+    ],
+    "checksum": "8d8c8b8e725ad26404d6896eb2f064294a0a7b4f1d9120210d85544684c4ca95",
+    "crate_size": 43425,
+    "created_at": "2026-10-22T03:52:01.580055Z",
+    "description": "Open a path or URL using the program configured on the system",
+    "license": "MIT",
+    "published_by": "Byron",
+    "repository": "https://github.com/Byron/open-rs",
+    "rust_version": "1.62"
+   },
+   "name": "open",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "CREATE_NO_WINDOW when it starts the Windows opener (no console flash) - its purpose. Nothing else. No binary; checksum = crates.io's; published by Byron on 2026-10-22; other medium findings read: ['hidden-process', 'rs-download-tool']."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/haiku.rs|882235252ac1232e",
+     "yara|capability_process_spawn|src/ios.rs|7409f3630f137e14",
+     "yara|capability_process_spawn|src/lib.rs|8452f7b0d75cbcc9",
+     "yara|capability_process_spawn|src/macos.rs|1aa17ee0249ea875",
+     "yara|capability_process_spawn|src/redox.rs|d885e78bc3aae168",
+     "yara|capability_process_spawn|src/unix.rs|c4c2ad1d3883b298",
+     "yara|capability_process_spawn|src/windows.rs|883fcfd302f0e261",
+     "yara|capability_process_spawn|src/wsl.rs|e8802d8506cbb850"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/haiku.rs",
+     "capability_process_spawn:capability_process_spawn src/ios.rs",
+     "capability_process_spawn:capability_process_spawn src/lib.rs",
+     "capability_process_spawn:capability_process_spawn src/macos.rs",
+     "capability_process_spawn:capability_process_spawn src/redox.rs",
+     "capability_process_spawn:capability_process_spawn src/unix.rs",
+     "capability_process_spawn:capability_process_spawn src/windows.rs",
+     "capability_process_spawn:capability_process_spawn src/wsl.rs"
+    ]
+   },
+   "version": "5.4.5"
+  }
+ }
+}

@@ -1,0 +1,53 @@
+{
+ "name": "yoke",
+ "versions": {
+  "0.8.4": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/cartable_ptr.rs|16d19efe57a8abb3"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 18,
+    "links": "",
+    "manifest": "2cad4442c49444a4ebccd97cd3715e27818339595633357ef30219db291b45fa",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "417ef3fcf6c300b7dbd25c85531a746931c02ad536f3cf4786ed1e88223340b3",
+    "vcs": {
+     "git": {
+      "sha1": "031d9e89f6a3fd26a14491e090729d46094328fd"
+     },
+     "path_in_vcs": "utils/yoke"
+    }
+   },
+   "crates_io": {
+    "checksum": "417ef3fcf6c300b7dbd25c85531a746931c02ad536f3cf4786ed1e88223340b3",
+    "crate_size": 33270,
+    "created_at": "2026-10-22T08:51:34.589056Z",
+    "description": "Abstraction allowing borrowed data to be carried along with the backing data it borrows from",
+    "license": "Unicode-3.0",
+    "published_by": "robertbastian",
+    "repository": "https://github.com/unicode-org/icu4x",
+    "rust_version": "1.82"
+   },
+   "name": "yoke",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by robertbastian on 2026-10-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/cartable_ptr.rs|16d19efe57a8abb3"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/cartable_ptr.rs"
+    ]
+   },
+   "version": "0.8.4"
+  }
+ }
+}

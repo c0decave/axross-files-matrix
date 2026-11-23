@@ -1,0 +1,47 @@
+{
+ "name": "idna_adapter",
+ "versions": {
+  "1.2.2": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 9,
+    "links": "",
+    "manifest": "a21e7441ac67b6542a258aec384e9d75f81bd01e520c1efb4826f980a9b3613c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "cb68373c0d6620ef8105e855e7745e18b0d00d3bdb07fb532e434244cdb9a714",
+    "vcs": {
+     "git": {
+      "sha1": "1d9782f32c9e29218542b4a9411a82b35ec5c8cb"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "cb68373c0d6620ef8105e855e7745e18b0d00d3bdb07fb532e434244cdb9a714",
+    "crate_size": 10444,
+    "created_at": "2026-04-27T17:45:54.838641Z",
+    "description": "Back end adapter for idna",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "hsivonen",
+    "repository": "https://github.com/hsivonen/idna_adapter",
+    "rust_version": "1.86"
+   },
+   "name": "idna_adapter",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by hsivonen on 2026-04-27."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.2.2"
+  }
+ }
+}

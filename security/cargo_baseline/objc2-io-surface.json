@@ -1,0 +1,47 @@
+{
+ "name": "objc2-io-surface",
+ "versions": {
+  "0.3.2": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 16,
+    "links": "",
+    "manifest": "f47a53e26648c2d335260879a2fae418c4b440dde473e1b4f12bfd87711d057d",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "180788110936d59bab6bd83b6060ffdfffb3b922ba1396b312ae795e1de9d81d",
+    "vcs": {
+     "git": {
+      "sha1": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b"
+     },
+     "path_in_vcs": "framework-crates/objc2-io-surface"
+    }
+   },
+   "crates_io": {
+    "checksum": "180788110936d59bab6bd83b6060ffdfffb3b922ba1396b312ae795e1de9d81d",
+    "crate_size": 11722,
+    "created_at": "2025-10-04T15:47:28.561974Z",
+    "description": "Bindings to the IOSurface framework",
+    "license": "Zlib OR Apache-2.0 OR MIT",
+    "published_by": "madsmtm",
+    "repository": "https://github.com/madsmtm/objc2",
+    "rust_version": "1.71"
+   },
+   "name": "objc2-io-surface",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by madsmtm on 2025-10-04."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.3.2"
+  }
+ }
+}

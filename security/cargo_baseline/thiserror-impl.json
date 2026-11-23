@@ -1,0 +1,91 @@
+{
+ "name": "thiserror-impl",
+ "versions": {
+  "1.0.69": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 15,
+    "links": "",
+    "manifest": "7761532f79bfa277fd0730e461a595f74b16ead1706d0235dfff394d76ec4f24",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "4fee6c4efc90059e10f81e6d42c60a18f76588c3d74cb83a0b242a2b6c7504c1",
+    "vcs": {
+     "git": {
+      "sha1": "41938bd3a03a70d34ed8e53d99c89c770c7c9c41"
+     },
+     "path_in_vcs": "impl"
+    }
+   },
+   "crates_io": {
+    "checksum": "4fee6c4efc90059e10f81e6d42c60a18f76588c3d74cb83a0b242a2b6c7504c1",
+    "crate_size": 18365,
+    "created_at": "2024-11-10T06:24:04.631987Z",
+    "description": "Implementation detail of the `thiserror` crate",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "dtolnay",
+    "repository": "https://github.com/dtolnay/thiserror",
+    "rust_version": "1.61"
+   },
+   "name": "thiserror-impl",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by dtolnay on 2024-11-10."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.0.69"
+  },
+  "2.0.21": {
+   "accepted_findings": [
+    "rs-url|src/lib.rs|af4dcdc60b15341c"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 17,
+    "links": "",
+    "manifest": "77241b3cd2123ac4a5e38b1946564256bba88908fdf097b98ce9de43c46703e0",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "fe5197923287db20a58125f0bc85c062f7f2c892de97b18c356f9efb14b28524",
+    "vcs": {
+     "git": {
+      "sha1": "b1827ee06f81a7d7f954e676771e19a97f9f8e3b"
+     },
+     "path_in_vcs": "impl"
+    }
+   },
+   "crates_io": {
+    "checksum": "fe5197923287db20a58125f0bc85c062f7f2c892de97b18c356f9efb14b28524",
+    "crate_size": 21637,
+    "created_at": "2026-09-23T20:24:05.038819Z",
+    "description": "Implementation detail of the `thiserror` crate",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "dtolnay",
+    "repository": "https://github.com/dtolnay/thiserror",
+    "rust_version": "1.77"
+   },
+   "name": "thiserror-impl",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by dtolnay on 2026-09-23."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "2.0.21"
+  }
+ }
+}

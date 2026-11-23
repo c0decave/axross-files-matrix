@@ -1,0 +1,85 @@
+{
+ "name": "wit-bindgen",
+ "versions": {
+  "0.57.1": {
+   "accepted_findings": [
+    "rs-fs-write|build.rs|25f0b0dc25142c93",
+    "yara|capability_process_spawn|src/rt/async_support/spawn.rs|54a779263daca4c8"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "99b4276049457d3ea1d304277d66b0ff1abba0b9b1f5d60a5e25bdd3fd897a91"
+    },
+    "files": 42,
+    "links": "",
+    "manifest": "06b96af99a2f3639bb50f290c2010407a47ce0a61a61decdeb2b2f6d4101a5e3",
+    "native": {
+     "src/rt/libwit_bindgen_cabi.a": {
+      "kind": "ar",
+      "sha256": "a18a4de12821dd777e6003625cc33896984a91a55bbf03c70abc5675842c60c1"
+     },
+     "src/rt/wit_bindgen_cabi_realloc.o": {
+      "kind": "wasm",
+      "sha256": "f5bef0033f3baaada79949e9c8e506d1de1722259c24dc752d2084784317f8de"
+     },
+     "src/rt/wit_bindgen_cabi_wasip3.o": {
+      "kind": "wasm",
+      "sha256": "76a7b6bf1529c2657f0e7620a443db23294647b009916df1b3b55646879ef61a"
+     },
+     "wasi-cli@0.2.0.wasm": {
+      "kind": "wasm",
+      "sha256": "60b274319c9dce183269a0e3ad922b8ee4ead915f34d171de9da23a390863119"
+     }
+    },
+    "native_profiles": {
+     "src/rt/libwit_bindgen_cabi.a": [
+      "wit_bindgen_cabi_realloc.o",
+      "wit_bindgen_cabi_wasip3.o"
+     ]
+    },
+    "native_sources": {
+     "src": 2
+    },
+    "proc_macro": false,
+    "sha256": "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e",
+    "vcs": {
+     "git": {
+      "sha1": "2e00369a643c0c8048b8636401e36b0cbf2dfb05"
+     },
+     "path_in_vcs": "crates/guest-rust"
+    }
+   },
+   "crates_io": {
+    "checksum": "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e",
+    "crate_size": 71227,
+    "created_at": "2026-04-17T17:49:55.029832Z",
+    "description": "Rust bindings generator and runtime support for WIT and the component model.\nUsed when compiling Rust programs to the component model.\n",
+    "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+    "repository": "https://github.com/bytecodealliance/wit-bindgen",
+    "rust_version": "1.85.0",
+    "trustpub": {
+     "provider": "github",
+     "repository": "bytecodealliance/wit-bindgen",
+     "run_id": "24578972866",
+     "sha": "2e00369a643c0c8048b8636401e36b0cbf2dfb05"
+    }
+   },
+   "name": "wit-bindgen",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Bundles src/rt/libwit_bindgen_cabi.a and .wasm objects (cabi_realloc) that its build script copies into OUT_DIR and links only for wasm32 targets - never for Linux/macOS/Windows builds. No network, no YARA threat. 4 native file(s) as described; checksum = crates.io's; published by trusted publishing on 2026-04-17."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/rt/async_support/spawn.rs|54a779263daca4c8"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/rt/async_support/spawn.rs"
+    ]
+   },
+   "version": "0.57.1"
+  }
+ }
+}

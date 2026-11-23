@@ -1,0 +1,46 @@
+{
+ "name": "ab_glyph_rasterizer",
+ "versions": {
+  "0.1.10": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 12,
+    "links": "",
+    "manifest": "9d90d7dcb3e6321f14d06b88b53e5146a0852b6db455cb830f93e7c29769c7ce",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "366ffbaa4442f4684d91e2cd7c5ea7c4ed8add41959a31447066e279e432b618",
+    "vcs": {
+     "git": {
+      "sha1": "971e5a9b337fbae3edb1ac3ac44d84351d24e8b8"
+     },
+     "path_in_vcs": "rasterizer"
+    }
+   },
+   "crates_io": {
+    "checksum": "366ffbaa4442f4684d91e2cd7c5ea7c4ed8add41959a31447066e279e432b618",
+    "crate_size": 11206,
+    "created_at": "2025-08-12T11:15:33.926296Z",
+    "description": "Coverage rasterization for lines, quadratic & cubic beziers",
+    "license": "Apache-2.0",
+    "published_by": "alexheretic",
+    "repository": "https://github.com/alexheretic/ab-glyph"
+   },
+   "name": "ab_glyph_rasterizer",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by alexheretic on 2025-08-12."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.1.10"
+  }
+ }
+}

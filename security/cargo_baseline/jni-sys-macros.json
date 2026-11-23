@@ -1,0 +1,46 @@
+{
+ "name": "jni-sys-macros",
+ "versions": {
+  "0.4.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 6,
+    "links": "",
+    "manifest": "c5c0409a83005737e4b8cfb5170e758f76b8de36d67b0ab57feeeb022d1ed374",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "38c0b942f458fe50cdac086d2f946512305e5631e720728f2a61aabcd47a6264",
+    "vcs": {
+     "git": {
+      "sha1": "64d77b7a5f119d7b55b4e2c169a4668067ff59e6"
+     },
+     "path_in_vcs": "jni-sys-macros"
+    }
+   },
+   "crates_io": {
+    "checksum": "38c0b942f458fe50cdac086d2f946512305e5631e720728f2a61aabcd47a6264",
+    "crate_size": 3301,
+    "created_at": "2026-01-09T00:23:44.614075Z",
+    "description": "Macros for jni-sys crate",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rib",
+    "repository": "https://github.com/jni-rs/jni-sys"
+   },
+   "name": "jni-sys-macros",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by rib on 2026-01-09."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.4.1"
+  }
+ }
+}

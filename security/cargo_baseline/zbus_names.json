@@ -1,0 +1,50 @@
+{
+ "name": "zbus_names",
+ "versions": {
+  "4.3.5": {
+   "accepted_advisories": {
+    "RUSTSEC-2026-0371": "zbus_names merged into zbus 6 (`names` module); needed by zbus 5, which axross-amp and accesskit_unix use. No vulnerability; goes away with zbus 6."
+   },
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 18,
+    "links": "",
+    "manifest": "a43466dae6e617137e3f87819dc19bb2d7030542a1bc28d09f9c6ac303fb3619",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "812a12be4ead7a59e18ea8f047d08add0066b73bc62fc1467066a2472ae088dd",
+    "vcs": {
+     "git": {
+      "sha1": "40dadcf73f849abbcfb71b0f54202e9178ab9099"
+     },
+     "path_in_vcs": "zbus_names"
+    }
+   },
+   "crates_io": {
+    "checksum": "812a12be4ead7a59e18ea8f047d08add0066b73bc62fc1467066a2472ae088dd",
+    "crate_size": 19358,
+    "created_at": "2026-10-16T14:49:32.038590Z",
+    "description": "A collection of D-Bus bus names types (deprecated: merged into zbus)",
+    "license": "MIT",
+    "published_by": "zeenix",
+    "repository": "https://github.com/z-galaxy/zbus/",
+    "rust_version": "1.87"
+   },
+   "name": "zbus_names",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by zeenix on 2026-10-16."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "4.3.5"
+  }
+ }
+}

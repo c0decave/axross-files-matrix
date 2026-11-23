@@ -1,0 +1,98 @@
+{
+ "name": "rayon-core",
+ "versions": {
+  "1.13.0": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/broadcast/test.rs|fe50fc868e67d855",
+    "yara|capability_process_spawn|src/compile_fail/scope_join_bad.rs|892959949f77cadf",
+    "yara|capability_process_spawn|src/lib.rs|5da845890b55010d",
+    "yara|capability_process_spawn|src/registry.rs|61674f4cdf39edb2",
+    "yara|capability_process_spawn|src/scope/mod.rs|b7720b8533281737",
+    "yara|capability_process_spawn|src/scope/test.rs|f358307efb3c0f5d",
+    "yara|capability_process_spawn|src/spawn/mod.rs|3520ce5822787a59",
+    "yara|capability_process_spawn|src/spawn/test.rs|b4850681aa5ff607",
+    "yara|capability_process_spawn|src/test.rs|b82d95f84314305f",
+    "yara|capability_process_spawn|src/thread_pool/mod.rs|f071a1bc766cde10",
+    "yara|capability_process_spawn|src/thread_pool/test.rs|e9377afa0d5727a9",
+    "yara|capability_process_spawn|tests/scope_join.rs|56f570c4b6a01704",
+    "yara|capability_process_spawn|tests/scoped_threadpool.rs|24d1293fe65ad5f1",
+    "yara|capability_process_spawn|tests/stack_overflow_crash.rs|87b962c66f301ac4",
+    "yara|capability_process_spawn|tests/use_current_thread.rs|552ec922f123aafd"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "fa31cb198b772600d100a7c403ddedccef637d2e6b2da431fa7f02ca41307fc6"
+    },
+    "files": 42,
+    "links": "rayon-core",
+    "manifest": "ae91b149e70b7947a54e1caf2a741f51184ef757dc59bf9c3cc641b3c4a2ce57",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "22e18b0f0062d30d4230b2e85ff77fdfe4326feb054b9783a3460d8435c8ab91",
+    "vcs": {
+     "git": {
+      "sha1": "7af20d7692d5decbcb4adcaa079cd607e3e50814"
+     },
+     "path_in_vcs": "rayon-core"
+    }
+   },
+   "crates_io": {
+    "checksum": "22e18b0f0062d30d4230b2e85ff77fdfe4326feb054b9783a3460d8435c8ab91",
+    "crate_size": 73151,
+    "created_at": "2025-08-12T23:21:51.666309Z",
+    "description": "Core APIs for Rayon",
+    "lib_links": "rayon-core",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "cuviper",
+    "repository": "https://github.com/rayon-rs/rayon",
+    "rust_version": "1.80"
+   },
+   "name": "rayon-core",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by cuviper on 2025-08-12."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/broadcast/test.rs|fe50fc868e67d855",
+     "yara|capability_process_spawn|src/compile_fail/scope_join_bad.rs|892959949f77cadf",
+     "yara|capability_process_spawn|src/lib.rs|5da845890b55010d",
+     "yara|capability_process_spawn|src/registry.rs|61674f4cdf39edb2",
+     "yara|capability_process_spawn|src/scope/mod.rs|b7720b8533281737",
+     "yara|capability_process_spawn|src/scope/test.rs|f358307efb3c0f5d",
+     "yara|capability_process_spawn|src/spawn/mod.rs|3520ce5822787a59",
+     "yara|capability_process_spawn|src/spawn/test.rs|b4850681aa5ff607",
+     "yara|capability_process_spawn|src/test.rs|b82d95f84314305f",
+     "yara|capability_process_spawn|src/thread_pool/mod.rs|f071a1bc766cde10",
+     "yara|capability_process_spawn|src/thread_pool/test.rs|e9377afa0d5727a9",
+     "yara|capability_process_spawn|tests/scope_join.rs|56f570c4b6a01704",
+     "yara|capability_process_spawn|tests/scoped_threadpool.rs|24d1293fe65ad5f1",
+     "yara|capability_process_spawn|tests/stack_overflow_crash.rs|87b962c66f301ac4",
+     "yara|capability_process_spawn|tests/use_current_thread.rs|552ec922f123aafd"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/broadcast/test.rs",
+     "capability_process_spawn:capability_process_spawn src/compile_fail/scope_join_bad.rs",
+     "capability_process_spawn:capability_process_spawn src/lib.rs",
+     "capability_process_spawn:capability_process_spawn src/registry.rs",
+     "capability_process_spawn:capability_process_spawn src/scope/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/scope/test.rs",
+     "capability_process_spawn:capability_process_spawn src/spawn/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/spawn/test.rs",
+     "capability_process_spawn:capability_process_spawn src/test.rs",
+     "capability_process_spawn:capability_process_spawn src/thread_pool/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/thread_pool/test.rs",
+     "capability_process_spawn:capability_process_spawn tests/scope_join.rs",
+     "capability_process_spawn:capability_process_spawn tests/scoped_threadpool.rs",
+     "capability_process_spawn:capability_process_spawn tests/stack_overflow_crash.rs",
+     "capability_process_spawn:capability_process_spawn tests/use_current_thread.rs"
+    ]
+   },
+   "version": "1.13.0"
+  }
+ }
+}

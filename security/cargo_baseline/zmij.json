@@ -1,0 +1,59 @@
+{
+ "name": "zmij",
+ "versions": {
+  "1.0.23": {
+   "accepted_findings": [
+    "rs-command|build.rs|a6a61c5c15299c38",
+    "yara|capability_process_spawn|build.rs|ad320bc635887879",
+    "yara|capability_process_spawn|tests/exhaustive.rs|272912ed5abdd2fa"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "ad320bc635887879bdbbf1b9322da4a157ec2c5a4243bd7c2cf9b6884a3b2a41"
+    },
+    "files": 17,
+    "links": "",
+    "manifest": "609d5a669c0686474e2f727607e928012e84ad0ba3c7e6efe193589da49973bf",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b",
+    "vcs": {
+     "git": {
+      "sha1": "7b7cc48b58028e8af7be87e94c0c1c8936f1a57c"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b",
+    "crate_size": 28612,
+    "created_at": "2026-07-13T12:58:53.705886Z",
+    "description": "A double-to-string conversion algorithm based on Schubfach and xjb",
+    "license": "MIT",
+    "published_by": "dtolnay",
+    "repository": "https://github.com/dtolnay/zmij",
+    "rust_version": "1.71"
+   },
+   "name": "zmij",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: runs rustc to probe its version; no network. No binary; checksum = crates.io's; published by dtolnay on 2026-07-13."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|build.rs|ad320bc635887879",
+     "yara|capability_process_spawn|tests/exhaustive.rs|272912ed5abdd2fa"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn build.rs",
+     "capability_process_spawn:capability_process_spawn tests/exhaustive.rs"
+    ]
+   },
+   "version": "1.0.23"
+  }
+ }
+}

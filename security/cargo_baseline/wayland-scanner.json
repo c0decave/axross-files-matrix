@@ -1,0 +1,54 @@
+{
+ "name": "wayland-scanner",
+ "versions": {
+  "0.31.11": {
+   "accepted_findings": [
+    "rs-command|src/lib.rs|5be1df924c41b914",
+    "yara|capability_process_spawn|src/lib.rs|a7327b9ddd75c043"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 22,
+    "links": "",
+    "manifest": "a6b2ed591bfd5c22109403d007532eb0aba806abb293e613023230452a42697a",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "338e30461b3a2b67d70eb30a6d89f8e0c93a833e07d2ae89085cd070c4a00ac0",
+    "vcs": {
+     "git": {
+      "sha1": "05196740da57e41b60a9e9f8e35079e9bd29b89a"
+     },
+     "path_in_vcs": "wayland-scanner"
+    }
+   },
+   "crates_io": {
+    "checksum": "338e30461b3a2b67d70eb30a6d89f8e0c93a833e07d2ae89085cd070c4a00ac0",
+    "crate_size": 37536,
+    "created_at": "2026-07-22T20:35:37.798276Z",
+    "description": "Wayland Scanner for generating rust APIs from XML wayland protocol files.",
+    "license": "MIT",
+    "published_by": "ids1024",
+    "repository": "https://github.com/smithay/wayland-rs",
+    "rust_version": "1.71"
+   },
+   "name": "wayland-scanner",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Proc macro: reads the protocol XML named by the calling crate (relative to its CARGO_MANIFEST_DIR) and generates code; rustfmt is started only in #[cfg(test)] code. No network. No binary; checksum = crates.io's; published by ids1024 on 2026-07-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/lib.rs|a7327b9ddd75c043"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/lib.rs"
+    ]
+   },
+   "version": "0.31.11"
+  }
+ }
+}

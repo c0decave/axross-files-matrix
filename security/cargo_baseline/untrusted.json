@@ -1,0 +1,45 @@
+{
+ "name": "untrusted",
+ "versions": {
+  "0.9.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 19,
+    "links": "",
+    "manifest": "60bc628524a0379fa419b636807ae873950ee78b71f8369fa7f0e2a2e4dab32c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1",
+    "vcs": {
+     "git": {
+      "sha1": "89c8b8415f692d3803d183fc5fbf9ec08a6adcf4"
+     }
+    }
+   },
+   "crates_io": {
+    "checksum": "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1",
+    "crate_size": 14447,
+    "created_at": "2021-07-13T22:13:26.650010Z",
+    "description": "Safe, fast, zero-panic, zero-crashing, zero-allocation parsing of untrusted inputs in Rust.",
+    "license": "ISC",
+    "published_by": "briansmith",
+    "repository": "https://github.com/briansmith/untrusted"
+   },
+   "name": "untrusted",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by briansmith on 2021-07-13."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.9.0"
+  }
+ }
+}

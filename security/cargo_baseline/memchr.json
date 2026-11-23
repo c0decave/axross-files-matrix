@@ -1,0 +1,47 @@
+{
+ "name": "memchr",
+ "versions": {
+  "2.8.3": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 59,
+    "links": "",
+    "manifest": "af22386fc5181423c75a729477234a4b8ca835c35251030098be059f2a99700d",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98",
+    "vcs": {
+     "git": {
+      "sha1": "5fdb40c054e1fff359a2f7bdf7f87a13b34b465d"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98",
+    "crate_size": 99165,
+    "created_at": "2026-07-08T00:49:54.408285Z",
+    "description": "Provides extremely fast (uses SIMD on x86_64, aarch64 and wasm32) routines for\n1, 2 or 3 byte search and single substring search.\n",
+    "license": "Unlicense OR MIT",
+    "published_by": "BurntSushi",
+    "repository": "https://github.com/BurntSushi/memchr",
+    "rust_version": "1.61"
+   },
+   "name": "memchr",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by BurntSushi on 2026-07-08."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "2.8.3"
+  }
+ }
+}

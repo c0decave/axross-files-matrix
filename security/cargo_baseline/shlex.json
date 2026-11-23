@@ -1,0 +1,47 @@
+{
+ "name": "shlex",
+ "versions": {
+  "2.0.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "8e5c00c8aa10af31ea9c1d06436198fa51c31e70bca6d7600975c1b1e411ddb5",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba",
+    "vcs": {
+     "git": {
+      "sha1": "e82b1411beb7c92871c2c078c9ab415bbcf207ef"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "f8fadd59c855ef2080decdef8ff161eb6661b86933c9d82e5ba29dc602a55aba",
+    "crate_size": 19332,
+    "created_at": "2026-05-17T18:56:12.775983Z",
+    "description": "Split a string into shell words, like Python's shlex.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "fenhl",
+    "repository": "https://github.com/comex/rust-shlex",
+    "rust_version": "1.46.0"
+   },
+   "name": "shlex",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by fenhl on 2026-05-17."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "2.0.1"
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "name": "egui_glow",
+ "versions": {
+  "0.37.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 14,
+    "links": "",
+    "manifest": "a87f1aa060e37421566e8ebbccee1bba5f9aa1a0f37ae836dd36dee849fcba10",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "9275ca5cc35a6b7c94e0e8cedf22542f66cb0cf45ed8ab2657c78ff49fec7268",
+    "vcs": {
+     "git": {
+      "sha1": "7c0b40402271e8d40cda69f87cf3c2617c2e4382"
+     },
+     "path_in_vcs": "crates/egui_glow"
+    }
+   },
+   "crates_io": {
+    "checksum": "9275ca5cc35a6b7c94e0e8cedf22542f66cb0cf45ed8ab2657c78ff49fec7268",
+    "crate_size": 38109,
+    "created_at": "2026-10-15T14:49:41.064307Z",
+    "description": "Bindings for using egui natively using the glow library",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rerunio",
+    "repository": "https://github.com/emilk/egui/tree/main/crates/egui_glow",
+    "rust_version": "1.95"
+   },
+   "name": "egui_glow",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rerunio on 2026-10-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.37.0"
+  }
+ }
+}

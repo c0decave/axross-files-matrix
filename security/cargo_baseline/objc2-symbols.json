@@ -1,0 +1,47 @@
+{
+ "name": "objc2-symbols",
+ "versions": {
+  "0.2.2": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 8,
+    "links": "",
+    "manifest": "e471304d1ee9d3d9265f29d27979e1218a435124f6510baebcb1d19497473d74",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "0a684efe3dec1b305badae1a28f6555f6ddd3bb2c2267896782858d5a78404dc",
+    "vcs": {
+     "git": {
+      "sha1": "e282618be4c3a3b9542957e0c8540e9588472ce8"
+     },
+     "path_in_vcs": "framework-crates/objc2-symbols"
+    }
+   },
+   "crates_io": {
+    "checksum": "0a684efe3dec1b305badae1a28f6555f6ddd3bb2c2267896782858d5a78404dc",
+    "crate_size": 3626,
+    "created_at": "2024-05-21T08:33:40.249073Z",
+    "description": "Bindings to the Symbols framework",
+    "license": "MIT",
+    "published_by": "madsmtm",
+    "repository": "https://github.com/madsmtm/objc2",
+    "rust_version": "1.60"
+   },
+   "name": "objc2-symbols",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by madsmtm on 2024-05-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.2"
+  }
+ }
+}

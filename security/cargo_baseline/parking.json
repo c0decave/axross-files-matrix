@@ -1,0 +1,56 @@
+{
+ "name": "parking",
+ "versions": {
+  "2.2.1": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/lib.rs|775370db46257b33",
+    "yara|capability_process_spawn|tests/loom.rs|e13cbefd9e838a00"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 11,
+    "links": "",
+    "manifest": "5f9323a19d0aaa0a5b73b9ddd9bd3c53ef05bbf82f7838a8c3cd0a42da27275b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "f38d5652c16fde515bb1ecef450ab0f6a219d619a7274976324d5e377f7dceba",
+    "vcs": {
+     "git": {
+      "sha1": "0ece32dbfd6cd1bc1510ede6ed56acb772edf83f"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "f38d5652c16fde515bb1ecef450ab0f6a219d619a7274976324d5e377f7dceba",
+    "crate_size": 10685,
+    "created_at": "2024-09-07T17:39:03.956479Z",
+    "description": "Thread parking and unparking",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "notgull",
+    "repository": "https://github.com/smol-rs/parking",
+    "rust_version": "1.51"
+   },
+   "name": "parking",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by notgull on 2024-09-07."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/lib.rs|775370db46257b33",
+     "yara|capability_process_spawn|tests/loom.rs|e13cbefd9e838a00"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/lib.rs",
+     "capability_process_spawn:capability_process_spawn tests/loom.rs"
+    ]
+   },
+   "version": "2.2.1"
+  }
+ }
+}

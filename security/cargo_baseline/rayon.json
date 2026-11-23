@@ -1,0 +1,59 @@
+{
+ "name": "rayon",
+ "versions": {
+  "1.12.0": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/iter/skip.rs|177755cf51a78ed8",
+    "yara|capability_process_spawn|src/iter/test.rs|c825efce0b9374da",
+    "yara|capability_process_spawn|tests/sort-panic-safe.rs|27199d55ca4c6b57"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 127,
+    "links": "",
+    "manifest": "179e522eb82bd9fbc1997250e03da909256baeaa890227b40b1b386ee0337070",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "fb39b166781f92d482534ef4b4b1b2568f42613b53e5b6c160e24cfbfa30926d",
+    "vcs": {
+     "git": {
+      "sha1": "c9ced185ae3508246a9eb70c8407a1199bb1b77f"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "fb39b166781f92d482534ef4b4b1b2568f42613b53e5b6c160e24cfbfa30926d",
+    "crate_size": 183391,
+    "created_at": "2026-04-14T00:56:56.454086Z",
+    "description": "Simple work-stealing parallelism for Rust",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "cuviper",
+    "repository": "https://github.com/rayon-rs/rayon",
+    "rust_version": "1.80"
+   },
+   "name": "rayon",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by cuviper on 2026-04-14."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/iter/skip.rs|177755cf51a78ed8",
+     "yara|capability_process_spawn|src/iter/test.rs|c825efce0b9374da",
+     "yara|capability_process_spawn|tests/sort-panic-safe.rs|27199d55ca4c6b57"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/iter/skip.rs",
+     "capability_process_spawn:capability_process_spawn src/iter/test.rs",
+     "capability_process_spawn:capability_process_spawn tests/sort-panic-safe.rs"
+    ]
+   },
+   "version": "1.12.0"
+  }
+ }
+}

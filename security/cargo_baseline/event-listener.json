@@ -1,0 +1,56 @@
+{
+ "name": "event-listener",
+ "versions": {
+  "5.4.2": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|examples/mutex.rs|04a3b314a878751e",
+    "yara|capability_process_spawn|src/lib.rs|a6a99e7ef46871d3"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 15,
+    "links": "",
+    "manifest": "8de44c652b901cc58ffe445fd19b5c6845f2e443cd98e7e7c40b7ef4cf31618d",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "5a23add41df1562121a9393cb065eab5146a1242410f23a644851e90cfd669d2",
+    "vcs": {
+     "git": {
+      "sha1": "77004ac77dcef7884bf71a99c276a50f83a7fa4e"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "5a23add41df1562121a9393cb065eab5146a1242410f23a644851e90cfd669d2",
+    "crate_size": 35131,
+    "created_at": "2026-07-27T11:31:20.582548Z",
+    "description": "Notify async tasks or threads",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "zeenix",
+    "repository": "https://github.com/smol-rs/event-listener",
+    "rust_version": "1.60"
+   },
+   "name": "event-listener",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by zeenix on 2026-07-27."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|examples/mutex.rs|04a3b314a878751e",
+     "yara|capability_process_spawn|src/lib.rs|a6a99e7ef46871d3"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn examples/mutex.rs",
+     "capability_process_spawn:capability_process_spawn src/lib.rs"
+    ]
+   },
+   "version": "5.4.2"
+  }
+ }
+}

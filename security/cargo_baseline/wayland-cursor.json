@@ -1,0 +1,47 @@
+{
+ "name": "wayland-cursor",
+ "versions": {
+  "0.31.14": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 8,
+    "links": "",
+    "manifest": "81cbeebb2ca7963e9867b020c531cc3fafd6f6922206451e074931e1297a98f8",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "4a52d18780be9b1314328a3de5f930b73d2200112e3849ca6cb11822793fb34d",
+    "vcs": {
+     "git": {
+      "sha1": "a3d7927d87799b2955bf491b51c7c2a3a82da661"
+     },
+     "path_in_vcs": "wayland-cursor"
+    }
+   },
+   "crates_io": {
+    "checksum": "4a52d18780be9b1314328a3de5f930b73d2200112e3849ca6cb11822793fb34d",
+    "crate_size": 9331,
+    "created_at": "2026-03-31T02:22:00.214711Z",
+    "description": "Bindings to libwayland-cursor.",
+    "license": "MIT",
+    "published_by": "elinorbgr",
+    "repository": "https://github.com/smithay/wayland-rs",
+    "rust_version": "1.71"
+   },
+   "name": "wayland-cursor",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by elinorbgr on 2026-03-31."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.31.14"
+  }
+ }
+}

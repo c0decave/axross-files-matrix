@@ -1,0 +1,56 @@
+{
+ "name": "tree_magic_mini",
+ "versions": {
+  "3.2.2": {
+   "accepted_findings": [
+    "rs-include-bytes|benches/from_u8.rs|66d8d39d84040695",
+    "rs-include-bytes|benches/from_u8.rs|74505dc7915da663",
+    "rs-include-bytes|benches/from_u8.rs|a7f338b78634fee4",
+    "rs-include-bytes|benches/from_u8.rs|fc32514dd619d5fa",
+    "rs-include-bytes|benches/match_u8.rs|0932f88012f5f73c",
+    "rs-include-bytes|benches/match_u8.rs|2af4ecad4e412349",
+    "rs-include-bytes|benches/match_u8.rs|9f37a5312f490281",
+    "rs-include-bytes|benches/match_u8.rs|d540612d2f850c8a"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 21,
+    "links": "",
+    "manifest": "30097827ac1544645a96cf7a0a729cef34ef8239ce4abcfb3f4f5878ca4de45b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "b8765b90061cba6c22b5831f675da109ae5561588290f9fa2317adab2714d5a6",
+    "vcs": {
+     "git": {
+      "sha1": "75bf1b01dc81d5c0b3377a3202792fa83097872c"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "b8765b90061cba6c22b5831f675da109ae5561588290f9fa2317adab2714d5a6",
+    "crate_size": 16074,
+    "created_at": "2025-11-14T19:22:26.199587Z",
+    "description": "Determines the MIME type of a file by traversing a filetype tree.",
+    "license": "MIT",
+    "published_by": "mbrubeck",
+    "repository": "https://github.com/mbrubeck/tree_magic/",
+    "rust_version": "1.85"
+   },
+   "name": "tree_magic_mini",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by mbrubeck on 2025-11-14."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "3.2.2"
+  }
+ }
+}

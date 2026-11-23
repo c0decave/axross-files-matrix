@@ -1,0 +1,70 @@
+{
+ "name": "js-sys",
+ "versions": {
+  "0.3.107": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/futures/queue.rs|c2b3d2bc71577312",
+    "yara|capability_network_outbound|src/lib.rs|93e79562e52f8254",
+    "yara|capability_process_spawn|src/futures/mod.rs|6ee9a8844e79ff5e",
+    "yara|capability_process_spawn|src/futures/task/multithread.rs|fb02fe4e062b45bb",
+    "yara|capability_process_spawn|src/lib.rs|93e79562e52f8254"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 18,
+    "links": "",
+    "manifest": "c23ded2091e8f31ed60093401c2f1ca606123eda778ba483d9e448e65c2035e3",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "8dc09d2154098bbf4ef54eab6b117a3c24cbbffe94046b16ee6d6d4510584d3a",
+    "vcs": {
+     "git": {
+      "sha1": "c93b8ae848d4d9e6beaeaf9516e18a7cadd818a2"
+     },
+     "path_in_vcs": "crates/js-sys"
+    }
+   },
+   "crates_io": {
+    "checksum": "8dc09d2154098bbf4ef54eab6b117a3c24cbbffe94046b16ee6d6d4510584d3a",
+    "crate_size": 136092,
+    "created_at": "2026-10-30T06:15:06.268363Z",
+    "description": "Bindings for all JS global objects and functions in all JS environments like\nNode.js and browsers, built on `#[wasm_bindgen]` using the `wasm-bindgen` crate.\n",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/js-sys",
+    "rust_version": "1.81",
+    "trustpub": {
+     "provider": "github",
+     "repository": "wasm-bindgen/wasm-bindgen",
+     "run_id": "41011884567",
+     "sha": "c93b8ae848d4d9e6beaeaf9516e18a7cadd818a2"
+    }
+   },
+   "name": "js-sys",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by trusted publishing on 2026-10-30."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/futures/queue.rs|c2b3d2bc71577312",
+     "yara|capability_network_outbound|src/lib.rs|93e79562e52f8254",
+     "yara|capability_process_spawn|src/futures/mod.rs|6ee9a8844e79ff5e",
+     "yara|capability_process_spawn|src/futures/task/multithread.rs|fb02fe4e062b45bb",
+     "yara|capability_process_spawn|src/lib.rs|93e79562e52f8254"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/futures/queue.rs",
+     "capability_network_outbound:capability_network_outbound src/lib.rs",
+     "capability_process_spawn:capability_process_spawn src/futures/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/futures/task/multithread.rs",
+     "capability_process_spawn:capability_process_spawn src/lib.rs"
+    ]
+   },
+   "version": "0.3.107"
+  }
+ }
+}

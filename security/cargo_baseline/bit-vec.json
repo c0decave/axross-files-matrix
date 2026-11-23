@@ -1,0 +1,47 @@
+{
+ "name": "bit-vec",
+ "versions": {
+  "0.9.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 14,
+    "links": "",
+    "manifest": "d6a23948cc156eb8ef4d13b200a923f62d732689f3323bee4703d3bfe3c5b277",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "b71798fca2c1fe1086445a7258a4bc81e6e49dcd24c8d0dd9a1e57395b603f51",
+    "vcs": {
+     "git": {
+      "sha1": "2fb0305422ff7fd915a107b91209abbff9fce50f"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "b71798fca2c1fe1086445a7258a4bc81e6e49dcd24c8d0dd9a1e57395b603f51",
+    "crate_size": 29177,
+    "created_at": "2026-03-12T11:58:25.849464Z",
+    "description": "A vector of bits",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "pczarn",
+    "repository": "https://github.com/contain-rs/bit-vec",
+    "rust_version": "1.82"
+   },
+   "name": "bit-vec",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by pczarn on 2026-03-12."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.9.1"
+  }
+ }
+}

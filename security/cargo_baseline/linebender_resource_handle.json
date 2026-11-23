@@ -1,0 +1,47 @@
+{
+ "name": "linebender_resource_handle",
+ "versions": {
+  "0.1.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 12,
+    "links": "",
+    "manifest": "20e99d4d8b5a8d92427470023e7ac32f3a48a7c8056b3a246bb082d3271d6442",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d4a5ff6bcca6c4867b1c4fd4ef63e4db7436ef363e0ad7531d1558856bae64f4",
+    "vcs": {
+     "git": {
+      "sha1": "bd8694ffca7550e8d569346c50de5fdcb5c51a7f"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "d4a5ff6bcca6c4867b1c4fd4ef63e4db7436ef363e0ad7531d1558856bae64f4",
+    "crate_size": 10920,
+    "created_at": "2025-09-16T09:53:56.589443Z",
+    "description": "Raw resource handle for immutable blobs with dynamic lifetimes.",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "DJMcNab",
+    "repository": "https://github.com/linebender/raw_resource_handle",
+    "rust_version": "1.70"
+   },
+   "name": "linebender_resource_handle",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by DJMcNab on 2025-09-16."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.1.1"
+  }
+ }
+}

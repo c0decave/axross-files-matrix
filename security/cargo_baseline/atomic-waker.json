@@ -1,0 +1,53 @@
+{
+ "name": "atomic-waker",
+ "versions": {
+  "1.1.2": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|tests/basic.rs|3200dbc6f9c7738c"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 11,
+    "links": "",
+    "manifest": "f658e3d29aaa042f0bea123691f4d46e164c9a93f4bd1c596165e0ac7fbc129d",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0",
+    "vcs": {
+     "git": {
+      "sha1": "9969a29ccd1fe298e2df7346849c0095ba303a64"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0",
+    "crate_size": 12422,
+    "created_at": "2023-09-25T17:45:09.388277Z",
+    "description": "A synchronization primitive for task wakeup",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "notgull",
+    "repository": "https://github.com/smol-rs/atomic-waker",
+    "rust_version": "1.36"
+   },
+   "name": "atomic-waker",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by notgull on 2023-09-25."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|tests/basic.rs|3200dbc6f9c7738c"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn tests/basic.rs"
+    ]
+   },
+   "version": "1.1.2"
+  }
+ }
+}

@@ -1,0 +1,70 @@
+{
+ "name": "portable-atomic",
+ "versions": {
+  "1.15.0": {
+   "accepted_findings": [
+    "rs-url|build.rs|a77886867d26f7ef",
+    "yara|capability_process_spawn|src/imp/detect/aarch64_aa64reg.rs|77d6b3a2fafbdeb8",
+    "yara|capability_process_spawn|src/imp/detect/aarch64_apple.rs|149a79530b9bdb11",
+    "yara|capability_process_spawn|src/tests/helper.rs|dc3d529032bd0a0e",
+    "yara|capability_process_spawn|version.rs|25c4e742d5a9e49e"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "9d0b1e071715580497aadb918d4b3b124ee366ba66f15ac05a3d8045f0bc2cf0"
+    },
+    "files": 69,
+    "links": "",
+    "manifest": "38b58779995a59b7d8369a257ff1ccf857ccac3cc39d395ee8e2be174e765129",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "05c8b63e8d9609db387f0324918f81d68fe27748f084ef092fb35954d0539a85",
+    "vcs": {
+     "git": {
+      "sha1": "e4595528211f1d53b7f4d93e528ef84b491fc871"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "05c8b63e8d9609db387f0324918f81d68fe27748f084ef092fb35954d0539a85",
+    "crate_size": 202705,
+    "created_at": "2026-08-09T17:31:27.814296Z",
+    "description": "Portable atomic types including support for 128-bit atomics, atomic float, etc.\n",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/taiki-e/portable-atomic",
+    "rust_version": "1.34",
+    "trustpub": {
+     "provider": "github",
+     "repository": "taiki-e/portable-atomic",
+     "run_id": "31326553686",
+     "sha": "cb58081f88cd02681dbb32482acec7ae198850d5"
+    }
+   },
+   "name": "portable-atomic",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by trusted publishing on 2026-08-09."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/imp/detect/aarch64_aa64reg.rs|77d6b3a2fafbdeb8",
+     "yara|capability_process_spawn|src/imp/detect/aarch64_apple.rs|149a79530b9bdb11",
+     "yara|capability_process_spawn|src/tests/helper.rs|dc3d529032bd0a0e",
+     "yara|capability_process_spawn|version.rs|25c4e742d5a9e49e"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/imp/detect/aarch64_aa64reg.rs",
+     "capability_process_spawn:capability_process_spawn src/imp/detect/aarch64_apple.rs",
+     "capability_process_spawn:capability_process_spawn src/tests/helper.rs",
+     "capability_process_spawn:capability_process_spawn version.rs"
+    ]
+   },
+   "version": "1.15.0"
+  }
+ }
+}

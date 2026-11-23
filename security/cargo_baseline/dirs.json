@@ -1,0 +1,46 @@
+{
+ "name": "dirs",
+ "versions": {
+  "7.0.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 14,
+    "links": "",
+    "manifest": "d2d5a0478d41e254126896934eed6d5a99ca5e70fa0c96ff4df18bc1e62090bb",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "8d57d423b3c82e89b9a24ca3091fee61f456a26edbd28d26c65906f4bc1dcd8f",
+    "vcs": {
+     "git": {
+      "sha1": "793c8a97bea55669a806499839abd7b1d844279f"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "8d57d423b3c82e89b9a24ca3091fee61f456a26edbd28d26c65906f4bc1dcd8f",
+    "crate_size": 13798,
+    "created_at": "2026-09-05T17:32:15.811659Z",
+    "description": "A tiny low-level library that provides platform-specific standard locations of directories for config, cache and other data on Linux, Windows, macOS and Redox by leveraging the mechanisms defined by the XDG base/user directory specifications on Linux, the Known Folder API on Windows, and the Standar",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "soc",
+    "repository": "https://codeberg.org/dirs/dirs-rs"
+   },
+   "name": "dirs",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by soc on 2026-09-05."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "7.0.0"
+  }
+ }
+}

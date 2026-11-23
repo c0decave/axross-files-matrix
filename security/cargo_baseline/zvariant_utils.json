@@ -1,0 +1,47 @@
+{
+ "name": "zvariant_utils",
+ "versions": {
+  "4.2.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 22,
+    "links": "",
+    "manifest": "4f091e0ce0ccaf74b504d92c2e31dbcdc6efb274b45e02f44690aa9e3b0ae0c7",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "bad0294361a320b694a328460dc73add56c306150f5cb6bfafc44446120008a3",
+    "vcs": {
+     "git": {
+      "sha1": "0f4db6980bc1566278618a46c9ffa7f5f025c18a"
+     },
+     "path_in_vcs": "zvariant_utils"
+    }
+   },
+   "crates_io": {
+    "checksum": "bad0294361a320b694a328460dc73add56c306150f5cb6bfafc44446120008a3",
+    "crate_size": 25869,
+    "created_at": "2026-08-18T11:45:57.255393Z",
+    "description": "Various utilities used internally by the zvariant crate.",
+    "license": "MIT",
+    "published_by": "zeenix",
+    "repository": "https://github.com/z-galaxy/zbus/",
+    "rust_version": "1.87"
+   },
+   "name": "zvariant_utils",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by zeenix on 2026-08-18."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "4.2.0"
+  }
+ }
+}

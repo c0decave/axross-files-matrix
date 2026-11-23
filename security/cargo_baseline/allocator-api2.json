@@ -1,0 +1,47 @@
+{
+ "name": "allocator-api2",
+ "versions": {
+  "0.2.21": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 25,
+    "links": "",
+    "manifest": "e85895c3d2fe0c728bd4027d077f6e31c69b21d9f1b34040fd508164c1f9398e",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923",
+    "vcs": {
+     "git": {
+      "sha1": "63cd7fcc2f8854b5821c7054d026e8a4647acde1"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923",
+    "crate_size": 63622,
+    "created_at": "2024-12-01T14:49:16.555989Z",
+    "description": "Mirror of Rust's allocator API",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "zakarumych",
+    "repository": "https://github.com/zakarumych/allocator-api2",
+    "rust_version": "1.63"
+   },
+   "name": "allocator-api2",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by zakarumych on 2024-12-01."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.21"
+  }
+ }
+}

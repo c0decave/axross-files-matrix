@@ -1,0 +1,50 @@
+{
+ "name": "x11-dl",
+ "versions": {
+  "2.21.0": {
+   "accepted_findings": [
+    "rs-fs-write|build.rs|22a9bed35beacd5c"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "566d4ca45345742e4ab92421c1379a4683b6154e29489b86372884a084703ecf"
+    },
+    "files": 36,
+    "links": "",
+    "manifest": "f667b4935d41df2034775133843b043958eee36386d58fc938dbf367259909fb",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "38735924fedd5314a6e548792904ed8c6de6636285cb9fec04d5b1db85c1516f",
+    "vcs": {
+     "git": {
+      "sha1": "fced94ef6eb5935c892079a46812806f7b7a9237"
+     },
+     "path_in_vcs": "x11-dl"
+    }
+   },
+   "crates_io": {
+    "checksum": "38735924fedd5314a6e548792904ed8c6de6636285cb9fec04d5b1db85c1516f",
+    "crate_size": 66823,
+    "created_at": "2023-01-18T20:43:48.234556Z",
+    "description": "X11 library bindings for Rust",
+    "license": "MIT",
+    "published_by": "AltF02",
+    "repository": "https://github.com/AltF02/x11-rs.git"
+   },
+   "name": "x11-dl",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: uses pkg-config; writes only into OUT_DIR; no network. No binary; checksum = crates.io's; published by AltF02 on 2023-01-18."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "2.21.0"
+  }
+ }
+}

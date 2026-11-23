@@ -1,0 +1,71 @@
+{
+ "name": "rustversion",
+ "versions": {
+  "1.0.23": {
+   "accepted_findings": [
+    "rs-command|build/build.rs|2238b03f47d40ab0",
+    "rs-command|build/build.rs|8c967b4b7cbdf2b9",
+    "rs-fs-write|build/build.rs|39882367cac43b12",
+    "rs-url|build/build.rs|be8a9b0691c0f27e",
+    "rs-url|src/lib.rs|99425c98b806ed3f",
+    "rs-url|tests/test_const.rs|fbd644fe664ed222",
+    "yara|capability_process_spawn|build/build.rs|4438b108d5b198ca",
+    "yara|capability_process_spawn|src/expand.rs|9c93525a8c4a0e62",
+    "yara|capability_process_spawn|src/expr.rs|8e8ca76f4f583843",
+    "yara|capability_process_spawn|src/lib.rs|77c732493550b7e7"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build/build.rs": "4438b108d5b198ca43ef0a78509da89861020674abd05166addd1c3058afbfa6",
+     "build/rustc.rs": "faf67033ec831d968406f5a66c475df337f7221e9d1ab3477fed3a629e1ec5bc"
+    },
+    "files": 39,
+    "links": "",
+    "manifest": "23492897d3ca4965d3aabd7039182fb155a816aaf9838e01ca4f67366dec5e1b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f",
+    "vcs": {
+     "git": {
+      "sha1": "3a7c76605450b9a7299c6502a421909de9126a59"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f",
+    "crate_size": 21013,
+    "created_at": "2026-07-07T02:10:26.015429Z",
+    "description": "Conditional compilation according to rustc compiler version",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "dtolnay",
+    "repository": "https://github.com/dtolnay/rustversion",
+    "rust_version": "1.31"
+   },
+   "name": "rustversion",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Build script runs rustc --version and writes version.expr into OUT_DIR, which the proc macro includes; reads CARGO_PKG_NAME. No network. No binary; checksum = crates.io's; published by dtolnay on 2026-07-07."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|build/build.rs|4438b108d5b198ca",
+     "yara|capability_process_spawn|src/expand.rs|9c93525a8c4a0e62",
+     "yara|capability_process_spawn|src/expr.rs|8e8ca76f4f583843",
+     "yara|capability_process_spawn|src/lib.rs|77c732493550b7e7"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn build/build.rs",
+     "capability_process_spawn:capability_process_spawn src/expand.rs",
+     "capability_process_spawn:capability_process_spawn src/expr.rs",
+     "capability_process_spawn:capability_process_spawn src/lib.rs"
+    ]
+   },
+   "version": "1.0.23"
+  }
+ }
+}

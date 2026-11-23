@@ -1,0 +1,46 @@
+{
+ "name": "dirs-sys",
+ "versions": {
+  "0.5.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 11,
+    "links": "",
+    "manifest": "816220d69f04eceee9be1ffc816bbe1dd4dcb151bab5fde14b22dcd99b68f899",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "e01a3366d27ee9890022452ee61b2b63a67e6f13f58900b651ff5665f0bb1fab",
+    "vcs": {
+     "git": {
+      "sha1": "8bcd4aa2c35990d57a2cff2953793525fc42709c"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "e01a3366d27ee9890022452ee61b2b63a67e6f13f58900b651ff5665f0bb1fab",
+    "crate_size": 10157,
+    "created_at": "2025-01-11T22:10:02.119353Z",
+    "description": "System-level helper functions for the dirs and directories crates.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "soc",
+    "repository": "https://github.com/dirs-dev/dirs-sys-rs"
+   },
+   "name": "dirs-sys",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by soc on 2025-01-11."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.5.0"
+  }
+ }
+}

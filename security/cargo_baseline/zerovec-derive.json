@@ -1,0 +1,47 @@
+{
+ "name": "zerovec-derive",
+ "versions": {
+  "0.11.7": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 18,
+    "links": "",
+    "manifest": "cdcc4e4271d3cb71f64d3d97ef9fab7e15b804f4b7dd797379ac82666f821884",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "c3743ddbf47738d929cd1ae2e199d40d0162979dfe31aef8ae646d2bf00bf97a",
+    "vcs": {
+     "git": {
+      "sha1": "031d9e89f6a3fd26a14491e090729d46094328fd"
+     },
+     "path_in_vcs": "utils/zerovec/derive"
+    }
+   },
+   "crates_io": {
+    "checksum": "c3743ddbf47738d929cd1ae2e199d40d0162979dfe31aef8ae646d2bf00bf97a",
+    "crate_size": 23232,
+    "created_at": "2026-10-22T08:51:38.515193Z",
+    "description": "Custom derive for the zerovec crate",
+    "license": "Unicode-3.0",
+    "published_by": "robertbastian",
+    "repository": "https://github.com/unicode-org/icu4x",
+    "rust_version": "1.83"
+   },
+   "name": "zerovec-derive",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by robertbastian on 2026-10-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.11.7"
+  }
+ }
+}

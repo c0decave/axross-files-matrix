@@ -1,0 +1,55 @@
+{
+ "name": "tiny-skia",
+ "versions": {
+  "0.11.4": {
+   "accepted_findings": [
+    "yara|lolbas_net|.github/workflows/main.yml|79c7610ab5e6482f",
+    "yara|suspicious_network_tools|.github/workflows/main.yml|79c7610ab5e6482f"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 190,
+    "links": "",
+    "manifest": "e0d88875bd251b24024e315d8b6c55d15188540d7d72aebc6559c1fe0d0a9320",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "83d13394d44dae3207b52a326c0c85a8bf87f1541f23b0d143811088497b09ab",
+    "vcs": {
+     "git": {
+      "sha1": "ce3fe9bab0659fb928d6c22c03b74e009a8a2b77"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "83d13394d44dae3207b52a326c0c85a8bf87f1541f23b0d143811088497b09ab",
+    "crate_size": 201082,
+    "created_at": "2024-02-04T15:18:19.393923Z",
+    "description": "A tiny Skia subset ported to Rust.",
+    "license": "BSD-3-Clause",
+    "published_by": "RazrFalcon",
+    "repository": "https://github.com/RazrFalcon/tiny-skia"
+   },
+   "name": "tiny-skia",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "YARA: a CI workflow under .github/ with curl/wget (shipped in the crate, never built). No binary; checksum = crates.io's; published by RazrFalcon on 2024-02-04."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|lolbas_net|.github/workflows/main.yml|79c7610ab5e6482f",
+     "yara|suspicious_network_tools|.github/workflows/main.yml|79c7610ab5e6482f"
+    ],
+    "yara": [
+     "axross_backdoor_rules:suspicious_network_tools .github/workflows/main.yml",
+     "capability_network_lolbas:lolbas_net .github/workflows/main.yml"
+    ]
+   },
+   "version": "0.11.4"
+  }
+ }
+}

@@ -1,0 +1,53 @@
+{
+ "name": "icu_locale_core",
+ "versions": {
+  "2.4.0": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/preferences/extensions/unicode/keywords/measurement_system.rs|ddcadb5c654f6dd2"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 87,
+    "links": "",
+    "manifest": "50e4b8e084e6e2042867067b8e91c563805a16c980c91f4856c75289a85a10ab",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "25d29b57c17c6528d0dc4c2141cfa2d08200465acb537a3909c8b9b8a4a984c0",
+    "vcs": {
+     "git": {
+      "sha1": "031d9e89f6a3fd26a14491e090729d46094328fd"
+     },
+     "path_in_vcs": "components/locale_core"
+    }
+   },
+   "crates_io": {
+    "checksum": "25d29b57c17c6528d0dc4c2141cfa2d08200465acb537a3909c8b9b8a4a984c0",
+    "crate_size": 80269,
+    "created_at": "2026-10-22T08:51:54.513231Z",
+    "description": "API for managing Unicode Language and Locale Identifiers",
+    "license": "Unicode-3.0",
+    "published_by": "robertbastian",
+    "repository": "https://github.com/unicode-org/icu4x",
+    "rust_version": "1.88"
+   },
+   "name": "icu_locale_core",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by robertbastian on 2026-10-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/preferences/extensions/unicode/keywords/measurement_system.rs|ddcadb5c654f6dd2"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/preferences/extensions/unicode/keywords/measurement_system.rs"
+    ]
+   },
+   "version": "2.4.0"
+  }
+ }
+}

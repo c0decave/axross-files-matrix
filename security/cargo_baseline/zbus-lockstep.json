@@ -1,0 +1,46 @@
+{
+ "name": "zbus-lockstep",
+ "versions": {
+  "0.5.2": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 9,
+    "links": "",
+    "manifest": "3109e6beda73b43a6db8fda07107cae502954550e109ac81e69dffda33675fa3",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "6998de05217a084b7578728a9443d04ea4cd80f2a0839b8d78770b76ccd45863",
+    "vcs": {
+     "git": {
+      "sha1": "9bda5264dfe1dc7eaa7738f839ff977315c31b84"
+     },
+     "path_in_vcs": "zbus-lockstep"
+    }
+   },
+   "crates_io": {
+    "checksum": "6998de05217a084b7578728a9443d04ea4cd80f2a0839b8d78770b76ccd45863",
+    "crate_size": 15733,
+    "created_at": "2025-11-29T16:54:49.988824Z",
+    "description": "Keep types in lockstep with DBus XML definitions",
+    "license": "MIT",
+    "published_by": "luukvanderduim",
+    "repository": "https://github.com/luukvanderduim/zbus-lockstep"
+   },
+   "name": "zbus-lockstep",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by luukvanderduim on 2025-11-29."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.5.2"
+  }
+ }
+}

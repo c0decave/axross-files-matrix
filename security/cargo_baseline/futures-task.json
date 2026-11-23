@@ -1,0 +1,53 @@
+{
+ "name": "futures-task",
+ "versions": {
+  "0.3.34": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/noop_waker.rs|8e3cfb3c0bf5efb1"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 14,
+    "links": "",
+    "manifest": "3a57c9b11a3121e258c3449f63e275c755b19507b1eb742d98d1a0551bbb4918",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "cd417de3d1d015fc3bfd2b1ea46dfc7bab72ef86f1cc7cc9c78e728b34a6d1fd",
+    "vcs": {
+     "git": {
+      "sha1": "705e6b5c0f06535b1aac1cb1989a172b3d45be8c"
+     },
+     "path_in_vcs": "futures-task"
+    }
+   },
+   "crates_io": {
+    "checksum": "cd417de3d1d015fc3bfd2b1ea46dfc7bab72ef86f1cc7cc9c78e728b34a6d1fd",
+    "crate_size": 11376,
+    "created_at": "2026-08-11T12:13:07.886026Z",
+    "description": "Tools for working with tasks.\n",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "taiki-e",
+    "repository": "https://github.com/rust-lang/futures-rs",
+    "rust_version": "1.71"
+   },
+   "name": "futures-task",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by taiki-e on 2026-08-11."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/noop_waker.rs|8e3cfb3c0bf5efb1"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/noop_waker.rs"
+    ]
+   },
+   "version": "0.3.34"
+  }
+ }
+}

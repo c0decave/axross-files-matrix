@@ -1,0 +1,50 @@
+{
+ "name": "unicode-general-category",
+ "versions": {
+  "1.1.0": {
+   "accepted_findings": [
+    "rs-fs-write|build.rs|ea06fa71e17acf8e"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "a877183b60fdc9846063f7ed5a1dc23f8ef26e1ff4994bc4cfc7418ddb4ec48e"
+    },
+    "files": 13,
+    "links": "",
+    "manifest": "5cdff10307f6c57bdc4f677351e66c4d6a414d35a6606ab64263bee0055da6e4",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "0b993bddc193ae5bd0d623b49ec06ac3e9312875fdae725a975c51db1cc1677f",
+    "vcs": {
+     "git": {
+      "sha1": "cb2d8a62f035c33d6971b99322aae65f3cea7c88"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "0b993bddc193ae5bd0d623b49ec06ac3e9312875fdae725a975c51db1cc1677f",
+    "crate_size": 36486,
+    "created_at": "2025-09-16T00:44:45.093075Z",
+    "description": "Fast lookup of the Unicode General Category property for char",
+    "license": "Apache-2.0",
+    "published_by": "wezm",
+    "repository": "https://github.com/yeslogic/unicode-general-category"
+   },
+   "name": "unicode-general-category",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: writes only into OUT_DIR; no network. No binary; checksum = crates.io's; published by wezm on 2025-09-16."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.1.0"
+  }
+ }
+}

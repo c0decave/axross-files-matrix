@@ -1,0 +1,47 @@
+{
+ "name": "unicode-segmentation",
+ "versions": {
+  "1.13.3": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 19,
+    "links": "",
+    "manifest": "75b7047236fc26374425f5704c1adb8440f2d1b7200ec75a32ffe1098be95b63",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "c6f5d3c3b1bf09027a88a6bc961fc00497d651009560b5463668dc81b0fa87a8",
+    "vcs": {
+     "git": {
+      "sha1": "66a032fd8d667bc47ac5b640b151dff3f5356d07"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "c6f5d3c3b1bf09027a88a6bc961fc00497d651009560b5463668dc81b0fa87a8",
+    "crate_size": 112325,
+    "created_at": "2026-06-01T15:58:43.979474Z",
+    "description": "This crate provides Grapheme Cluster, Word and Sentence boundaries\naccording to Unicode Standard Annex #29 rules.\n",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "Manishearth",
+    "repository": "https://github.com/unicode-rs/unicode-segmentation",
+    "rust_version": "1.85.0"
+   },
+   "name": "unicode-segmentation",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by Manishearth on 2026-06-01."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.13.3"
+  }
+ }
+}

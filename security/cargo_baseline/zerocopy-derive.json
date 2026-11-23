@@ -1,0 +1,54 @@
+{
+ "name": "zerocopy-derive",
+ "versions": {
+  "0.8.63": {
+   "accepted_findings": [
+    "rs-fs-write|src/output_tests/mod.rs|5a8848176fbaae2b",
+    "rs-url|src/derive/into_bytes.rs|f6cf6996cb7f2a3f"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 175,
+    "links": "",
+    "manifest": "68e802672f2a066336e195b30165bbbb2873ebbe34cdb73057fa7d9ae2f70d46",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "863ad3ac83293fb4d740aedbfdc9240dd8d1a50c1099acd76ce80ce7c7230c7f",
+    "vcs": {
+     "git": {
+      "sha1": "c55af491426ef53f35fb8c6e83f220fa07712e66"
+     },
+     "path_in_vcs": "zerocopy/zerocopy-derive"
+    }
+   },
+   "crates_io": {
+    "checksum": "863ad3ac83293fb4d740aedbfdc9240dd8d1a50c1099acd76ce80ce7c7230c7f",
+    "crate_size": 137261,
+    "created_at": "2026-10-13T20:01:58.185985Z",
+    "description": "Custom derive for traits from the zerocopy crate",
+    "license": "BSD-2-Clause OR Apache-2.0 OR MIT",
+    "repository": "https://github.com/google/zerocopy",
+    "trustpub": {
+     "provider": "github",
+     "repository": "google/zerocopy",
+     "run_id": "38458455928",
+     "sha": "c55af491426ef53f35fb8c6e83f220fa07712e66"
+    }
+   },
+   "name": "zerocopy-derive",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Proc macro; fs/env use only in src/output_tests (its own tests). No network, no process. No binary; checksum = crates.io's; published by trusted publishing on 2026-10-13."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.8.63"
+  }
+ }
+}

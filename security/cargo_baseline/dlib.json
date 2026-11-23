@@ -1,0 +1,47 @@
+{
+ "name": "dlib",
+ "versions": {
+  "0.5.3": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 9,
+    "links": "",
+    "manifest": "08845ac66f8d8ca12b9732a7b5404d4aa4844b4077ed047b3b3d822b56958806",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "ab8ecd87370524b461f8557c119c405552c396ed91fc0a8eec68679eab26f94a",
+    "vcs": {
+     "git": {
+      "sha1": "ab1a79fd8b92a331a5f123be9e1dcbbcbd48dbf8"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "ab8ecd87370524b461f8557c119c405552c396ed91fc0a8eec68679eab26f94a",
+    "crate_size": 7120,
+    "created_at": "2026-02-26T03:32:04.429182Z",
+    "description": "Helper macros for handling manually loading optional system libraries.",
+    "license": "MIT",
+    "published_by": "ids1024",
+    "repository": "https://github.com/elinorbgr/dlib",
+    "rust_version": "1.56"
+   },
+   "name": "dlib",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by ids1024 on 2026-02-26."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.5.3"
+  }
+ }
+}

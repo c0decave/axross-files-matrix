@@ -1,0 +1,53 @@
+{
+ "name": "png",
+ "versions": {
+  "0.18.1": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/decoder/unfiltering_buffer.rs|6e146579e29cb571"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 39,
+    "links": "",
+    "manifest": "ed50a4165db1fab6c2db5b98b4ee9f5e0e00849a6d3073d48d7ffa4b67be0a99",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "60769b8b31b2a9f263dae2776c37b1b28ae246943cf719eb6946a1db05128a61",
+    "vcs": {
+     "git": {
+      "sha1": "2a3f980245e3ae38b82ade96533e7b450e8477bb"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "60769b8b31b2a9f263dae2776c37b1b28ae246943cf719eb6946a1db05128a61",
+    "crate_size": 125800,
+    "created_at": "2026-02-14T16:24:10.825565Z",
+    "description": "PNG decoding and encoding library in pure Rust",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "197g",
+    "repository": "https://github.com/image-rs/image-png",
+    "rust_version": "1.73"
+   },
+   "name": "png",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by 197g on 2026-02-14."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/decoder/unfiltering_buffer.rs|6e146579e29cb571"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/decoder/unfiltering_buffer.rs"
+    ]
+   },
+   "version": "0.18.1"
+  }
+ }
+}

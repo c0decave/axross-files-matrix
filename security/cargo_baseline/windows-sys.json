@@ -1,0 +1,107 @@
+{
+ "name": "windows-sys",
+ "versions": {
+  "0.52.0": {
+   "accepted_findings": [
+    "crontab-autostart|src/Windows/Win32/System/Registry/mod.rs|0da57b7124e96346",
+    "crontab-autostart|src/Windows/Win32/System/Registry/mod.rs|3b3700d1b8edf990",
+    "crontab-autostart|src/Windows/Win32/System/Registry/mod.rs|5466053fbb750d8f",
+    "crontab-autostart|src/Windows/Win32/System/Registry/mod.rs|a28678adf5c6830b",
+    "crontab-autostart|src/Windows/Win32/System/Registry/mod.rs|ab4c021fce2edb65",
+    "hidden-process|src/Windows/Win32/System/Threading/mod.rs|1f1e7b975731d811",
+    "hidden-process|src/Windows/Win32/System/Threading/mod.rs|331cad6b8df1d103",
+    "keyring-stores|src/Windows/Win32/UI/Shell/mod.rs|572b7402e3ceee69"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 241,
+    "links": "",
+    "manifest": "4746bf9d7dd129ae6ba4e0c3ec8bd16bff73df19d205c086678f1fe31de0a0f2",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "282be5f36a8ce781fad8c8ae18fa3f9beff57ec1b52cb3de0789201425d9a33d",
+    "vcs": {
+     "git": {
+      "sha1": "3a605cba064b26f2a198ac58085f8c8836f47c38"
+     },
+     "path_in_vcs": "crates/libs/sys"
+    }
+   },
+   "crates_io": {
+    "checksum": "282be5f36a8ce781fad8c8ae18fa3f9beff57ec1b52cb3de0789201425d9a33d",
+    "crate_size": 2576877,
+    "created_at": "2023-11-15T18:55:55.748059Z",
+    "description": "Rust for Windows",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "kennykerr",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "rust_version": "1.56"
+   },
+   "name": "windows-sys",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Generated Windows API bindings: REGSTR_PATH_RUN* are registry-path constants. Nothing else. No binary; checksum = crates.io's; published by kennykerr on 2023-11-15; other medium findings read: ['crontab-autostart', 'hidden-process', 'keyring-stores']."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.52.0"
+  },
+  "0.61.2": {
+   "accepted_findings": [
+    "crontab-autostart|src/Windows/Win32/System/Registry/mod.rs|218a31ecc89ca05d",
+    "crontab-autostart|src/Windows/Win32/System/Registry/mod.rs|71f54c574998313e",
+    "crontab-autostart|src/Windows/Win32/System/Registry/mod.rs|9b1922cbab6bd593",
+    "crontab-autostart|src/Windows/Win32/System/Registry/mod.rs|cf1b17da0769ebda",
+    "crontab-autostart|src/Windows/Win32/System/Registry/mod.rs|e4ae92ff34c087d3",
+    "hidden-process|src/Windows/Win32/System/Threading/mod.rs|1f1e7b975731d811",
+    "hidden-process|src/Windows/Win32/System/Threading/mod.rs|331cad6b8df1d103",
+    "keyring-stores|src/Windows/Win32/UI/Shell/mod.rs|979f2eb0f222fab2"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 257,
+    "links": "",
+    "manifest": "873853ef6021a31aa4b48e5d4555b840475d882b029065f68fc9228c52e2df2e",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "ae137229bcbd6cdf0f7b80a31df61766145077ddf49416a728b02cb3921ff3fc",
+    "vcs": {
+     "git": {
+      "sha1": "32c3144490c016fe496a0aed769bce60987a2e9d"
+     },
+     "path_in_vcs": "crates/libs/sys"
+    }
+   },
+   "crates_io": {
+    "checksum": "ae137229bcbd6cdf0f7b80a31df61766145077ddf49416a728b02cb3921ff3fc",
+    "crate_size": 2517186,
+    "created_at": "2025-10-06T19:18:30.163595Z",
+    "description": "Rust for Windows",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "kennykerr",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "rust_version": "1.71"
+   },
+   "name": "windows-sys",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Generated Windows API bindings: REGSTR_PATH_RUN* are registry-path constants. Nothing else. No binary; checksum = crates.io's; published by kennykerr on 2025-10-06; other medium findings read: ['crontab-autostart', 'hidden-process', 'keyring-stores']."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.61.2"
+  }
+ }
+}

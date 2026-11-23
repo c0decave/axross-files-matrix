@@ -1,0 +1,54 @@
+{
+ "name": "send_wrapper",
+ "versions": {
+  "0.6.0": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/futures.rs|72537ec5ce8c5fd5",
+    "yara|capability_process_spawn|src/lib.rs|6f502c35d714b9a5"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "ab6c9318b3402abb2d3639255bcd4b3bdd143ad20575e7e29f6541e08b2bee2f",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73",
+    "vcs": {
+     "git": {
+      "sha1": "1d005016d15a301af42e5a3fdc1369d9badb1f23"
+     }
+    }
+   },
+   "crates_io": {
+    "checksum": "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73",
+    "crate_size": 10519,
+    "created_at": "2022-06-05T17:10:03.323883Z",
+    "description": "This Rust library implements a wrapper type called SendWrapper which allows you to move around non-Send types\nbetween threads, as long as you access the contained value only from within the original thread. You also have to\nmake sure that the wrapper is dropped from within the original thread. If an",
+    "license": "MIT/Apache-2.0",
+    "published_by": "thk1",
+    "repository": "https://github.com/thk1/send_wrapper"
+   },
+   "name": "send_wrapper",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by thk1 on 2022-06-05."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/futures.rs|72537ec5ce8c5fd5",
+     "yara|capability_process_spawn|src/lib.rs|6f502c35d714b9a5"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/futures.rs",
+     "capability_process_spawn:capability_process_spawn src/lib.rs"
+    ]
+   },
+   "version": "0.6.0"
+  }
+ }
+}

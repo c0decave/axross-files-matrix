@@ -1,0 +1,116 @@
+{
+ "name": "rustix",
+ "versions": {
+  "0.38.44": {
+   "accepted_findings": [
+    "rs-command|build.rs|a104f7c138a88bce",
+    "rs-command|build.rs|fd283ce85299953f",
+    "yara|capability_network_outbound|src/weak.rs|2f0a7a12f8e48cc6",
+    "yara|capability_process_spawn|build.rs|7cc60a1a80836bff"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "7cc60a1a80836bff6c4f82dd938049dcec84736100bb81ebe6ac84513b0f4a45"
+    },
+    "files": 323,
+    "links": "",
+    "manifest": "aaa6dadc80359da8c0f4db764a4b7c04df655daa0c8e4474d670537d3fff04e1",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "fdb5bc1ae2baa591800df16c9ca78619bf65c0488b41b96ccec5d11220d8c154",
+    "vcs": {
+     "git": {
+      "sha1": "acf4a284ea893efa93953e1ff2f2f0ab00be1cdc"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "fdb5bc1ae2baa591800df16c9ca78619bf65c0488b41b96ccec5d11220d8c154",
+    "crate_size": 379347,
+    "created_at": "2025-01-21T23:46:00.129474Z",
+    "description": "Safe Rust bindings to POSIX/Unix/Linux/Winsock-like syscalls",
+    "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+    "published_by": "sunfishcode",
+    "repository": "https://github.com/bytecodealliance/rustix",
+    "rust_version": "1.63"
+   },
+   "name": "rustix",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: runs rustc to probe its version; writes only into OUT_DIR; no network. No binary; checksum = crates.io's; published by sunfishcode on 2025-01-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/weak.rs|2f0a7a12f8e48cc6",
+     "yara|capability_process_spawn|build.rs|7cc60a1a80836bff"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/weak.rs",
+     "capability_process_spawn:capability_process_spawn build.rs"
+    ]
+   },
+   "version": "0.38.44"
+  },
+  "1.1.6": {
+   "accepted_findings": [
+    "rs-command|build.rs|a104f7c138a88bce",
+    "rs-command|build.rs|fd283ce85299953f",
+    "rs-fs-write|build.rs|6e9621dee662e996",
+    "yara|capability_network_outbound|src/weak.rs|45b1e4ab84e6a1e1",
+    "yara|capability_process_spawn|build.rs|f7609b919173e712"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "f7609b919173e7121493266d0f89db724a1e47bb105ebd05397f869639603eec"
+    },
+    "files": 332,
+    "links": "",
+    "manifest": "ead93fe7d933f50f28527ed8c5536186cc7208df9f14727a1f36aeb9b2e1c2ea",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "e5e76742e5294153d4dde1207dbec5bdd81eef6fabdc0d2118babadabfd858aa",
+    "vcs": {
+     "git": {
+      "sha1": "4a563ad698b2c20ff848515821023d2265a788d0"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "e5e76742e5294153d4dde1207dbec5bdd81eef6fabdc0d2118babadabfd858aa",
+    "crate_size": 426484,
+    "created_at": "2026-10-27T00:49:03.146056Z",
+    "description": "Safe Rust bindings to POSIX/Unix/Linux/Winsock-like syscalls",
+    "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+    "published_by": "sunfishcode",
+    "repository": "https://github.com/bytecodealliance/rustix",
+    "rust_version": "1.65"
+   },
+   "name": "rustix",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: runs rustc to probe its version; writes only into OUT_DIR; no network. No binary; checksum = crates.io's; published by sunfishcode on 2026-10-27."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/weak.rs|45b1e4ab84e6a1e1",
+     "yara|capability_process_spawn|build.rs|f7609b919173e712"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/weak.rs",
+     "capability_process_spawn:capability_process_spawn build.rs"
+    ]
+   },
+   "version": "1.1.6"
+  }
+ }
+}

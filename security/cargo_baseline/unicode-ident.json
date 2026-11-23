@@ -1,0 +1,63 @@
+{
+ "name": "unicode-ident",
+ "versions": {
+  "1.0.27": {
+   "accepted_findings": [
+    "rs-include-bytes|tests/fst/mod.rs|8c056c5fa495289e",
+    "rs-include-bytes|tests/fst/mod.rs|e878aaecef3c1846",
+    "rs-include-bytes|tests/static_size.rs|e63b25c92adaab8e",
+    "rs-include-bytes|tests/static_size.rs|fca93a10a2d29a76",
+    "yara|lolbas_net|.github/workflows/ci.yml|e7b498453efe559a",
+    "yara|lolbas_net|src/tables.rs|88cc4f427e7335cd",
+    "yara|suspicious_network_tools|.github/workflows/ci.yml|e7b498453efe559a"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 26,
+    "links": "",
+    "manifest": "269bde7706ecc74e5f8aa290e82420f51f017861129077b1c77febbc0824432f",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563",
+    "vcs": {
+     "git": {
+      "sha1": "c1ac3afb721f3cea6527bc2255340a04d0de3ca0"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563",
+    "crate_size": 48807,
+    "created_at": "2026-10-12T04:20:27.796258Z",
+    "description": "Determine whether characters have the XID_Start or XID_Continue properties according to Unicode Standard Annex #31",
+    "license": "(MIT OR Apache-2.0) AND Unicode-3.0",
+    "published_by": "dtolnay",
+    "repository": "https://github.com/dtolnay/unicode-ident",
+    "rust_version": "1.71"
+   },
+   "name": "unicode-ident",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "YARA: a CI workflow under .github/ with curl/wget (shipped in the crate, never built). No binary; checksum = crates.io's; published by dtolnay on 2026-10-12."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|lolbas_net|.github/workflows/ci.yml|e7b498453efe559a",
+     "yara|lolbas_net|src/tables.rs|88cc4f427e7335cd",
+     "yara|suspicious_network_tools|.github/workflows/ci.yml|e7b498453efe559a"
+    ],
+    "yara": [
+     "axross_backdoor_rules:suspicious_network_tools .github/workflows/ci.yml",
+     "capability_network_lolbas:lolbas_net .github/workflows/ci.yml",
+     "capability_network_lolbas:lolbas_net src/tables.rs"
+    ]
+   },
+   "version": "1.0.27"
+  }
+ }
+}

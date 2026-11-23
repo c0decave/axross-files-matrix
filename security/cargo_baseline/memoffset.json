@@ -1,0 +1,48 @@
+{
+ "name": "memoffset",
+ "versions": {
+  "0.9.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "0ddaae191a4091fe1318177d12244ff0dbabc17a18f25a54059f4badc9a20876"
+    },
+    "files": 13,
+    "links": "",
+    "manifest": "974c6aac0a0c9ba6e0bf01f98aafc79e43bdc01c9995e168e743b175df90d1ac",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a",
+    "vcs": {
+     "git": {
+      "sha1": "153fc3d50f03755be53148bc3eb97390f9011e45"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a",
+    "crate_size": 9032,
+    "created_at": "2024-03-26T19:58:31.849513Z",
+    "description": "offset_of functionality for Rust structs.",
+    "license": "MIT",
+    "published_by": "Gilnaa",
+    "repository": "https://github.com/Gilnaa/memoffset"
+   },
+   "name": "memoffset",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by Gilnaa on 2024-03-26."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.9.1"
+  }
+ }
+}

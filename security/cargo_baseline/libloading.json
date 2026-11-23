@@ -1,0 +1,89 @@
+{
+ "name": "libloading",
+ "versions": {
+  "0.8.9": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|tests/functions.rs|bfe07fc286693235"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 25,
+    "links": "",
+    "manifest": "1e0c3195e8d7dfc46bb6355402767d2c8cde3c0e0b9e2f1bfcc884c989d456b9",
+    "native": {
+     "tests/nagisa32.dll": {
+      "kind": "pe",
+      "sha256": "5c69b2bd9c8a6ad04165c221075fc9fade1dd66ca697399ace528a5a62328e36"
+     },
+     "tests/nagisa64.dll": {
+      "kind": "pe",
+      "sha256": "e20b95e3036f3289421abd100760874d4f455afd33c3b5b64fec56b191f7d477"
+     }
+    },
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d7c4b02199fee7c5d21a5ae7d8cfa79a6ef5bb2fc834d6e9058e89c825efdc55",
+    "vcs": {
+     "git": {
+      "sha1": "f4ec9e702de2d0778bccff8525dc44e4cacac2d1"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "d7c4b02199fee7c5d21a5ae7d8cfa79a6ef5bb2fc834d6e9058e89c825efdc55",
+    "crate_size": 30222,
+    "created_at": "2025-09-21T10:59:30.598195Z",
+    "description": "Bindings around the platform's dynamic library loading primitives with greatly improved memory safety.",
+    "license": "ISC",
+    "published_by": "nagisa",
+    "repository": "https://github.com/nagisa/rust_libloading/",
+    "rust_version": "1.71.0"
+   },
+   "name": "libloading",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "tests/nagisa32.dll and nagisa64.dll: tiny PE test fixtures (3 KB / 2.5 KB) loaded only by the crate's own tests, never linked; capa finds no capability, no imports of concern. Library code is dlopen/LoadLibrary wrappers as expected. 2 native file(s) as described; checksum = crates.io's; published by nagisa on 2025-09-21."
+   },
+   "scans": {
+    "capa": {
+     "5c69b2bd9c8a6ad04165c221075fc9fade1dd66ca697399ace528a5a62328e36": {
+      "capabilities": [],
+      "note": "",
+      "path": "tests/nagisa32.dll",
+      "profile": {
+       "categories": {},
+       "error": "",
+       "ipv4": [],
+       "needed": [],
+       "rpath": [],
+       "urls": []
+      }
+     },
+     "e20b95e3036f3289421abd100760874d4f455afd33c3b5b64fec56b191f7d477": {
+      "capabilities": [],
+      "note": "",
+      "path": "tests/nagisa64.dll",
+      "profile": {
+       "categories": {},
+       "error": "",
+       "ipv4": [],
+       "needed": [],
+       "rpath": [],
+       "urls": []
+      }
+     }
+    },
+    "keys": [
+     "yara|capability_process_spawn|tests/functions.rs|bfe07fc286693235"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn tests/functions.rs"
+    ]
+   },
+   "version": "0.8.9"
+  }
+ }
+}

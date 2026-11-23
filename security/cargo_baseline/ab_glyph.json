@@ -1,0 +1,46 @@
+{
+ "name": "ab_glyph",
+ "versions": {
+  "0.2.32": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 20,
+    "links": "",
+    "manifest": "29640595c94c82ce5f9136f64639c202703f5f1307ee93d06c0a08afc74539aa",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "01c0457472c38ea5bd1c3b5ada5e368271cb550be7a4ca4a0b4634e9913f6cc2",
+    "vcs": {
+     "git": {
+      "sha1": "ffde4c677fa1095ac355174c1aa2919d7d53eff3"
+     },
+     "path_in_vcs": "glyph"
+    }
+   },
+   "crates_io": {
+    "checksum": "01c0457472c38ea5bd1c3b5ada5e368271cb550be7a4ca4a0b4634e9913f6cc2",
+    "crate_size": 20967,
+    "created_at": "2025-09-28T08:32:19.607120Z",
+    "description": "API for loading, scaling, positioning and rasterizing OpenType font glyphs.",
+    "license": "Apache-2.0",
+    "published_by": "alexheretic",
+    "repository": "https://github.com/alexheretic/ab-glyph"
+   },
+   "name": "ab_glyph",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by alexheretic on 2025-09-28."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.32"
+  }
+ }
+}

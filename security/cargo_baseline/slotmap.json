@@ -1,0 +1,49 @@
+{
+ "name": "slotmap",
+ "versions": {
+  "1.1.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "fa4b3bd978b8f9c9a619b6fd61b4471a9b0a386335dd3b1fc8997daa8a16c4ff"
+    },
+    "files": 19,
+    "links": "",
+    "manifest": "670b7ede5eaaa446dd7607d4eac455871696459f1affdceca2b67eee02987485",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "bdd58c3c93c3d278ca835519292445cb4b0d4dc59ccfdf7ceadaab3f8aeb4038",
+    "vcs": {
+     "git": {
+      "sha1": "2d56154b9b628f7d7a506f24ebc4f55a13ec8fed"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "bdd58c3c93c3d278ca835519292445cb4b0d4dc59ccfdf7ceadaab3f8aeb4038",
+    "crate_size": 61862,
+    "created_at": "2025-12-06T12:30:22.308199Z",
+    "description": "Slotmap data structure",
+    "license": "Zlib",
+    "published_by": "orlp",
+    "repository": "https://github.com/orlp/slotmap",
+    "rust_version": "1.58.0"
+   },
+   "name": "slotmap",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by orlp on 2025-12-06."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.1.1"
+  }
+ }
+}

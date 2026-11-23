@@ -1,0 +1,62 @@
+{
+ "name": "winnow",
+ "versions": {
+  "1.0.4": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|examples/arithmetic/bench.rs|a162e4f91ce2ed19",
+    "yara|capability_process_spawn|examples/arithmetic/main.rs|42982ed3cc995b5e",
+    "yara|capability_process_spawn|examples/arithmetic/parser_ast.rs|eeb12535c386632e",
+    "yara|capability_process_spawn|examples/arithmetic/parser_lexer.rs|996a5e48b0d35a6a"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 107,
+    "links": "",
+    "manifest": "2c699edeac7ac99bd348151bd07d3f0af7b1388001380c11b701ae4f51f3f406",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "23b97319f7b8343df12cc98938e5c3eb436064524c8d2b4e30a1d3a36eecdf81",
+    "vcs": {
+     "git": {
+      "sha1": "7539ec0fc27144bfdcf9a68b0dbbec48bd0d5bae"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "23b97319f7b8343df12cc98938e5c3eb436064524c8d2b4e30a1d3a36eecdf81",
+    "crate_size": 188513,
+    "created_at": "2026-07-13T14:31:41.405838Z",
+    "description": "A byte-oriented, zero-copy, parser combinators library",
+    "license": "MIT",
+    "published_by": "epage",
+    "repository": "https://github.com/winnow-rs/winnow",
+    "rust_version": "1.65.0"
+   },
+   "name": "winnow",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by epage on 2026-07-13."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|examples/arithmetic/bench.rs|a162e4f91ce2ed19",
+     "yara|capability_process_spawn|examples/arithmetic/main.rs|42982ed3cc995b5e",
+     "yara|capability_process_spawn|examples/arithmetic/parser_ast.rs|eeb12535c386632e",
+     "yara|capability_process_spawn|examples/arithmetic/parser_lexer.rs|996a5e48b0d35a6a"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn examples/arithmetic/bench.rs",
+     "capability_process_spawn:capability_process_spawn examples/arithmetic/main.rs",
+     "capability_process_spawn:capability_process_spawn examples/arithmetic/parser_ast.rs",
+     "capability_process_spawn:capability_process_spawn examples/arithmetic/parser_lexer.rs"
+    ]
+   },
+   "version": "1.0.4"
+  }
+ }
+}

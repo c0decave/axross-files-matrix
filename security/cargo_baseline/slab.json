@@ -1,0 +1,47 @@
+{
+ "name": "slab",
+ "versions": {
+  "0.4.12": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "510f833c72a3a1cb04d0c69b021c1974594424368df81253270fec8dee597d40",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5",
+    "vcs": {
+     "git": {
+      "sha1": "a1e4346070a48c936d808de75191dee5d01e433c"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5",
+    "crate_size": 19080,
+    "created_at": "2026-01-31T12:59:22.609198Z",
+    "description": "Pre-allocated storage for a uniform data type",
+    "license": "MIT",
+    "published_by": "Darksonn",
+    "repository": "https://github.com/tokio-rs/slab",
+    "rust_version": "1.51"
+   },
+   "name": "slab",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by Darksonn on 2026-01-31."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.4.12"
+  }
+ }
+}

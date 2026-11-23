@@ -1,0 +1,66 @@
+{
+ "name": "wayland-backend",
+ "versions": {
+  "0.3.17": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/rs/client_impl/mod.rs|64c30ab1d10773b0",
+    "yara|capability_network_outbound|src/rs/server_impl/client.rs|af6e4774be6e26c0",
+    "yara|capability_network_outbound|src/sys/client_impl/mod.rs|b7606de09034a709",
+    "yara|capability_network_outbound|src/sys/server_impl/mod.rs|95f548b70b600b22"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "1cfc2d91bcb90aaa03e0ed572ae27efa8e6fcc5e9da0a70ae1885fd964468f5c"
+    },
+    "files": 42,
+    "links": "",
+    "manifest": "bc93f9bc0f54dd43541dbbb8d67c3baa984fa9b46fa9a5368f04a3cce5eb79a4",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {
+     "src": 2
+    },
+    "proc_macro": false,
+    "sha256": "38a91b4eaddff87b1cd1074985e3713da4af2c49742d1b356b2c01670a67a078",
+    "vcs": {
+     "git": {
+      "sha1": "72f7fe0d9e99cb720ed57ade0c3077aec533b6ab"
+     },
+     "path_in_vcs": "wayland-backend"
+    }
+   },
+   "crates_io": {
+    "checksum": "38a91b4eaddff87b1cd1074985e3713da4af2c49742d1b356b2c01670a67a078",
+    "crate_size": 81255,
+    "created_at": "2026-08-14T21:50:33.143344Z",
+    "description": "Low-level bindings to the Wayland protocol",
+    "license": "MIT",
+    "published_by": "ids1024",
+    "repository": "https://github.com/smithay/wayland-rs",
+    "rust_version": "1.71"
+   },
+   "name": "wayland-backend",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: uses cc; no network. No binary; checksum = crates.io's; published by ids1024 on 2026-08-14."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/rs/client_impl/mod.rs|64c30ab1d10773b0",
+     "yara|capability_network_outbound|src/rs/server_impl/client.rs|af6e4774be6e26c0",
+     "yara|capability_network_outbound|src/sys/client_impl/mod.rs|b7606de09034a709",
+     "yara|capability_network_outbound|src/sys/server_impl/mod.rs|95f548b70b600b22"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/rs/client_impl/mod.rs",
+     "capability_network_outbound:capability_network_outbound src/rs/server_impl/client.rs",
+     "capability_network_outbound:capability_network_outbound src/sys/client_impl/mod.rs",
+     "capability_network_outbound:capability_network_outbound src/sys/server_impl/mod.rs"
+    ]
+   },
+   "version": "0.3.17"
+  }
+ }
+}

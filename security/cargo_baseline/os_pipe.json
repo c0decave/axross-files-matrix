@@ -1,0 +1,61 @@
+{
+ "name": "os_pipe",
+ "versions": {
+  "1.2.3": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/bin/swap.rs|69eca65dd6e94e8c",
+    "yara|capability_process_spawn|src/lib.rs|4d1ffb47da54d43d"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 15,
+    "links": "",
+    "manifest": "8182fb8f3e5dc0afe7f18638beb3250ed09a957e1a8d8403fe31c3ad300aa1c9",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967",
+    "vcs": {
+     "git": {
+      "sha1": "228ee175117faf1bf0cce99942ce579244215da4"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "bin_names": [
+     "cat",
+     "cat_both",
+     "swap"
+    ],
+    "checksum": "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967",
+    "crate_size": 10467,
+    "created_at": "2025-10-11T19:15:04.313994Z",
+    "description": "a cross-platform library for opening OS pipes",
+    "license": "MIT",
+    "published_by": "oconnor663",
+    "repository": "https://github.com/oconnor663/os_pipe.rs",
+    "rust_version": "1.63"
+   },
+   "name": "os_pipe",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by oconnor663 on 2025-10-11."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/bin/swap.rs|69eca65dd6e94e8c",
+     "yara|capability_process_spawn|src/lib.rs|4d1ffb47da54d43d"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/bin/swap.rs",
+     "capability_process_spawn:capability_process_spawn src/lib.rs"
+    ]
+   },
+   "version": "1.2.3"
+  }
+ }
+}

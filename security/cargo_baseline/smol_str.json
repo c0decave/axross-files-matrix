@@ -1,0 +1,58 @@
+{
+ "name": "smol_str",
+ "versions": {
+  "0.2.2": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|.github/ci.rs|472249d24e27e299",
+    "yara|capability_process_spawn|tests/tidy.rs|b86cc626ca3315d5",
+    "yara|threat_runtime_environment_read|.github/ci.rs|472249d24e27e299"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "64ece07ed11ebf0607ee3be3e688915c90e45d4b208a2a230d11d8f8b0f4085a",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "dd538fb6910ac1099850255cf94a94df6551fbdd602454387d0adb2d1ca6dead",
+    "vcs": {
+     "git": {
+      "sha1": "aea39b4974f55e9380556272b1335e2f6fd13cc7"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "dd538fb6910ac1099850255cf94a94df6551fbdd602454387d0adb2d1ca6dead",
+    "crate_size": 15840,
+    "created_at": "2024-05-14T10:24:31.374376Z",
+    "description": "small-string optimized string type with O(1) clone",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "Veykril",
+    "repository": "https://github.com/rust-analyzer/smol_str"
+   },
+   "name": "smol_str",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": ".github/ci.rs reads CRATES_IO_TOKEN - the maintainers' publish script, shipped, never built. Nothing else flagged. No binary; checksum = crates.io's; published by Veykril on 2024-05-14."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|.github/ci.rs|472249d24e27e299",
+     "yara|capability_process_spawn|tests/tidy.rs|b86cc626ca3315d5",
+     "yara|threat_runtime_environment_read|.github/ci.rs|472249d24e27e299"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn .github/ci.rs",
+     "capability_process_spawn:capability_process_spawn tests/tidy.rs",
+     "threat_runtime_environment_read:threat_runtime_environment_read .github/ci.rs"
+    ]
+   },
+   "version": "0.2.2"
+  }
+ }
+}

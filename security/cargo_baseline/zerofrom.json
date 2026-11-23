@@ -1,0 +1,47 @@
+{
+ "name": "zerofrom",
+ "versions": {
+  "0.1.8": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 9,
+    "links": "",
+    "manifest": "59f81e14572db1223c1ee3d7930fff7e71fb56bbd1684a45a364056e12f67547",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "0ec05a11813ea801ff6d75110ad09cd0824ddba17dfe17128ea0d5f68e6c5272",
+    "vcs": {
+     "git": {
+      "sha1": "e9575f7e4b5aeddfeeb87ada5d3e715950e8233e"
+     },
+     "path_in_vcs": "utils/zerofrom"
+    }
+   },
+   "crates_io": {
+    "checksum": "0ec05a11813ea801ff6d75110ad09cd0824ddba17dfe17128ea0d5f68e6c5272",
+    "crate_size": 6156,
+    "created_at": "2026-05-12T09:08:18.380489Z",
+    "description": "ZeroFrom trait for constructing",
+    "license": "Unicode-3.0",
+    "published_by": "sffc",
+    "repository": "https://github.com/unicode-org/icu4x",
+    "rust_version": "1.71.1"
+   },
+   "name": "zerofrom",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by sffc on 2026-05-12."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.1.8"
+  }
+ }
+}

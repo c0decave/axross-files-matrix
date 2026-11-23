@@ -1,0 +1,65 @@
+{
+ "name": "wasm-bindgen-shared",
+ "versions": {
+  "0.2.130": {
+   "accepted_findings": [
+    "rs-command|build.rs|36a91c8b71dcaf4b",
+    "yara|capability_process_spawn|build.rs|2ad2b0d08ef35c6a",
+    "yara|capability_process_spawn|src/identifier.rs|05ce1e3dbaaa2c5a"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "2ad2b0d08ef35c6a9013b5488bdf568630f0fc517d10b47f3851ad5c6ef10da4"
+    },
+    "files": 11,
+    "links": "wasm_bindgen",
+    "manifest": "6c7df7d2e16189a0e2b53b26f4dbc266cc25021b1f37df16b1b870fdcb67199c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "3b1f9c3798725016c6ee5f2f57869ec0831e8bbc0ab0310a86e787e97f41389e",
+    "vcs": {
+     "git": {
+      "sha1": "c93b8ae848d4d9e6beaeaf9516e18a7cadd818a2"
+     },
+     "path_in_vcs": "crates/shared"
+    }
+   },
+   "crates_io": {
+    "checksum": "3b1f9c3798725016c6ee5f2f57869ec0831e8bbc0ab0310a86e787e97f41389e",
+    "crate_size": 13698,
+    "created_at": "2026-10-30T06:14:57.203710Z",
+    "description": "Shared support between wasm-bindgen and wasm-bindgen cli, an internal\ndependency.\n",
+    "lib_links": "wasm_bindgen",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/shared",
+    "rust_version": "1.81",
+    "trustpub": {
+     "provider": "github",
+     "repository": "wasm-bindgen/wasm-bindgen",
+     "run_id": "41011884567",
+     "sha": "c93b8ae848d4d9e6beaeaf9516e18a7cadd818a2"
+    }
+   },
+   "name": "wasm-bindgen-shared",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Build script hashes its own schema files and runs `git rev-parse HEAD` in the crate folder to embed a revision (reads the enclosing repository's HEAD if CARGO_HOME lies inside one - harmless, but noted); wasm-only crate. No network. No binary; checksum = crates.io's; published by trusted publishing on 2026-10-30."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|build.rs|2ad2b0d08ef35c6a",
+     "yara|capability_process_spawn|src/identifier.rs|05ce1e3dbaaa2c5a"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn build.rs",
+     "capability_process_spawn:capability_process_spawn src/identifier.rs"
+    ]
+   },
+   "version": "0.2.130"
+  }
+ }
+}

@@ -1,0 +1,46 @@
+{
+ "name": "error-code",
+ "versions": {
+  "3.4.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "283b09cbea49a55f192f47416435eeaef1e4b52b1845fd8721bbc088484e2f94",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "0b5343afd4a8365a643ac588dab4cf234a190c7f6c88c9f6dd6ffe00837661b7",
+    "vcs": {
+     "git": {
+      "sha1": "e4615e514db3ff64f5f1b328b4865b20a3dcdbc3"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "0b5343afd4a8365a643ac588dab4cf234a190c7f6c88c9f6dd6ffe00837661b7",
+    "crate_size": 8964,
+    "created_at": "2026-08-15T09:38:47.556114Z",
+    "description": "Error code",
+    "license": "BSL-1.0",
+    "published_by": "DoumanAsh",
+    "repository": "https://github.com/DoumanAsh/error-code"
+   },
+   "name": "error-code",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by DoumanAsh on 2026-08-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "3.4.0"
+  }
+ }
+}

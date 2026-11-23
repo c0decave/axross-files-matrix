@@ -1,0 +1,47 @@
+{
+ "name": "objc2-core-location",
+ "versions": {
+  "0.2.2": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 33,
+    "links": "",
+    "manifest": "18b67697894bf6d3cb6b9fe7ca36f6dd47e06e6694347c6efa070f56929c3265",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "000cfee34e683244f284252ee206a27953279d370e309649dc3ee317b37e5781",
+    "vcs": {
+     "git": {
+      "sha1": "e282618be4c3a3b9542957e0c8540e9588472ce8"
+     },
+     "path_in_vcs": "framework-crates/objc2-core-location"
+    }
+   },
+   "crates_io": {
+    "checksum": "000cfee34e683244f284252ee206a27953279d370e309649dc3ee317b37e5781",
+    "crate_size": 13100,
+    "created_at": "2024-05-21T08:30:29.450774Z",
+    "description": "Bindings to the CoreLocation framework",
+    "license": "MIT",
+    "published_by": "madsmtm",
+    "repository": "https://github.com/madsmtm/objc2",
+    "rust_version": "1.60"
+   },
+   "name": "objc2-core-location",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by madsmtm on 2024-05-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.2"
+  }
+ }
+}

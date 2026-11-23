@@ -1,0 +1,52 @@
+{
+ "name": "wgpu",
+ "versions": {
+  "30.0.1": {
+   "accepted_findings": [
+    "rs-include-bytes|src/macros/mod.rs|48f91401813046f1",
+    "rs-include-bytes|src/macros/mod.rs|fe9b74acf1a20ea2"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "18681e37762d3a8e36e04df1b6228a16e93f8b5946f1e1886839c5cab1b034f0"
+    },
+    "files": 191,
+    "links": "",
+    "manifest": "a630bdd743cfa9a2bc993443d2e8aa0e0770dbde0d6fa0a059d4cc42a6b2be2b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "527ccdf43dd5b2e8676eed9984ce00e2bbb0a1b85b70c1969dcb6cd2eb55ab9e",
+    "vcs": {
+     "git": {
+      "sha1": "40f4a34ebaf56f9a046231f54125ad046239d3f3"
+     },
+     "path_in_vcs": "wgpu"
+    }
+   },
+   "crates_io": {
+    "checksum": "527ccdf43dd5b2e8676eed9984ce00e2bbb0a1b85b70c1969dcb6cd2eb55ab9e",
+    "crate_size": 231453,
+    "created_at": "2026-08-22T02:53:38.229945Z",
+    "description": "Cross-platform, safe, pure-rust graphics API",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "cwfitzgerald",
+    "repository": "https://github.com/gfx-rs/wgpu",
+    "rust_version": "1.87.0"
+   },
+   "name": "wgpu",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by cwfitzgerald on 2026-08-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "30.0.1"
+  }
+ }
+}

@@ -1,0 +1,49 @@
+{
+ "name": "tiff",
+ "versions": {
+  "0.11.3": {
+   "accepted_findings": [
+    "rs-include-bytes|benches/lzw.rs|618e6224bf3a67ed"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 45,
+    "links": "",
+    "manifest": "707879a2a6af39baa178a79496f72b638b5759e7a6eead92f8bd78185e5bd5b5",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "b63feaf3343d35b6ca4d50483f94843803b0f51634937cc2ec519fc32232bc52",
+    "vcs": {
+     "git": {
+      "sha1": "e41159ce058bf193718b017599e2d7d53e9ccc92"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "b63feaf3343d35b6ca4d50483f94843803b0f51634937cc2ec519fc32232bc52",
+    "crate_size": 102026,
+    "created_at": "2026-02-10T04:18:15.326938Z",
+    "description": "TIFF decoding and encoding library in pure Rust",
+    "license": "MIT",
+    "published_by": "197g",
+    "repository": "https://github.com/image-rs/image-tiff",
+    "rust_version": "1.85.0"
+   },
+   "name": "tiff",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by 197g on 2026-02-10."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.11.3"
+  }
+ }
+}

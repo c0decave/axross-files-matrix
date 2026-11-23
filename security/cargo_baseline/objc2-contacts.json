@@ -1,0 +1,47 @@
+{
+ "name": "objc2-contacts",
+ "versions": {
+  "0.2.2": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 37,
+    "links": "",
+    "manifest": "3053a26f1684c5019ed72cc750e979d8183d961d37a9e908d85582cd508c44cd",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "a5ff520e9c33812fd374d8deecef01d4a840e7b41862d849513de77e44aa4889",
+    "vcs": {
+     "git": {
+      "sha1": "e282618be4c3a3b9542957e0c8540e9588472ce8"
+     },
+     "path_in_vcs": "framework-crates/objc2-contacts"
+    }
+   },
+   "crates_io": {
+    "checksum": "a5ff520e9c33812fd374d8deecef01d4a840e7b41862d849513de77e44aa4889",
+    "crate_size": 17094,
+    "created_at": "2024-05-21T08:30:25.248897Z",
+    "description": "Bindings to the Contacts framework",
+    "license": "MIT",
+    "published_by": "madsmtm",
+    "repository": "https://github.com/madsmtm/objc2",
+    "rust_version": "1.60"
+   },
+   "name": "objc2-contacts",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by madsmtm on 2024-05-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.2"
+  }
+ }
+}

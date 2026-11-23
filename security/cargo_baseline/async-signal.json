@@ -1,0 +1,53 @@
+{
+ "name": "async-signal",
+ "versions": {
+  "0.2.14": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|tests/unix_signals.rs|ae344c6bcffca28a"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 15,
+    "links": "",
+    "manifest": "c9f30c16bb4c7655c2f185d15adaba7111ff6c9a596336682f367281058521f7",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "52b5aaafa020cf5053a01f2a60e8ff5dccf550f0f77ec54a4e47285ac2bab485",
+    "vcs": {
+     "git": {
+      "sha1": "d750e57adccbd90c4c4e93d184aeabcf5b22f057"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "52b5aaafa020cf5053a01f2a60e8ff5dccf550f0f77ec54a4e47285ac2bab485",
+    "crate_size": 16447,
+    "created_at": "2026-04-07T11:50:26.817406Z",
+    "description": "Async signal handling",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "taiki-e",
+    "repository": "https://github.com/smol-rs/async-signal",
+    "rust_version": "1.85"
+   },
+   "name": "async-signal",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by taiki-e on 2026-04-07."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|tests/unix_signals.rs|ae344c6bcffca28a"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn tests/unix_signals.rs"
+    ]
+   },
+   "version": "0.2.14"
+  }
+ }
+}

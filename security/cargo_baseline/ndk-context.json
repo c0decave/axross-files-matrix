@@ -1,0 +1,46 @@
+{
+ "name": "ndk-context",
+ "versions": {
+  "0.1.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 6,
+    "links": "",
+    "manifest": "05b96df8a22749085340d68d4f0d4bd5cd8d816c8494be53dc619c610d5bd927",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "27b02d87554356db9e9a873add8782d4ea6e3e58ea071a9adb9a2e8ddb884a8b",
+    "vcs": {
+     "git": {
+      "sha1": "10f2ba388fca20f7349996ebae26ccda7a6fda5c"
+     },
+     "path_in_vcs": "ndk-context"
+    }
+   },
+   "crates_io": {
+    "checksum": "27b02d87554356db9e9a873add8782d4ea6e3e58ea071a9adb9a2e8ddb884a8b",
+    "crate_size": 2205,
+    "created_at": "2022-04-19T14:40:07.603632Z",
+    "description": "Handles for accessing Android APIs",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "francesca64",
+    "repository": "https://github.com/rust-windowing/android-ndk-rs"
+   },
+   "name": "ndk-context",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by francesca64 on 2022-04-19."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.1.1"
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "name": "zerofrom-derive",
+ "versions": {
+  "0.1.8": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 9,
+    "links": "",
+    "manifest": "41cc363155c3073b98723b469e1e091f64266c401dd1736721defe5393d0535a",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "f75b4683f6c7f45248d4d64056a24298c6281e0993356d7d1b4a1a962ef10d4a",
+    "vcs": {
+     "git": {
+      "sha1": "ce235d80cf7cbd028e8bd59920420e1203b205b3"
+     },
+     "path_in_vcs": "utils/zerofrom/derive"
+    }
+   },
+   "crates_io": {
+    "checksum": "f75b4683f6c7f45248d4d64056a24298c6281e0993356d7d1b4a1a962ef10d4a",
+    "crate_size": 8834,
+    "created_at": "2026-09-15T21:39:20.888453Z",
+    "description": "Custom derive for the zerofrom crate",
+    "license": "Unicode-3.0",
+    "published_by": "sffc",
+    "repository": "https://github.com/unicode-org/icu4x",
+    "rust_version": "1.71.1"
+   },
+   "name": "zerofrom-derive",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by sffc on 2026-09-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.1.8"
+  }
+ }
+}

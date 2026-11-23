@@ -1,0 +1,53 @@
+{
+ "name": "peniko",
+ "versions": {
+  "0.6.1": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/gradient.rs|c0520aca035fb605"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 14,
+    "links": "",
+    "manifest": "776c50b8f5d3ba2c4fec179ee4e7895f4551773f10c81a1684d5bf01f960dced",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "839c8299360d2e998bdb106dc0a6cd71dcc5f4df51df1b620361bf50e283cca6",
+    "vcs": {
+     "git": {
+      "sha1": "e1bb9ef26282a2dd48058a3a7154691548fe4980"
+     },
+     "path_in_vcs": "peniko"
+    }
+   },
+   "crates_io": {
+    "checksum": "839c8299360d2e998bdb106dc0a6cd71dcc5f4df51df1b620361bf50e283cca6",
+    "crate_size": 21265,
+    "created_at": "2026-05-15T04:59:45.348256Z",
+    "description": "Primitive types for styling vector graphics",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "waywardmonkeys",
+    "repository": "https://github.com/linebender/peniko",
+    "rust_version": "1.85"
+   },
+   "name": "peniko",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by waywardmonkeys on 2026-05-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/gradient.rs|c0520aca035fb605"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/gradient.rs"
+    ]
+   },
+   "version": "0.6.1"
+  }
+ }
+}

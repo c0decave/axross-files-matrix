@@ -1,0 +1,57 @@
+{
+ "name": "serde",
+ "versions": {
+  "1.0.229": {
+   "accepted_findings": [
+    "rs-command|build.rs|a6a61c5c15299c38",
+    "rs-fs-write|build.rs|dcc34fe1c9237941",
+    "yara|capability_process_spawn|build.rs|e2ea6a7a82f5404c"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "e2ea6a7a82f5404c3e28cb055883c737ee7903367a10206fbb47b75c009f0eb3"
+    },
+    "files": 33,
+    "links": "",
+    "manifest": "13c9a4c42f5321788235e46dc69930d160cc325219cb6264a561b776c7c38332",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "4148590afebada386688f18773da617792bf2ef03ffc1e4cbd2b1d45b023e0ba",
+    "vcs": {
+     "git": {
+      "sha1": "7fc3b4c30c94f73a96ebd1553f2b090d928fc3a8"
+     },
+     "path_in_vcs": "serde"
+    }
+   },
+   "crates_io": {
+    "checksum": "4148590afebada386688f18773da617792bf2ef03ffc1e4cbd2b1d45b023e0ba",
+    "crate_size": 83669,
+    "created_at": "2026-07-18T23:05:13.266456Z",
+    "description": "A generic serialization/deserialization framework",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "dtolnay",
+    "repository": "https://github.com/serde-rs/serde",
+    "rust_version": "1.56"
+   },
+   "name": "serde",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: runs rustc to probe its version; writes only into OUT_DIR; no network. No binary; checksum = crates.io's; published by dtolnay on 2026-07-18."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|build.rs|e2ea6a7a82f5404c"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn build.rs"
+    ]
+   },
+   "version": "1.0.229"
+  }
+ }
+}

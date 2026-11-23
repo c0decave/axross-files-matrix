@@ -1,0 +1,59 @@
+{
+ "name": "color",
+ "versions": {
+  "0.3.3": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|examples/interp.rs|5ad30e33d6a315ae",
+    "yara|capability_process_spawn|src/dynamic.rs|08f1df53de95424d",
+    "yara|capability_process_spawn|src/gradient.rs|59f78ee5df149ffa"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 29,
+    "links": "",
+    "manifest": "a0b05e70834d3cc0fb6b635c8e1d852acc3a67949bf4f4612911d72a81566a1b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "2ec7c5eb7a16992b1904d76c517d170ab353b0e0b3d5a0c81a8a0cd1037893cf",
+    "vcs": {
+     "git": {
+      "sha1": "598fae3faca4d17bbde51ec12c0d051102ef4541"
+     },
+     "path_in_vcs": "color"
+    }
+   },
+   "crates_io": {
+    "checksum": "2ec7c5eb7a16992b1904d76c517d170ab353b0e0b3d5a0c81a8a0cd1037893cf",
+    "crate_size": 75273,
+    "created_at": "2026-05-05T14:20:48.490544Z",
+    "description": "A library for representing and manipulating colors",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "tomcur",
+    "repository": "https://github.com/linebender/color",
+    "rust_version": "1.82"
+   },
+   "name": "color",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by tomcur on 2026-05-05."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|examples/interp.rs|5ad30e33d6a315ae",
+     "yara|capability_process_spawn|src/dynamic.rs|08f1df53de95424d",
+     "yara|capability_process_spawn|src/gradient.rs|59f78ee5df149ffa"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn examples/interp.rs",
+     "capability_process_spawn:capability_process_spawn src/dynamic.rs",
+     "capability_process_spawn:capability_process_spawn src/gradient.rs"
+    ]
+   },
+   "version": "0.3.3"
+  }
+ }
+}

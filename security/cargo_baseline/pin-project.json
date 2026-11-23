@@ -1,0 +1,52 @@
+{
+ "name": "pin-project",
+ "versions": {
+  "1.1.13": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 208,
+    "links": "",
+    "manifest": "8a792afee827bb26521b5258f6eae9eb3f89f119d59cd2acdb9bead4f237466b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "2466b2336ed02bcdca6b294417127b90ec92038d1d5c4fbeac971a922e0e0924",
+    "vcs": {
+     "git": {
+      "sha1": "c3b6b85f7e1674602c0ed693da985b33b2452c3c"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "2466b2336ed02bcdca6b294417127b90ec92038d1d5c4fbeac971a922e0e0924",
+    "crate_size": 56345,
+    "created_at": "2026-05-13T18:32:09.030433Z",
+    "description": "A crate for safe and ergonomic pin-projection.\n",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/taiki-e/pin-project",
+    "rust_version": "1.71",
+    "trustpub": {
+     "provider": "github",
+     "repository": "taiki-e/pin-project",
+     "run_id": "25818408191",
+     "sha": "61a5c74806c90ea24239ff2ce98043d2ede8f3a8"
+    }
+   },
+   "name": "pin-project",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by trusted publishing on 2026-05-13."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.1.13"
+  }
+ }
+}

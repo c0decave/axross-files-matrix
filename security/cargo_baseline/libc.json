@@ -1,0 +1,78 @@
+{
+ "name": "libc",
+ "versions": {
+  "0.2.191": {
+   "accepted_findings": [
+    "rs-command|build.rs|464c9eca7b9dd197",
+    "rs-command|build.rs|92567e773441ea5c",
+    "rs-command|build.rs|d3796929c2a8097e",
+    "rs-command|build.rs|d3fdb7c2efe9a366",
+    "rs-command|build.rs|eebc6bc1f825522e",
+    "rs-exec-memory|src/unix/bsd/freebsdlike/freebsd/mod.rs|795f65fad6dc5340",
+    "yara|capability_process_spawn|build.rs|e70593206df4d2a3",
+    "yara|capability_process_spawn|src/fuchsia/mod.rs|4457834aa65da944",
+    "yara|capability_process_spawn|src/unix/mod.rs|5983e1f99a999167",
+    "yara|capability_process_spawn|src/vxworks/mod.rs|92f6aefb64995544",
+    "yara|capability_process_spawn|src/windows/mod.rs|cee2e2d028fc9598"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "e70593206df4d2a3138eab463567e0ae8f91c1bea565da4ab5370ea8986840ac"
+    },
+    "files": 452,
+    "links": "",
+    "manifest": "c4e329687a1f84bb1ab1d53fdb192dbd219ae764f153cde954da166f17b27909",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "65cd87c9a6d60536580b316ad985726104730a5151c99845f2490428ef91240a",
+    "vcs": {
+     "git": {
+      "sha1": "ccc2ff4aaab962f7fde7b8edda7379c045b1ca12"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "65cd87c9a6d60536580b316ad985726104730a5151c99845f2490428ef91240a",
+    "crate_size": 855401,
+    "created_at": "2026-10-16T22:56:46.041660Z",
+    "description": "Raw FFI bindings to platform libraries like libc.",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/rust-lang/libc",
+    "rust_version": "1.65",
+    "trustpub": {
+     "provider": "github",
+     "repository": "rust-lang/libc",
+     "run_id": "38978648039",
+     "sha": "ccc2ff4aaab962f7fde7b8edda7379c045b1ca12"
+    }
+   },
+   "name": "libc",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Build script probes rustc (and freebsd-version / emcc on those targets) to set cfgs. rs-exec-memory hits are PROT_EXEC constants of the bindings. No network. No binary; checksum = crates.io's; published by trusted publishing on 2026-10-16."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|build.rs|e70593206df4d2a3",
+     "yara|capability_process_spawn|src/fuchsia/mod.rs|4457834aa65da944",
+     "yara|capability_process_spawn|src/unix/mod.rs|5983e1f99a999167",
+     "yara|capability_process_spawn|src/vxworks/mod.rs|92f6aefb64995544",
+     "yara|capability_process_spawn|src/windows/mod.rs|cee2e2d028fc9598"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn build.rs",
+     "capability_process_spawn:capability_process_spawn src/fuchsia/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/unix/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/vxworks/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/windows/mod.rs"
+    ]
+   },
+   "version": "0.2.191"
+  }
+ }
+}

@@ -1,0 +1,85 @@
+{
+ "name": "async-io",
+ "versions": {
+  "2.6.0": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|benches/io.rs|e998fce847146b27",
+    "yara|capability_network_outbound|src/lib.rs|8fbcbca068a140c7",
+    "yara|capability_network_outbound|tests/issue_182.rs|7bfb6f6786040dc3",
+    "yara|capability_process_spawn|examples/kqueue-process.rs|111aff050555ce5e",
+    "yara|capability_process_spawn|examples/windows-command.rs|9901e8a9b6abfcf8",
+    "yara|capability_process_spawn|src/driver.rs|a55c9715d9669e44",
+    "yara|capability_process_spawn|src/os/kqueue.rs|1809c885491c7a8b",
+    "yara|capability_process_spawn|src/os/windows.rs|765afbfe7d52d285",
+    "yara|capability_process_spawn|tests/async.rs|d9a3826c77251553",
+    "yara|capability_process_spawn|tests/block_on.rs|b92d79be1a005132",
+    "yara|capability_process_spawn|tests/timer.rs|0c7b36e2f96d3200"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "114f314a71b008f860a7f6564971c914206e7a1e2252e9fe7ff675d2f75220b3"
+    },
+    "files": 31,
+    "links": "",
+    "manifest": "e779a77adeb2affa305d7a049187f987f5b08076472eca39c0fe4f0e6226ce6d",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "456b8a8feb6f42d237746d4b3e9a178494627745c3c56c6ea55d92ba50d026fc",
+    "vcs": {
+     "git": {
+      "sha1": "576b470ca3cadefdec8b169279df23c9a0a63495"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "456b8a8feb6f42d237746d4b3e9a178494627745c3c56c6ea55d92ba50d026fc",
+    "crate_size": 51062,
+    "created_at": "2025-09-14T14:03:50.201510Z",
+    "description": "Async I/O and timers",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "taiki-e",
+    "repository": "https://github.com/smol-rs/async-io",
+    "rust_version": "1.71"
+   },
+   "name": "async-io",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by taiki-e on 2025-09-14."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|benches/io.rs|e998fce847146b27",
+     "yara|capability_network_outbound|src/lib.rs|8fbcbca068a140c7",
+     "yara|capability_network_outbound|tests/issue_182.rs|7bfb6f6786040dc3",
+     "yara|capability_process_spawn|examples/kqueue-process.rs|111aff050555ce5e",
+     "yara|capability_process_spawn|examples/windows-command.rs|9901e8a9b6abfcf8",
+     "yara|capability_process_spawn|src/driver.rs|a55c9715d9669e44",
+     "yara|capability_process_spawn|src/os/kqueue.rs|1809c885491c7a8b",
+     "yara|capability_process_spawn|src/os/windows.rs|765afbfe7d52d285",
+     "yara|capability_process_spawn|tests/async.rs|d9a3826c77251553",
+     "yara|capability_process_spawn|tests/block_on.rs|b92d79be1a005132",
+     "yara|capability_process_spawn|tests/timer.rs|0c7b36e2f96d3200"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound benches/io.rs",
+     "capability_network_outbound:capability_network_outbound src/lib.rs",
+     "capability_network_outbound:capability_network_outbound tests/issue_182.rs",
+     "capability_process_spawn:capability_process_spawn examples/kqueue-process.rs",
+     "capability_process_spawn:capability_process_spawn examples/windows-command.rs",
+     "capability_process_spawn:capability_process_spawn src/driver.rs",
+     "capability_process_spawn:capability_process_spawn src/os/kqueue.rs",
+     "capability_process_spawn:capability_process_spawn src/os/windows.rs",
+     "capability_process_spawn:capability_process_spawn tests/async.rs",
+     "capability_process_spawn:capability_process_spawn tests/block_on.rs",
+     "capability_process_spawn:capability_process_spawn tests/timer.rs"
+    ]
+   },
+   "version": "2.6.0"
+  }
+ }
+}

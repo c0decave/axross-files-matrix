@@ -1,0 +1,60 @@
+[package]
+name = "axross-files-matrix"
+version = "0.1.0"
+description = "The data on your mountpoints as a 3D city you fly through, Matrix style: local disks, every mount and axross's remote backends, with real file access"
+license = "Apache-2.0"
+repository = "https://github.com/c0decave/axross-files-matrix"
+keywords = ["filesystem", "visualization", "3d", "treemap", "disk-usage"]
+categories = ["visualization", "filesystem"]
+readme = "README.md"
+edition = "2024"
+rust-version = "1.88"
+exclude = ["/docs/*.png", "/tests/snapshots"]
+
+[dependencies]
+bytemuck = { version = "1.25.2", features = ["derive"] }
+dirs = "7.0.0"
+eframe = "0.37.0"
+egui = "0.37"
+image = { version = "0.25.10", default-features = false, features = ["jpeg", "png"] }
+# (already in the lock through rustls: the update's Ed25519 signature and
+# SHA-256, the cache's checksum - src/update.rs, src/cache.rs)
+ring = "0.17.14"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+ureq = { version = "3.5.1", default-features = false, features = ["rustls"] }
+
+[dev-dependencies]
+egui_kittest = { version = "0.37.0", features = ["wgpu", "snapshot", "eframe"] }
+# (already in the lock through eframe: the measurements' headless GPU)
+pollster = "1.0"
+
+[target.'cfg(unix)'.dependencies]
+# (already in the lock through the window crates: setsid and fcntl for going
+# to the background, as axross-amp does)
+libc = "0.2.191"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+# (already in the tree through accesskit: NetworkManager's word on a metered
+# or missing network before an update check - src/update.rs)
+zbus = "5.19"
+
+[target.'cfg(windows)'.dependencies]
+# (already in the lock through the window crates: AttachConsole, and the
+# logical drives with their kind)
+windows-sys = { version = "0.61.2", features = ["Win32_System_Console", "Win32_Storage_FileSystem"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+
+# (the screenshot and frame-time tests render real frames: optimised a
+# little they take seconds, not minutes; line tables only keep the test
+# binaries small)
+[profile.test]
+opt-level = 1
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+opt-level = 2

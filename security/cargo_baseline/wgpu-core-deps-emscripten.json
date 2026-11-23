@@ -1,0 +1,47 @@
+{
+ "name": "wgpu-core-deps-emscripten",
+ "versions": {
+  "30.0.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 8,
+    "links": "",
+    "manifest": "6c7b866070445984fdfb53c989d15e1431ec765e93b2af1e7884f7c5d0b00984",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d98b86cf4abf524a902dd35f18ca6a3f08fc2ae9847c8f10b48e30491b1f0b86",
+    "vcs": {
+     "git": {
+      "sha1": "40f4a34ebaf56f9a046231f54125ad046239d3f3"
+     },
+     "path_in_vcs": "wgpu-core/platform-deps/emscripten"
+    }
+   },
+   "crates_io": {
+    "checksum": "d98b86cf4abf524a902dd35f18ca6a3f08fc2ae9847c8f10b48e30491b1f0b86",
+    "crate_size": 11296,
+    "created_at": "2026-08-22T02:53:33.575752Z",
+    "description": "Feature unification helper crate for the Emscripten platform",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "cwfitzgerald",
+    "repository": "https://github.com/gfx-rs/wgpu",
+    "rust_version": "1.76"
+   },
+   "name": "wgpu-core-deps-emscripten",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by cwfitzgerald on 2026-08-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "30.0.1"
+  }
+ }
+}

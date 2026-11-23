@@ -1,0 +1,122 @@
+{
+ "name": "zbus",
+ "versions": {
+  "5.19.0": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/address/transport/tcp.rs|e93034db4b738208",
+    "yara|capability_network_outbound|src/connection/mod.rs|6008204d5516ec37",
+    "yara|capability_network_outbound|src/win32.rs|554951caeaf3b946",
+    "yara|capability_network_outbound|tests/e2e.rs|f4e6e1c936190c64",
+    "yara|capability_process_spawn|examples/watch-systemd-jobs.rs|a42faddaa57e7d3d",
+    "yara|capability_process_spawn|src/abstractions/executor.rs|f5ae59104b8a977c",
+    "yara|capability_process_spawn|src/abstractions/process.rs|38743fd8c0e7b9b2",
+    "yara|capability_process_spawn|src/address/mod.rs|14bfbfa71f7b17f7",
+    "yara|capability_process_spawn|src/address/transport/unixexec.rs|f3fda6219c875704",
+    "yara|capability_process_spawn|src/blocking/connection/builder.rs|da38247f105e6c84",
+    "yara|capability_process_spawn|src/blocking/connection/mod.rs|b4b8718161ebb281",
+    "yara|capability_process_spawn|src/connection/builder.rs|60c04930d8e581f3",
+    "yara|capability_process_spawn|src/connection/mod.rs|6008204d5516ec37",
+    "yara|capability_process_spawn|src/connection/socket_reader.rs|099ccec5cc3cb558",
+    "yara|capability_process_spawn|src/fdo/error.rs|00e7a5aeaf20a59a",
+    "yara|capability_process_spawn|src/object_server/mod.rs|67cf3cad3401a63a",
+    "yara|capability_process_spawn|src/proxy/mod.rs|bb296d58f0aec24e",
+    "yara|capability_process_spawn|tests/basic.rs|78ef9b45c21c7167",
+    "yara|capability_process_spawn|tests/e2e.rs|f4e6e1c936190c64",
+    "yara|capability_process_spawn|tests/iface_and_proxy/iface.rs|1f38735f25aac9df",
+    "yara|capability_process_spawn|tests/issue/issue_122.rs|9c3a3277d21192ae",
+    "yara|capability_process_spawn|tests/issue/issue_173.rs|a0e7c468a53d71ca",
+    "yara|capability_process_spawn|tests/issue/issue_310.rs|6719c5416a3bd820",
+    "yara|capability_process_spawn|tests/issue/issue_799.rs|dcc725ed1f5345e8"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 115,
+    "links": "",
+    "manifest": "3829d618de9a2ff91a67274bf624696e0518325009620e38e0e0fb42f8e6348a",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "5db4be7c075cb421e4b7ee645541604239bd243ba7c357511f4ff3a74b555907",
+    "vcs": {
+     "git": {
+      "sha1": "7518d73db4dbf830ec1c9c43865bf8aeae9a8ffd"
+     },
+     "path_in_vcs": "zbus"
+    }
+   },
+   "crates_io": {
+    "checksum": "5db4be7c075cb421e4b7ee645541604239bd243ba7c357511f4ff3a74b555907",
+    "crate_size": 187145,
+    "created_at": "2026-08-09T17:48:33.130343Z",
+    "description": "API for D-Bus communication",
+    "license": "MIT",
+    "published_by": "zeenix",
+    "repository": "https://github.com/z-galaxy/zbus/",
+    "rust_version": "1.87"
+   },
+   "name": "zbus",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by zeenix on 2026-08-09."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/address/transport/tcp.rs|e93034db4b738208",
+     "yara|capability_network_outbound|src/connection/mod.rs|6008204d5516ec37",
+     "yara|capability_network_outbound|src/win32.rs|554951caeaf3b946",
+     "yara|capability_network_outbound|tests/e2e.rs|f4e6e1c936190c64",
+     "yara|capability_process_spawn|examples/watch-systemd-jobs.rs|a42faddaa57e7d3d",
+     "yara|capability_process_spawn|src/abstractions/executor.rs|f5ae59104b8a977c",
+     "yara|capability_process_spawn|src/abstractions/process.rs|38743fd8c0e7b9b2",
+     "yara|capability_process_spawn|src/address/mod.rs|14bfbfa71f7b17f7",
+     "yara|capability_process_spawn|src/address/transport/unixexec.rs|f3fda6219c875704",
+     "yara|capability_process_spawn|src/blocking/connection/builder.rs|da38247f105e6c84",
+     "yara|capability_process_spawn|src/blocking/connection/mod.rs|b4b8718161ebb281",
+     "yara|capability_process_spawn|src/connection/builder.rs|60c04930d8e581f3",
+     "yara|capability_process_spawn|src/connection/mod.rs|6008204d5516ec37",
+     "yara|capability_process_spawn|src/connection/socket_reader.rs|099ccec5cc3cb558",
+     "yara|capability_process_spawn|src/fdo/error.rs|00e7a5aeaf20a59a",
+     "yara|capability_process_spawn|src/object_server/mod.rs|67cf3cad3401a63a",
+     "yara|capability_process_spawn|src/proxy/mod.rs|bb296d58f0aec24e",
+     "yara|capability_process_spawn|tests/basic.rs|78ef9b45c21c7167",
+     "yara|capability_process_spawn|tests/e2e.rs|f4e6e1c936190c64",
+     "yara|capability_process_spawn|tests/iface_and_proxy/iface.rs|1f38735f25aac9df",
+     "yara|capability_process_spawn|tests/issue/issue_122.rs|9c3a3277d21192ae",
+     "yara|capability_process_spawn|tests/issue/issue_173.rs|a0e7c468a53d71ca",
+     "yara|capability_process_spawn|tests/issue/issue_310.rs|6719c5416a3bd820",
+     "yara|capability_process_spawn|tests/issue/issue_799.rs|dcc725ed1f5345e8"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/address/transport/tcp.rs",
+     "capability_network_outbound:capability_network_outbound src/connection/mod.rs",
+     "capability_network_outbound:capability_network_outbound src/win32.rs",
+     "capability_network_outbound:capability_network_outbound tests/e2e.rs",
+     "capability_process_spawn:capability_process_spawn examples/watch-systemd-jobs.rs",
+     "capability_process_spawn:capability_process_spawn src/abstractions/executor.rs",
+     "capability_process_spawn:capability_process_spawn src/abstractions/process.rs",
+     "capability_process_spawn:capability_process_spawn src/address/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/address/transport/unixexec.rs",
+     "capability_process_spawn:capability_process_spawn src/blocking/connection/builder.rs",
+     "capability_process_spawn:capability_process_spawn src/blocking/connection/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/connection/builder.rs",
+     "capability_process_spawn:capability_process_spawn src/connection/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/connection/socket_reader.rs",
+     "capability_process_spawn:capability_process_spawn src/fdo/error.rs",
+     "capability_process_spawn:capability_process_spawn src/object_server/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/proxy/mod.rs",
+     "capability_process_spawn:capability_process_spawn tests/basic.rs",
+     "capability_process_spawn:capability_process_spawn tests/e2e.rs",
+     "capability_process_spawn:capability_process_spawn tests/iface_and_proxy/iface.rs",
+     "capability_process_spawn:capability_process_spawn tests/issue/issue_122.rs",
+     "capability_process_spawn:capability_process_spawn tests/issue/issue_173.rs",
+     "capability_process_spawn:capability_process_spawn tests/issue/issue_310.rs",
+     "capability_process_spawn:capability_process_spawn tests/issue/issue_799.rs"
+    ]
+   },
+   "version": "5.19.0"
+  }
+ }
+}

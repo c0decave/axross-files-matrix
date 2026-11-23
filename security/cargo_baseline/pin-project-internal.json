@@ -1,0 +1,57 @@
+{
+ "name": "pin-project-internal",
+ "versions": {
+  "1.1.13": {
+   "accepted_findings": [
+    "rs-url|src/lib.rs|38b4d101f638ddb2",
+    "rs-url|src/pin_project/derive.rs|06d743ee7f785ba3",
+    "rs-url|src/pin_project/derive.rs|8ebd077347ad44fd",
+    "rs-url|src/pin_project/derive.rs|aa3cdb33cc6b61b9"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 14,
+    "links": "",
+    "manifest": "68a7371538e1f83b66df02de7c2aade7188a4a0db2a70e332af08a049c29d4ee",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "c96395f0a926bc13b1c17622aaddda1ecb55d49c8f1bf9777e4d877800a43f8b",
+    "vcs": {
+     "git": {
+      "sha1": "c3b6b85f7e1674602c0ed693da985b33b2452c3c"
+     },
+     "path_in_vcs": "pin-project-internal"
+    }
+   },
+   "crates_io": {
+    "checksum": "c96395f0a926bc13b1c17622aaddda1ecb55d49c8f1bf9777e4d877800a43f8b",
+    "crate_size": 29331,
+    "created_at": "2026-05-13T18:32:07.416866Z",
+    "description": "Implementation detail of the `pin-project` crate.\n",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/taiki-e/pin-project",
+    "rust_version": "1.71",
+    "trustpub": {
+     "provider": "github",
+     "repository": "taiki-e/pin-project",
+     "run_id": "25818408191",
+     "sha": "61a5c74806c90ea24239ff2ce98043d2ede8f3a8"
+    }
+   },
+   "name": "pin-project-internal",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by trusted publishing on 2026-05-13."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.1.13"
+  }
+ }
+}

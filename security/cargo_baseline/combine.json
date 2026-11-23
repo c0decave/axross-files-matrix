@@ -1,0 +1,46 @@
+{
+ "name": "combine",
+ "versions": {
+  "4.6.9": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 31,
+    "links": "",
+    "manifest": "879eca301898621bf4df35f27e580ae1a18c5c18ab7e1a286356a3397f799bac",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "4356eba6976435498d05a311ee9fc486da3bc81c200d3f0d7dd9703b41913f92",
+    "vcs": {
+     "git": {
+      "sha1": "a2da738ca628bb2e2ef9881fce8e35cbafc455b2"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "4356eba6976435498d05a311ee9fc486da3bc81c200d3f0d7dd9703b41913f92",
+    "crate_size": 109439,
+    "created_at": "2026-10-15T13:17:58.967822Z",
+    "description": "Fast parser combinators on arbitrary streams with zero-copy support.",
+    "license": "MIT",
+    "published_by": "Marwes",
+    "repository": "https://github.com/Marwes/combine"
+   },
+   "name": "combine",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by Marwes on 2026-10-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "4.6.9"
+  }
+ }
+}

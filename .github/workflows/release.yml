@@ -1,0 +1,226 @@
+# A release: on a tag vX.Y.Z the program is built for Linux (x86_64: a
+# binary built in AlmaLinux 9 - glibc 2.34 as the floor - and an AppImage),
+# macOS (one universal binary, arm64 and x86_64, packed and as axross-files-matrix.app
+# in a DMG) and Windows (x64), the files'
+# SHA-256 sums written, their provenance attested, and a GitHub release made
+# with the CHANGELOG's notes for that version - with this workflow's own
+# GITHUB_TOKEN, no stored secret. Nothing is built before the supply-chain
+# gate and the tests (ci.yml) pass. Third-party actions are pinned by commit, as axross pins them; the
+# Rust toolchain comes from rustup, which the runners carry; the AppImage
+# tools are fetched by scripts/fetch_appimagetool.sh and checked against
+# their pinned SHA-256.
+
+name: release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: The tag, Cargo.toml and the CHANGELOG name one version
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION="${TAG#v}"
+          CARGO=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          if [ "$VERSION" != "$CARGO" ]; then
+            echo "::error::tag $TAG but Cargo.toml says $CARGO"; exit 1
+          fi
+          grep -q "^## $VERSION " CHANGELOG.md || { echo "::error::no '## $VERSION' in CHANGELOG.md"; exit 1; }
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  # The supply-chain gate and the tests on Linux, macOS and Windows (ci.yml):
+  # nothing is built for the release before they pass.
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  linux:
+    needs: [check, ci]
+    # (glibc 2.34 as the floor: built in AlmaLinux 9 - RHEL 9's glibc - it
+    # runs on AlmaLinux / RHEL 9, Ubuntu 22.04, Debian 12 and later; a check
+    # after the build fails the release where it needs a newer one)
+    runs-on: ubuntu-24.04
+    container: almalinux:9
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+      - name: The build's tools (a C compiler for ring, pkg-config, git for the checkout)
+        run: dnf install -y --setopt=install_weak_deps=False gcc gcc-c++ make pkgconf-pkg-config git python3 findutils file
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Rust (rustup, stable)
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - name: Build
+        run: cargo build --release --locked
+      - name: It needs no newer glibc than 2.34
+        run: python3 scripts/glibc_floor.py target/release/axross-files-matrix 2.34
+      - name: The third-party licences as checked in are Cargo.lock's
+        run: python3 scripts/third_party_licenses.py --target x86_64-unknown-linux-gnu --check THIRD_PARTY_LICENSES.md
+      - name: Packed (the program, LICENSE, the third-party licences, the desktop entry and icon)
+        run: |
+          strip target/release/axross-files-matrix
+          scripts/pack_release.sh target/release/axross-files-matrix "axross-files-matrix-$VERSION-linux-x86_64" dist THIRD_PARTY_LICENSES.md linux
+      - name: The AppImage (appimagetool and its runtime pinned by SHA-256)
+        run: scripts/build_appimage.sh target/release/axross-files-matrix "$VERSION" dist "$RUNNER_TEMP/appimage-tools"
+      - name: The program alone (what the updater fetches - src/update.rs)
+        run: install -m 0755 target/release/axross-files-matrix "dist/axross-files-matrix-$VERSION-linux-x86_64"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-linux
+          path: |
+            dist/*.tar.gz
+            dist/*.AppImage
+            dist/axross-files-matrix-*-linux-x86_64
+          if-no-files-found: error
+
+  macos:
+    needs: [check, ci]
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Rust (rustup, stable; Apple silicon and Intel)
+        run: |
+          rustup toolchain install stable --profile minimal && rustup default stable
+          rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      - name: Build (arm64)
+        run: cargo build --release --locked --target aarch64-apple-darwin
+      # (both, or no release: an Intel build that fails fails it - it is not
+      # left out quietly)
+      - name: Build (x86_64, cross-built)
+        run: cargo build --release --locked --target x86_64-apple-darwin
+      - name: The third-party licences (macOS's crates, from Cargo.lock)
+        run: python3 scripts/third_party_licenses.py --target aarch64-apple-darwin --output THIRD_PARTY_LICENSES-macos.md
+      - name: One universal binary (arm64 and x86_64)
+        run: |
+          mkdir -p pack
+          lipo -create -output pack/axross-files-matrix target/aarch64-apple-darwin/release/axross-files-matrix target/x86_64-apple-darwin/release/axross-files-matrix
+          strip pack/axross-files-matrix
+          lipo -info pack/axross-files-matrix
+      - name: Packed (the binary, LICENSE, the third-party licences)
+        run: scripts/pack_release.sh pack/axross-files-matrix "axross-files-matrix-$VERSION-macos-universal" dist THIRD_PARTY_LICENSES-macos.md
+      - name: axross-files-matrix.app in a DMG
+        run: scripts/build_macos_app.sh pack/axross-files-matrix "$VERSION" dist THIRD_PARTY_LICENSES-macos.md "axross-files-matrix-$VERSION-macos-universal"
+      - name: The program alone (what the updater fetches - src/update.rs)
+        run: install -m 0755 pack/axross-files-matrix "dist/axross-files-matrix-$VERSION-macos-universal"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-macos
+          path: |
+            dist/*.tar.gz
+            dist/*.dmg
+            dist/axross-files-matrix-*-macos-universal
+          if-no-files-found: error
+
+  windows:
+    needs: [check, ci]
+    runs-on: windows-2022
+    timeout-minutes: 60
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Rust (rustup, stable)
+        run: rustup toolchain install stable --profile minimal; rustup default stable
+      - name: Build
+        run: cargo build --release --locked
+      - name: A GUI program (no console window beside it)
+        run: python scripts/pe_subsystem.py target/release/axross-files-matrix.exe gui
+      - name: The third-party licences (Windows's crates, from Cargo.lock)
+        run: python scripts/third_party_licenses.py --target x86_64-pc-windows-msvc --output THIRD_PARTY_LICENSES-windows.md
+      - name: Zipped (the program, LICENSE, the third-party licences, the README)
+        shell: pwsh
+        run: |
+          $name = "axross-files-matrix-$env:VERSION-windows-x64"
+          New-Item -ItemType Directory -Force -Path dist, "pack/$name" | Out-Null
+          Copy-Item target/release/axross-files-matrix.exe, LICENSE, README.md "pack/$name/"
+          Copy-Item THIRD_PARTY_LICENSES-windows.md "pack/$name/THIRD_PARTY_LICENSES.md"
+          Compress-Archive -Path "pack/$name" -DestinationPath "dist/$name.zip"
+          $files = (Get-ChildItem "pack/$name").Name
+          foreach ($f in "axross-files-matrix.exe", "LICENSE", "THIRD_PARTY_LICENSES.md") {
+            if ($files -notcontains $f) { Write-Error "$f missing from the zip"; exit 1 }
+          }
+          # the program alone (what the updater fetches - src/update.rs)
+          Copy-Item target/release/axross-files-matrix.exe "dist/$name.exe"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-windows
+          path: |
+            dist/*.zip
+            dist/*.exe
+          if-no-files-found: error
+
+  release:
+    needs: [check, linux, macos, windows]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      # (the provenance attestation: signed with the workflow's OIDC identity)
+      id-token: write
+      attestations: write
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          # (the release's files only - not ci.yml's test builds and reports)
+          pattern: release-*
+          path: artifacts
+      - name: The files and their SHA-256 sums
+        run: |
+          mkdir -p release
+          find artifacts -type f -exec cp {} release/ \;
+          (cd release && sha256sum -- * > SHA256SUMS)
+          cat release/SHA256SUMS
+      - name: Provenance (SLSA, by GitHub's attestations) for every file
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-checksums: release/SHA256SUMS
+      - name: The notes, from the CHANGELOG's section for this version
+        run: |
+          awk -v v="$VERSION" '
+            $0 ~ "^## " v " " { on = 1; next }
+            on && /^## / { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          test -s notes.md
+          printf '\n**Photosensitivity warning**: the city moves (the digital rain, the flight, the teleport'"'"'s warp). The picture is guarded against flashes (see the README), but it is not guaranteed safe for everyone; if you or anyone watching has epilepsy, use Settings > Reduce motion or do not use it.\n' >> notes.md
+      # A draft: the maintainer signs SHA256SUMS on their own machine
+      # (scripts/sign_release.py, docs/RELEASING.md), uploads
+      # SHA256SUMS.sig and publishes - the key never reaches CI, and the
+      # updater takes no release without the signature.
+      - name: The GitHub release, as a draft (signed and published by hand)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --title "axross-files-matrix $VERSION" --notes-file notes.md release/*

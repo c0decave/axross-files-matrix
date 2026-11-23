@@ -1,0 +1,49 @@
+{
+ "name": "serde_derive",
+ "versions": {
+  "1.0.229": {
+   "accepted_findings": [
+    "rs-url|src/lib.rs|38a691ddc5e2e53b"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 36,
+    "links": "",
+    "manifest": "774d3ff5ba438303c5cb11bfd0297eff643db96abeb89c35b0bc84d3be15c51b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "e7a5d71263a5a7d47b41f6b3f06ba276f10cc18b0931f1799f710578e2309348",
+    "vcs": {
+     "git": {
+      "sha1": "7fc3b4c30c94f73a96ebd1553f2b090d928fc3a8"
+     },
+     "path_in_vcs": "serde_derive"
+    }
+   },
+   "crates_io": {
+    "checksum": "e7a5d71263a5a7d47b41f6b3f06ba276f10cc18b0931f1799f710578e2309348",
+    "crate_size": 59864,
+    "created_at": "2026-07-18T23:05:07.504375Z",
+    "description": "Macros 1.1 implementation of #[derive(Serialize, Deserialize)]",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "dtolnay",
+    "repository": "https://github.com/serde-rs/serde",
+    "rust_version": "1.71"
+   },
+   "name": "serde_derive",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by dtolnay on 2026-07-18."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.0.229"
+  }
+ }
+}

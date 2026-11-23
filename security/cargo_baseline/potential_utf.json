@@ -1,0 +1,47 @@
+{
+ "name": "potential_utf",
+ "versions": {
+  "0.1.6": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 10,
+    "links": "",
+    "manifest": "70cff1402c662ec1544d66bf210f8bea1e041fb6c349fdcd838d904a13c9abc3",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d83eb9bc6d8e5cf568e7a1101d60ee05e81ed50ea106026f3d18deeb046d7661",
+    "vcs": {
+     "git": {
+      "sha1": "a14f2dad852be26bad277ae704abf27a15cbfed1"
+     },
+     "path_in_vcs": "utils/potential_utf"
+    }
+   },
+   "crates_io": {
+    "checksum": "d83eb9bc6d8e5cf568e7a1101d60ee05e81ed50ea106026f3d18deeb046d7661",
+    "crate_size": 10420,
+    "created_at": "2026-08-13T23:28:14.578806Z",
+    "description": "Unvalidated string and character types",
+    "license": "Unicode-3.0",
+    "published_by": "sffc",
+    "repository": "https://github.com/unicode-org/icu4x",
+    "rust_version": "1.82"
+   },
+   "name": "potential_utf",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by sffc on 2026-08-13."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.1.6"
+  }
+ }
+}

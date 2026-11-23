@@ -1,0 +1,46 @@
+{
+ "name": "wasi",
+ "versions": {
+  "0.11.1+wasi-snapshot-preview1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 17,
+    "links": "",
+    "manifest": "4c86d6c75ce0a944f32326202d7f34babf7a1a68efa4c8e95c1f4c98123d063f",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b",
+    "vcs": {
+     "git": {
+      "sha1": "f136a81add9706ed0b36ac3c4b0da943de8e690d"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b",
+    "crate_size": 28477,
+    "created_at": "2025-06-10T14:23:45.376914Z",
+    "description": "Experimental WASI API bindings for Rust",
+    "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+    "published_by": "alexcrichton",
+    "repository": "https://github.com/bytecodealliance/wasi"
+   },
+   "name": "wasi",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by alexcrichton on 2025-06-10."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.11.1+wasi-snapshot-preview1"
+  }
+ }
+}

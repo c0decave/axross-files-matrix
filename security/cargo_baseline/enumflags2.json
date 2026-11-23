@@ -1,0 +1,47 @@
+{
+ "name": "enumflags2",
+ "versions": {
+  "0.7.12": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 14,
+    "links": "",
+    "manifest": "b92b3e76bc93afee784beda6b2e8b4afce8f023a6a89ff7941e18dc4654514fb",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "1027f7680c853e056ebcec683615fb6fbbc07dbaa13b4d5d9442b146ded4ecef",
+    "vcs": {
+     "git": {
+      "sha1": "332c37f47577e5f6b7104419da7e761963032086"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "1027f7680c853e056ebcec683615fb6fbbc07dbaa13b4d5d9442b146ded4ecef",
+    "crate_size": 17544,
+    "created_at": "2025-06-09T22:16:25.147642Z",
+    "description": "Enum-based bit flags",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "meithecatte",
+    "repository": "https://github.com/meithecatte/enumflags2",
+    "rust_version": "1.56"
+   },
+   "name": "enumflags2",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by meithecatte on 2025-06-09."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.7.12"
+  }
+ }
+}

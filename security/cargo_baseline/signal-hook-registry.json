@@ -1,0 +1,47 @@
+{
+ "name": "signal-hook-registry",
+ "versions": {
+  "1.4.8": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 11,
+    "links": "",
+    "manifest": "7cf1dc19ba72f5cf94b499d848108a951f9fe9242b6ede234a80bcd51939f692",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "c4db69cba1110affc0e9f7bcd48bbf87b3f4fc7c61fc9155afd4c469eb3d6c1b",
+    "vcs": {
+     "git": {
+      "sha1": "4d5fd6a6663be38e70774e4ac733d65916c70951"
+     },
+     "path_in_vcs": "signal-hook-registry"
+    }
+   },
+   "crates_io": {
+    "checksum": "c4db69cba1110affc0e9f7bcd48bbf87b3f4fc7c61fc9155afd4c469eb3d6c1b",
+    "crate_size": 21668,
+    "created_at": "2025-12-25T17:35:43.742246Z",
+    "description": "Backend crate for signal-hook",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "vorner",
+    "repository": "https://github.com/vorner/signal-hook",
+    "rust_version": "1.26"
+   },
+   "name": "signal-hook-registry",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by vorner on 2025-12-25."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.4.8"
+  }
+ }
+}

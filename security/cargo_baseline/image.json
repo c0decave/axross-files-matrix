@@ -1,0 +1,56 @@
+{
+ "name": "image",
+ "versions": {
+  "0.25.10": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/imageops/colorops.rs|e1675b3ecc3f9cc5",
+    "yara|capability_process_spawn|src/metadata/cicp.rs|f9d696bde46b4640"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 86,
+    "links": "",
+    "manifest": "fd29bdbf92847f0cd0f1e804351f5dc4f638eba2a6c68960d8eea36074f785a7",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "85ab80394333c02fe689eaf900ab500fbd0c2213da414687ebf995a65d5a6104",
+    "vcs": {
+     "git": {
+      "sha1": "76e57184f22772dad1138e96954e57945406b15e"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "85ab80394333c02fe689eaf900ab500fbd0c2213da414687ebf995a65d5a6104",
+    "crate_size": 303647,
+    "created_at": "2026-03-10T16:29:18.250581Z",
+    "description": "Imaging library. Provides basic image processing and encoders/decoders for common image formats.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "197g",
+    "repository": "https://github.com/image-rs/image",
+    "rust_version": "1.88.0"
+   },
+   "name": "image",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by 197g on 2026-03-10."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/imageops/colorops.rs|e1675b3ecc3f9cc5",
+     "yara|capability_process_spawn|src/metadata/cicp.rs|f9d696bde46b4640"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/imageops/colorops.rs",
+     "capability_process_spawn:capability_process_spawn src/metadata/cicp.rs"
+    ]
+   },
+   "version": "0.25.10"
+  }
+ }
+}

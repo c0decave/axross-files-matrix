@@ -1,0 +1,47 @@
+{
+ "name": "endi",
+ "versions": {
+  "1.1.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 12,
+    "links": "",
+    "manifest": "80099b55442c89d79be2fc9f8da7ccf37b4fa29863c42b5dc1cae2dcb6f2cebc",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "66b7e2430c6dff6a955451e2cfc438f09cea1965a9d6f87f7e3b90decc014099",
+    "vcs": {
+     "git": {
+      "sha1": "226224559725a9ef0e0687b3a54eca9ad6a5a6c7"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "66b7e2430c6dff6a955451e2cfc438f09cea1965a9d6f87f7e3b90decc014099",
+    "crate_size": 5045,
+    "created_at": "2025-11-26T17:18:58.382799Z",
+    "description": "A simple endian-handling library",
+    "license": "MIT",
+    "published_by": "zeenix",
+    "repository": "https://github.com/zeenix/endi",
+    "rust_version": "1.60"
+   },
+   "name": "endi",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by zeenix on 2025-11-26."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.1.1"
+  }
+ }
+}

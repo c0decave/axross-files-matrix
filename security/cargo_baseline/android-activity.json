@@ -1,0 +1,60 @@
+{
+ "name": "android-activity",
+ "versions": {
+  "0.6.1": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/init.rs|450997e32ec748b9",
+    "yara|capability_process_spawn|src/native_activity/glue.rs|af20a91d71516d09"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "23364598e9f37f4c5b35abca0c5738bff5aefe7ca31e4ff780022e81bc1fa30c"
+    },
+    "files": 49,
+    "links": "",
+    "manifest": "ae7ae4a5caaaf58bafbc2f6aa80fd850082c274f988730fdba27c256be578af4",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {
+     "android-games-sdk": 13
+    },
+    "proc_macro": false,
+    "sha256": "0f2a1bb052857d5dd49572219344a7332b31b76405648eabac5bc68978251bcd",
+    "vcs": {
+     "git": {
+      "sha1": "b4ddf059b77be12cdb955d394e65a92e7568d936"
+     },
+     "path_in_vcs": "android-activity"
+    }
+   },
+   "crates_io": {
+    "checksum": "0f2a1bb052857d5dd49572219344a7332b31b76405648eabac5bc68978251bcd",
+    "crate_size": 322611,
+    "created_at": "2026-03-24T00:59:18.755650Z",
+    "description": "Glue for building Rust applications on Android with NativeActivity or GameActivity",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rib",
+    "repository": "https://github.com/rust-mobile/android-activity",
+    "rust_version": "1.85.0"
+   },
+   "name": "android-activity",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: uses cc; no network. No binary; checksum = crates.io's; published by rib on 2026-03-24."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/init.rs|450997e32ec748b9",
+     "yara|capability_process_spawn|src/native_activity/glue.rs|af20a91d71516d09"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/init.rs",
+     "capability_process_spawn:capability_process_spawn src/native_activity/glue.rs"
+    ]
+   },
+   "version": "0.6.1"
+  }
+ }
+}

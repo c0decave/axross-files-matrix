@@ -1,0 +1,186 @@
+{
+ "name": "getrandom",
+ "versions": {
+  "0.2.17": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|tests/common/mod.rs|b9a36043d71963ba",
+    "yara|lolbas_net|Cargo.toml.orig|850cb9e629142ded",
+    "yara|lolbas_net|Cargo.toml|032d84ffe8438604",
+    "yara|suspicious_network_tools|Cargo.toml.orig|850cb9e629142ded",
+    "yara|suspicious_network_tools|Cargo.toml|032d84ffe8438604"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 38,
+    "links": "",
+    "manifest": "867260f9e9ee83470bcc7310d3ce294c0cf9c8788dacf98bf8905ff7935d9970",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "ff2abc00be7fca6ebc474524697ae276ad847ad0a6b3faa4bcb027e9a4614ad0",
+    "vcs": {
+     "git": {
+      "sha1": "b625985d852600a3eeb68556811e59e7c9a6a098"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "ff2abc00be7fca6ebc474524697ae276ad847ad0a6b3faa4bcb027e9a4614ad0",
+    "crate_size": 40780,
+    "created_at": "2026-01-11T21:09:53.669788Z",
+    "description": "A small cross-platform library for retrieving random data from system source",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "newpavlov",
+    "repository": "https://github.com/rust-random/getrandom"
+   },
+   "name": "getrandom",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "YARA curl hit is a URL in Cargo.toml metadata comments, not code. Nothing else flagged. No binary; checksum = crates.io's; published by newpavlov on 2026-01-11."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|tests/common/mod.rs|b9a36043d71963ba",
+     "yara|lolbas_net|Cargo.toml.orig|850cb9e629142ded",
+     "yara|lolbas_net|Cargo.toml|032d84ffe8438604",
+     "yara|suspicious_network_tools|Cargo.toml.orig|850cb9e629142ded",
+     "yara|suspicious_network_tools|Cargo.toml|032d84ffe8438604"
+    ],
+    "yara": [
+     "axross_backdoor_rules:suspicious_network_tools Cargo.toml",
+     "axross_backdoor_rules:suspicious_network_tools Cargo.toml.orig",
+     "capability_network_lolbas:lolbas_net Cargo.toml",
+     "capability_network_lolbas:lolbas_net Cargo.toml.orig",
+     "capability_process_spawn:capability_process_spawn tests/common/mod.rs"
+    ]
+   },
+   "version": "0.2.17"
+  },
+  "0.3.4": {
+   "accepted_findings": [
+    "rs-command|build.rs|175c9de776242be2",
+    "rs-command|build.rs|d3fdb7c2efe9a366",
+    "yara|capability_process_spawn|build.rs|d542c9c3bbc2f64a",
+    "yara|capability_process_spawn|tests/mod.rs|b8e88300a1ec0b2f",
+    "yara|lolbas_net|Cargo.toml.orig|4b13c332865245a2",
+    "yara|lolbas_net|Cargo.toml|5fd1d61c34277748"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "d542c9c3bbc2f64a26c758eac8af16178aab52464bdd8bf0b9a767ba87665021"
+    },
+    "files": 43,
+    "links": "",
+    "manifest": "fc392b9ab78aaf25ae6c09ab67b511189d8ecc5f34a04d81bf14737c89425028",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "899def5c37c4fd7b2664648c28120ecec138e4d395b459e5ca34f9cce2dd77fd",
+    "vcs": {
+     "git": {
+      "sha1": "38e4ad38309a85b56eef4fc759535ccfc322ba9a"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "899def5c37c4fd7b2664648c28120ecec138e4d395b459e5ca34f9cce2dd77fd",
+    "crate_size": 50932,
+    "created_at": "2025-10-14T17:47:36.464125Z",
+    "description": "A small cross-platform library for retrieving random data from system source",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "josephlr",
+    "repository": "https://github.com/rust-random/getrandom",
+    "rust_version": "1.63"
+   },
+   "name": "getrandom",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "YARA curl hit is a URL in Cargo.toml metadata comments, not code. Nothing else flagged. No binary; checksum = crates.io's; published by josephlr on 2025-10-14."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|build.rs|d542c9c3bbc2f64a",
+     "yara|capability_process_spawn|tests/mod.rs|b8e88300a1ec0b2f",
+     "yara|lolbas_net|Cargo.toml.orig|4b13c332865245a2",
+     "yara|lolbas_net|Cargo.toml|5fd1d61c34277748"
+    ],
+    "yara": [
+     "capability_network_lolbas:lolbas_net Cargo.toml",
+     "capability_network_lolbas:lolbas_net Cargo.toml.orig",
+     "capability_process_spawn:capability_process_spawn build.rs",
+     "capability_process_spawn:capability_process_spawn tests/mod.rs"
+    ]
+   },
+   "version": "0.3.4"
+  },
+  "0.4.3": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|tests/mod.rs|6f8ffe1b36d10490",
+    "yara|lolbas_net|Cargo.toml.orig|eebe7c6d086d3f40",
+    "yara|lolbas_net|Cargo.toml|4f107fe4ceacee71"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "662faa06d7b2a9c5bea2c17a127a90e00b9f9b31105b0360da516e47cf816e95"
+    },
+    "files": 48,
+    "links": "",
+    "manifest": "55cd00110ad706d6a3bad3218d6c74c35232add1eccbc22991d4497d3396d311",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099",
+    "vcs": {
+     "git": {
+      "sha1": "5e7cd5733536844a9856dc7259bd4696bbe5e3ae"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099",
+    "crate_size": 52437,
+    "created_at": "2026-06-17T18:01:59.979552Z",
+    "description": "A small cross-platform library for retrieving random data from system source",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/rust-random/getrandom",
+    "rust_version": "1.85",
+    "trustpub": {
+     "provider": "github",
+     "repository": "rust-random/getrandom",
+     "run_id": "27709261998",
+     "sha": "5e7cd5733536844a9856dc7259bd4696bbe5e3ae"
+    }
+   },
+   "name": "getrandom",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "YARA curl hit is a URL in Cargo.toml metadata comments, not code. Nothing else flagged. No binary; checksum = crates.io's; published by trusted publishing on 2026-06-17."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|tests/mod.rs|6f8ffe1b36d10490",
+     "yara|lolbas_net|Cargo.toml.orig|eebe7c6d086d3f40",
+     "yara|lolbas_net|Cargo.toml|4f107fe4ceacee71"
+    ],
+    "yara": [
+     "capability_network_lolbas:lolbas_net Cargo.toml",
+     "capability_network_lolbas:lolbas_net Cargo.toml.orig",
+     "capability_process_spawn:capability_process_spawn tests/mod.rs"
+    ]
+   },
+   "version": "0.4.3"
+  }
+ }
+}

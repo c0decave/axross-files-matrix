@@ -1,0 +1,73 @@
+{
+ "name": "webbrowser",
+ "versions": {
+  "1.2.6": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/android.rs|c275b180de62f72d",
+    "yara|capability_process_spawn|src/common.rs|c556a6ea667c201d",
+    "yara|capability_process_spawn|src/unix.rs|e552f0d9887edc9e",
+    "yara|capability_process_spawn|src/windows.rs|618a013e5c729639",
+    "yara|capability_process_spawn|tests/common.rs|e649dcee6a8bfef2",
+    "yara|capability_process_spawn|tests/test_android.rs|7c6e11177921b223",
+    "yara|capability_process_spawn|tests/test_ios.rs|d63c55969d2953a4"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 42,
+    "links": "",
+    "manifest": "8c2e6f0e482e622a5c0722db1d733ed84717d1d8bbc2811cdb6b36b4d864265f",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {
+     "tests": 1
+    },
+    "proc_macro": false,
+    "sha256": "fe8d20d0214027baf11b8b0cc307c1da7657d8f4db9aa956f7de27a6fb1acbd5",
+    "vcs": {
+     "git": {
+      "sha1": "29065db6d08e3969238018d222876007f7c835a4"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "fe8d20d0214027baf11b8b0cc307c1da7657d8f4db9aa956f7de27a6fb1acbd5",
+    "crate_size": 64036,
+    "created_at": "2026-10-31T06:44:19.065844Z",
+    "description": "Open URLs in web browsers available on a platform",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "amodm",
+    "repository": "https://github.com/amodm/webbrowser-rs",
+    "rust_version": "1.85"
+   },
+   "name": "webbrowser",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by amodm on 2026-10-31."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/android.rs|c275b180de62f72d",
+     "yara|capability_process_spawn|src/common.rs|c556a6ea667c201d",
+     "yara|capability_process_spawn|src/unix.rs|e552f0d9887edc9e",
+     "yara|capability_process_spawn|src/windows.rs|618a013e5c729639",
+     "yara|capability_process_spawn|tests/common.rs|e649dcee6a8bfef2",
+     "yara|capability_process_spawn|tests/test_android.rs|7c6e11177921b223",
+     "yara|capability_process_spawn|tests/test_ios.rs|d63c55969d2953a4"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/android.rs",
+     "capability_process_spawn:capability_process_spawn src/common.rs",
+     "capability_process_spawn:capability_process_spawn src/unix.rs",
+     "capability_process_spawn:capability_process_spawn src/windows.rs",
+     "capability_process_spawn:capability_process_spawn tests/common.rs",
+     "capability_process_spawn:capability_process_spawn tests/test_android.rs",
+     "capability_process_spawn:capability_process_spawn tests/test_ios.rs"
+    ]
+   },
+   "version": "1.2.6"
+  }
+ }
+}

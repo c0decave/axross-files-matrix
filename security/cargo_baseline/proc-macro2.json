@@ -1,0 +1,61 @@
+{
+ "name": "proc-macro2",
+ "versions": {
+  "1.0.107": {
+   "accepted_findings": [
+    "rs-command|build.rs|10b299cc2295e108",
+    "rs-command|build.rs|a6a61c5c15299c38",
+    "rs-fs-write|build.rs|91fabdfc35eb9844",
+    "yara|capability_process_spawn|build.rs|baeb20b52f6b536b",
+    "yara|capability_process_spawn|src/extra.rs|29f094473279a29b"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "baeb20b52f6b536be8657a566591a507bb2e34a45cf8baa42b135510a0c3c729"
+    },
+    "files": 33,
+    "links": "",
+    "manifest": "ba01b30bf2bab9292cccba60cf0ff30e42e3c15b6e481895cd31220339146960",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9",
+    "vcs": {
+     "git": {
+      "sha1": "ed8a5497669cd63db33bf24646f261b012bbbc4a"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9",
+    "crate_size": 59588,
+    "created_at": "2026-07-19T00:18:25.189787Z",
+    "description": "A substitute implementation of the compiler's `proc_macro` API to decouple token-based libraries from the procedural macro use case.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "dtolnay",
+    "repository": "https://github.com/dtolnay/proc-macro2",
+    "rust_version": "1.71"
+   },
+   "name": "proc-macro2",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: runs rustc to probe its version; writes only into OUT_DIR; no network. No binary; checksum = crates.io's; published by dtolnay on 2026-07-19."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|build.rs|baeb20b52f6b536b",
+     "yara|capability_process_spawn|src/extra.rs|29f094473279a29b"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn build.rs",
+     "capability_process_spawn:capability_process_spawn src/extra.rs"
+    ]
+   },
+   "version": "1.0.107"
+  }
+ }
+}

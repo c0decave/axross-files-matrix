@@ -1,0 +1,46 @@
+{
+ "name": "is-docker",
+ "versions": {
+  "0.2.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 10,
+    "links": "",
+    "manifest": "c6dc938aa86cd9ee506ac1249c357d2dd78e62a55819fd818cb0cc0f119f9c05",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "928bae27f42bc99b60d9ac7334e3a21d10ad8f1835a4e12ec3ec0464765ed1b3",
+    "vcs": {
+     "git": {
+      "sha1": "c1e40d4be6ee669e0294cbe55778ad62d69ce16f"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "928bae27f42bc99b60d9ac7334e3a21d10ad8f1835a4e12ec3ec0464765ed1b3",
+    "crate_size": 2664,
+    "created_at": "2023-01-22T20:19:07.012131Z",
+    "description": "Checks if the process is running inside a Docker container.",
+    "license": "MIT",
+    "published_by": "TheLarkInn",
+    "repository": "https://github.com/TheLarkInn/is-docker"
+   },
+   "name": "is-docker",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by TheLarkInn on 2023-01-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.0"
+  }
+ }
+}

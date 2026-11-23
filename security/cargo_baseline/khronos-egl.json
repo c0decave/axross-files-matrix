@@ -1,0 +1,48 @@
+{
+ "name": "khronos-egl",
+ "versions": {
+  "6.0.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "d932445d4ed5c9545f2ae99417c97090e842b0ef14d217cdb4cea6b75174b4fd"
+    },
+    "files": 19,
+    "links": "",
+    "manifest": "81283cd0237ca12d4f26233abc755a54885fa1d7392d2f3492b130a9fd074cf1",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "6aae1df220ece3c0ada96b8153459b67eebe9ae9212258bb0134ae60416fdf76",
+    "vcs": {
+     "git": {
+      "sha1": "5605af04fb91ca3e5cc314ac374d21c452bb6855"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "6aae1df220ece3c0ada96b8153459b67eebe9ae9212258bb0134ae60416fdf76",
+    "crate_size": 29315,
+    "created_at": "2023-10-05T12:26:28.196465Z",
+    "description": "Rust bindings for EGL",
+    "license": "MIT/Apache-2.0",
+    "published_by": "timothee-haudebourg",
+    "repository": "https://github.com/timothee-haudebourg/khronos-egl"
+   },
+   "name": "khronos-egl",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: uses pkg-config; no network. No binary; checksum = crates.io's; published by timothee-haudebourg on 2023-10-05."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "6.0.0"
+  }
+ }
+}

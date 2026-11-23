@@ -1,0 +1,46 @@
+{
+ "name": "core-graphics",
+ "versions": {
+  "0.23.2": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 27,
+    "links": "",
+    "manifest": "0d35a3a2e505bcfb0037c011b30fec54340d8a03871d85a01456a6b726c6a7b6",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "c07782be35f9e1140080c6b96f0d44b739e2278479f64e02fdab4e32dfd8b081",
+    "vcs": {
+     "git": {
+      "sha1": "07be553c3f1d435b5087c16e787d73cb24b65efb"
+     },
+     "path_in_vcs": "core-graphics"
+    }
+   },
+   "crates_io": {
+    "checksum": "c07782be35f9e1140080c6b96f0d44b739e2278479f64e02fdab4e32dfd8b081",
+    "crate_size": 30763,
+    "created_at": "2024-04-04T17:47:45.408685Z",
+    "description": "Bindings to Core Graphics for macOS",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "jrmuizel",
+    "repository": "https://github.com/servo/core-foundation-rs"
+   },
+   "name": "core-graphics",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by jrmuizel on 2024-04-04."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.23.2"
+  }
+ }
+}

@@ -1,0 +1,51 @@
+{
+ "name": "tracing-attributes",
+ "versions": {
+  "0.1.31": {
+   "accepted_findings": [
+    "rs-url|src/lib.rs|1c381bd908fa819a",
+    "rs-url|src/lib.rs|50416d493f982018",
+    "rs-url|src/lib.rs|cb883adadfc3b31f"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 30,
+    "links": "",
+    "manifest": "31e079c6d2a9ad8c8900b6dbd93b9de32a9c9ba4d2f10be49c263d1c12411d4c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "7490cfa5ec963746568740651ac6781f701c9c5ea257c58e057f3ba8cf69e8da",
+    "vcs": {
+     "git": {
+      "sha1": "55086231ec4aaeffcaab9932e696f40278f06bd1"
+     },
+     "path_in_vcs": "tracing-attributes"
+    }
+   },
+   "crates_io": {
+    "checksum": "7490cfa5ec963746568740651ac6781f701c9c5ea257c58e057f3ba8cf69e8da",
+    "crate_size": 39733,
+    "created_at": "2025-11-26T11:23:01.809940Z",
+    "description": "Procedural macro attributes for automatically instrumenting functions.\n",
+    "license": "MIT",
+    "published_by": "hds",
+    "repository": "https://github.com/tokio-rs/tracing",
+    "rust_version": "1.65.0"
+   },
+   "name": "tracing-attributes",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by hds on 2025-11-26."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.1.31"
+  }
+ }
+}

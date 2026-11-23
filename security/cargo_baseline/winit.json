@@ -1,0 +1,89 @@
+{
+ "name": "winit",
+ "versions": {
+  "0.30.13": {
+   "accepted_findings": [
+    "rs-include-bytes|examples/window.rs|0b533cda5aa2920e",
+    "rs-include-bytes|examples/window.rs|7f81fae8d7bfe5fa",
+    "rs-include-bytes|examples/window.rs|f6cedf2f39a1756a",
+    "rs-include-bytes|examples/window.rs|f70295cce4b439a9",
+    "yara|capability_network_outbound|src/platform_impl/linux/wayland/event_loop/mod.rs|dd1ceefa859550fb",
+    "yara|capability_network_outbound|src/platform_impl/linux/wayland/window/mod.rs|30b6c00aa143046e",
+    "yara|capability_network_outbound|src/platform_impl/web/async/waker.rs|c6cde0c84e315972",
+    "yara|capability_network_outbound|src/platform_impl/web/event_loop/runner.rs|e8ecd77ef8c4550d",
+    "yara|capability_process_spawn|examples/window.rs|f7cd8787211bb307",
+    "yara|capability_process_spawn|src/event_loop.rs|f842094768491881",
+    "yara|capability_process_spawn|src/platform/run_on_demand.rs|007047afc1e916f1",
+    "yara|capability_process_spawn|src/platform/web.rs|4dac8e96213a4ca4",
+    "yara|capability_process_spawn|src/platform/windows.rs|1a480966b317ac2f",
+    "yara|capability_process_spawn|src/platform_impl/linux/wayland/event_loop/mod.rs|dd1ceefa859550fb",
+    "yara|capability_process_spawn|src/platform_impl/windows/keyboard.rs|93188bdea60bce10"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "eda62c3ebf765708bf1608b51ccf77501b4aa0253214c419f813c6d08d640b1a"
+    },
+    "files": 217,
+    "links": "",
+    "manifest": "d0f9c97573fe2b1a5371d93e480703d02e4f06b79ca2ea4f4aed685e149f230b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "a6755fa58a9f8350bd1e472d4c3fcc25f824ec358933bba33306d0b63df5978d",
+    "vcs": {
+     "git": {
+      "sha1": "e9809ef54b18499bb4f2cac945719ecc2a61061b"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "a6755fa58a9f8350bd1e472d4c3fcc25f824ec358933bba33306d0b63df5978d",
+    "crate_size": 605180,
+    "created_at": "2026-03-02T13:50:47.664884Z",
+    "description": "Cross-platform window creation library.",
+    "license": "Apache-2.0",
+    "published_by": "kchibisov",
+    "repository": "https://github.com/rust-windowing/winit",
+    "rust_version": "1.70.0"
+   },
+   "name": "winit",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by kchibisov on 2026-03-02."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/platform_impl/linux/wayland/event_loop/mod.rs|dd1ceefa859550fb",
+     "yara|capability_network_outbound|src/platform_impl/linux/wayland/window/mod.rs|30b6c00aa143046e",
+     "yara|capability_network_outbound|src/platform_impl/web/async/waker.rs|c6cde0c84e315972",
+     "yara|capability_network_outbound|src/platform_impl/web/event_loop/runner.rs|e8ecd77ef8c4550d",
+     "yara|capability_process_spawn|examples/window.rs|f7cd8787211bb307",
+     "yara|capability_process_spawn|src/event_loop.rs|f842094768491881",
+     "yara|capability_process_spawn|src/platform/run_on_demand.rs|007047afc1e916f1",
+     "yara|capability_process_spawn|src/platform/web.rs|4dac8e96213a4ca4",
+     "yara|capability_process_spawn|src/platform/windows.rs|1a480966b317ac2f",
+     "yara|capability_process_spawn|src/platform_impl/linux/wayland/event_loop/mod.rs|dd1ceefa859550fb",
+     "yara|capability_process_spawn|src/platform_impl/windows/keyboard.rs|93188bdea60bce10"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/platform_impl/linux/wayland/event_loop/mod.rs",
+     "capability_network_outbound:capability_network_outbound src/platform_impl/linux/wayland/window/mod.rs",
+     "capability_network_outbound:capability_network_outbound src/platform_impl/web/async/waker.rs",
+     "capability_network_outbound:capability_network_outbound src/platform_impl/web/event_loop/runner.rs",
+     "capability_process_spawn:capability_process_spawn examples/window.rs",
+     "capability_process_spawn:capability_process_spawn src/event_loop.rs",
+     "capability_process_spawn:capability_process_spawn src/platform/run_on_demand.rs",
+     "capability_process_spawn:capability_process_spawn src/platform/web.rs",
+     "capability_process_spawn:capability_process_spawn src/platform/windows.rs",
+     "capability_process_spawn:capability_process_spawn src/platform_impl/linux/wayland/event_loop/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/platform_impl/windows/keyboard.rs"
+    ]
+   },
+   "version": "0.30.13"
+  }
+ }
+}

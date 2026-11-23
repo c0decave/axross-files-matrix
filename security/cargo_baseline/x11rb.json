@@ -1,0 +1,65 @@
+{
+ "name": "x11rb",
+ "versions": {
+  "0.13.2": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/rust_connection/stream.rs|527689b350671465",
+    "yara|capability_process_spawn|examples/hypnomoire.rs|28d58b8a5a926212",
+    "yara|capability_process_spawn|examples/integration_test_util/util.rs|4e866dbe19d1c806",
+    "yara|capability_process_spawn|examples/record.rs|21a75d7e32778a43",
+    "yara|capability_process_spawn|tests/multithread_test.rs|bef9ce968ce8f77c"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 86,
+    "links": "",
+    "manifest": "c369d080d0718291e6e7c5f3cee4a82b396d768c97d43b4ebbd2c50a5553a879",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "9993aa5be5a26815fe2c3eacfc1fde061fc1a1f094bf1ad2a18bf9c495dd7414",
+    "vcs": {
+     "git": {
+      "sha1": "1b73245acc5dce4c4987c80dd7589e7b60af3532"
+     },
+     "path_in_vcs": "x11rb"
+    }
+   },
+   "crates_io": {
+    "checksum": "9993aa5be5a26815fe2c3eacfc1fde061fc1a1f094bf1ad2a18bf9c495dd7414",
+    "crate_size": 220549,
+    "created_at": "2025-08-29T16:34:47.956210Z",
+    "description": "Rust bindings to X11",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "psychon",
+    "repository": "https://github.com/psychon/x11rb",
+    "rust_version": "1.64"
+   },
+   "name": "x11rb",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by psychon on 2025-08-29."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/rust_connection/stream.rs|527689b350671465",
+     "yara|capability_process_spawn|examples/hypnomoire.rs|28d58b8a5a926212",
+     "yara|capability_process_spawn|examples/integration_test_util/util.rs|4e866dbe19d1c806",
+     "yara|capability_process_spawn|examples/record.rs|21a75d7e32778a43",
+     "yara|capability_process_spawn|tests/multithread_test.rs|bef9ce968ce8f77c"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/rust_connection/stream.rs",
+     "capability_process_spawn:capability_process_spawn examples/hypnomoire.rs",
+     "capability_process_spawn:capability_process_spawn examples/integration_test_util/util.rs",
+     "capability_process_spawn:capability_process_spawn examples/record.rs",
+     "capability_process_spawn:capability_process_spawn tests/multithread_test.rs"
+    ]
+   },
+   "version": "0.13.2"
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "name": "equivalent",
+ "versions": {
+  "1.0.3": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 10,
+    "links": "",
+    "manifest": "e74fb06da07559206625b1d842917e8a87f9009747025de333f5c618f4589cc0",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "00d174d5400e5e8fd687ad1049e2f578285fa914201b1af7e8b112a4546bd826",
+    "vcs": {
+     "git": {
+      "sha1": "4ee88130bd4ab3229e785533da2af641be22deac"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "00d174d5400e5e8fd687ad1049e2f578285fa914201b1af7e8b112a4546bd826",
+    "crate_size": 7495,
+    "created_at": "2026-10-13T23:06:49.442503Z",
+    "description": "Traits for key comparison in maps.",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "cuviper",
+    "repository": "https://github.com/indexmap-rs/equivalent",
+    "rust_version": "1.6"
+   },
+   "name": "equivalent",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by cuviper on 2026-10-13."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.0.3"
+  }
+ }
+}

@@ -1,0 +1,67 @@
+{
+ "name": "polycool",
+ "versions": {
+  "0.4.0": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|benches/eval.rs|526fd093ac280eb2",
+    "yara|capability_process_spawn|src/arbitrary.rs|2b564a00c3ec33e9",
+    "yara|capability_process_spawn|src/cubic.rs|af61800891438c22",
+    "yara|capability_process_spawn|src/poly.rs|627fb4cdf106636d",
+    "yara|capability_process_spawn|src/poly_dyn.rs|21f4a03f60775632",
+    "yara|capability_process_spawn|src/quadratic.rs|22b7a6f2dfa9da37"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 19,
+    "links": "",
+    "manifest": "ea0d342e8d36893b8cc1411c585de9f309117fe193ad8e41b78a18382df9d7dd",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "50596ddc09eb5ad5f75cacd40209568e66df71baf86e1499a0e99c4cff12a5a6",
+    "vcs": {
+     "git": {
+      "sha1": "0ffc830eca99e68ba6bab54224cfac2c66bde2f9"
+     },
+     "path_in_vcs": "polycool"
+    }
+   },
+   "crates_io": {
+    "checksum": "50596ddc09eb5ad5f75cacd40209568e66df71baf86e1499a0e99c4cff12a5a6",
+    "crate_size": 22738,
+    "created_at": "2025-10-23T22:48:11.442086Z",
+    "description": "Polynomial root-finding",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "jneem",
+    "repository": "https://github.com/linebender/kurbo"
+   },
+   "name": "polycool",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by jneem on 2025-10-23."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|benches/eval.rs|526fd093ac280eb2",
+     "yara|capability_process_spawn|src/arbitrary.rs|2b564a00c3ec33e9",
+     "yara|capability_process_spawn|src/cubic.rs|af61800891438c22",
+     "yara|capability_process_spawn|src/poly.rs|627fb4cdf106636d",
+     "yara|capability_process_spawn|src/poly_dyn.rs|21f4a03f60775632",
+     "yara|capability_process_spawn|src/quadratic.rs|22b7a6f2dfa9da37"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn benches/eval.rs",
+     "capability_process_spawn:capability_process_spawn src/arbitrary.rs",
+     "capability_process_spawn:capability_process_spawn src/cubic.rs",
+     "capability_process_spawn:capability_process_spawn src/poly.rs",
+     "capability_process_spawn:capability_process_spawn src/poly_dyn.rs",
+     "capability_process_spawn:capability_process_spawn src/quadratic.rs"
+    ]
+   },
+   "version": "0.4.0"
+  }
+ }
+}

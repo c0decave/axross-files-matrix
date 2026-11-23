@@ -1,0 +1,61 @@
+{
+ "name": "crc32fast",
+ "versions": {
+  "1.5.4": {
+   "accepted_findings": [
+    "rs-command|build.rs|52dd38c3e7ef594c",
+    "yara|capability_process_spawn|build.rs|deb6052c4a586e88"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "deb6052c4a586e8875ef677fe2d9e9dcfafebfa949803455ea8eff6e7dbde436"
+    },
+    "files": 21,
+    "links": "",
+    "manifest": "4d316a81966ca9d0429319f202977a18d9b27c0f9ef04b6460857829993d0d59",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "5f97d3416d5337d15c4b0d78c8c91df922ca143f57ec20e2d1c188333047ef04",
+    "vcs": {
+     "git": {
+      "sha1": "118796a864d40beed113e887522531d5474b8abc"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "5f97d3416d5337d15c4b0d78c8c91df922ca143f57ec20e2d1c188333047ef04",
+    "crate_size": 54444,
+    "created_at": "2026-11-01T20:23:57.281754Z",
+    "description": "Fast, SIMD-accelerated CRC32 (IEEE) checksum computation",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/srijs/rust-crc32fast",
+    "rust_version": "1.63",
+    "trustpub": {
+     "provider": "github",
+     "repository": "srijs/rust-crc32fast",
+     "run_id": "41346190672",
+     "sha": "118796a864d40beed113e887522531d5474b8abc"
+    }
+   },
+   "name": "crc32fast",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: runs rustc to probe its version; no network. No binary; checksum = crates.io's; published by trusted publishing on 2026-11-01."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|build.rs|deb6052c4a586e88"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn build.rs"
+    ]
+   },
+   "version": "1.5.4"
+  }
+ }
+}

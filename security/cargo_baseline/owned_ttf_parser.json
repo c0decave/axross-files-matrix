@@ -1,0 +1,46 @@
+{
+ "name": "owned_ttf_parser",
+ "versions": {
+  "0.25.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 10,
+    "links": "",
+    "manifest": "61d15323d63d8a1348d5a9d76ae030977ac9ac703e0088b2f3025ed508a3d769",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "36820e9051aca1014ddc75770aab4d68bc1e9e632f0f5627c4086bc216fb583b",
+    "vcs": {
+     "git": {
+      "sha1": "3abee95150b4c32f16ffbaf1bb922a68b465d48b"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "36820e9051aca1014ddc75770aab4d68bc1e9e632f0f5627c4086bc216fb583b",
+    "crate_size": 8989,
+    "created_at": "2025-07-24T08:13:23.649753Z",
+    "description": "ttf-parser plus support for owned data",
+    "license": "Apache-2.0",
+    "published_by": "alexheretic",
+    "repository": "https://github.com/alexheretic/owned-ttf-parser"
+   },
+   "name": "owned_ttf_parser",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by alexheretic on 2025-07-24."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.25.1"
+  }
+ }
+}

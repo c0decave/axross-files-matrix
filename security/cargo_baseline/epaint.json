@@ -1,0 +1,59 @@
+{
+ "name": "epaint",
+ "versions": {
+  "0.37.0": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/text/family.rs|b573142f77d552c5",
+    "yara|capability_network_outbound|src/text/fonts.rs|1feb5e3e930f0efa",
+    "yara|capability_process_spawn|src/mutex.rs|513cd7d225e129ad"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 57,
+    "links": "",
+    "manifest": "1c0821875ad49ce7190ea35087945f96e7118b864a35ed5209b1c7240a6a140b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "97bac86ae3dde93fc3951e790951caea739ff39a6c89d909cdaf1d9278dbb1bd",
+    "vcs": {
+     "git": {
+      "sha1": "7c0b40402271e8d40cda69f87cf3c2617c2e4382"
+     },
+     "path_in_vcs": "crates/epaint"
+    }
+   },
+   "crates_io": {
+    "checksum": "97bac86ae3dde93fc3951e790951caea739ff39a6c89d909cdaf1d9278dbb1bd",
+    "crate_size": 155411,
+    "created_at": "2026-10-15T14:49:06.268100Z",
+    "description": "Minimal 2D graphics library for GUI work",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rerunio",
+    "repository": "https://github.com/emilk/egui/tree/main/crates/epaint",
+    "rust_version": "1.95"
+   },
+   "name": "epaint",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rerunio on 2026-10-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/text/family.rs|b573142f77d552c5",
+     "yara|capability_network_outbound|src/text/fonts.rs|1feb5e3e930f0efa",
+     "yara|capability_process_spawn|src/mutex.rs|513cd7d225e129ad"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/text/family.rs",
+     "capability_network_outbound:capability_network_outbound src/text/fonts.rs",
+     "capability_process_spawn:capability_process_spawn src/mutex.rs"
+    ]
+   },
+   "version": "0.37.0"
+  }
+ }
+}

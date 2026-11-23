@@ -1,0 +1,47 @@
+{
+ "name": "async-recursion",
+ "versions": {
+  "1.2.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 58,
+    "links": "",
+    "manifest": "53e17f8331e12c6e07623c7b03414108ee5a7b387f569a796c4a002fd9d30673",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "4f8abc12baad266b1c8cec146854c195b5864b4221d4b2ca7296a7ae82d9e451",
+    "vcs": {
+     "git": {
+      "sha1": "b33ad72c964f403fc28f2ed38dfa658078461ccd"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "4f8abc12baad266b1c8cec146854c195b5864b4221d4b2ca7296a7ae82d9e451",
+    "crate_size": 18102,
+    "created_at": "2026-10-03T13:58:56.340427Z",
+    "description": "Recursion for async functions",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "dcchut",
+    "repository": "https://github.com/dcchut/async-recursion",
+    "rust_version": "1.71"
+   },
+   "name": "async-recursion",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by dcchut on 2026-10-03."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.2.0"
+  }
+ }
+}

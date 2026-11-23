@@ -1,0 +1,54 @@
+{
+ "name": "wasm-bindgen-macro",
+ "versions": {
+  "0.2.130": {
+   "accepted_findings": [
+    "rs-url|src/lib.rs|7ad82a078a6365a3"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 9,
+    "links": "",
+    "manifest": "b2b35bc3348d6dd992ffe6d4b8482d5ac4c7731251c4c78be4335e4f66d69792",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "6e931a02a39abdbf66966fc35902b5ed58344750a70885bed4ebb3d8eaf28ed9",
+    "vcs": {
+     "git": {
+      "sha1": "c93b8ae848d4d9e6beaeaf9516e18a7cadd818a2"
+     },
+     "path_in_vcs": "crates/macro"
+    }
+   },
+   "crates_io": {
+    "checksum": "6e931a02a39abdbf66966fc35902b5ed58344750a70885bed4ebb3d8eaf28ed9",
+    "crate_size": 9626,
+    "created_at": "2026-10-30T06:15:02.683402Z",
+    "description": "Definition of the `#[wasm_bindgen]` attribute, an internal dependency\n",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/macro",
+    "rust_version": "1.81",
+    "trustpub": {
+     "provider": "github",
+     "repository": "wasm-bindgen/wasm-bindgen",
+     "run_id": "41011884567",
+     "sha": "c93b8ae848d4d9e6beaeaf9516e18a7cadd818a2"
+    }
+   },
+   "name": "wasm-bindgen-macro",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by trusted publishing on 2026-10-30."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.130"
+  }
+ }
+}

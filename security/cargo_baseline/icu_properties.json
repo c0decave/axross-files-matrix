@@ -1,0 +1,47 @@
+{
+ "name": "icu_properties",
+ "versions": {
+  "2.4.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 24,
+    "links": "",
+    "manifest": "4d22669100f712682fe5f27a162f3dbd73825af3b71e8385030a60c1c3dfd1bb",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "2ea83d991c56158f7cf898bf86436c1dfe7c07ee82fe88951f2695c9f37a379f",
+    "vcs": {
+     "git": {
+      "sha1": "031d9e89f6a3fd26a14491e090729d46094328fd"
+     },
+     "path_in_vcs": "components/properties"
+    }
+   },
+   "crates_io": {
+    "checksum": "2ea83d991c56158f7cf898bf86436c1dfe7c07ee82fe88951f2695c9f37a379f",
+    "crate_size": 146217,
+    "created_at": "2026-10-22T08:56:21.837545Z",
+    "description": "Definitions for Unicode properties",
+    "license": "Unicode-3.0",
+    "published_by": "robertbastian",
+    "repository": "https://github.com/unicode-org/icu4x",
+    "rust_version": "1.88"
+   },
+   "name": "icu_properties",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by robertbastian on 2026-10-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "2.4.0"
+  }
+ }
+}

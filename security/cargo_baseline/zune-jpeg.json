@@ -1,0 +1,47 @@
+{
+ "name": "zune-jpeg",
+ "versions": {
+  "0.5.15": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 39,
+    "links": "",
+    "manifest": "29497e8a4ff4da81405580665763a015139fd072c9b8e019716808c38758e966",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "27bc9d5b815bc103f142aa054f561d9187d191692ec7c2d1e2b4737f8dbd7296",
+    "vcs": {
+     "git": {
+      "sha1": "31d81fed7551c8ccea456d9d8e2b1fd8bebb6995"
+     },
+     "path_in_vcs": "crates/zune-jpeg"
+    }
+   },
+   "crates_io": {
+    "checksum": "27bc9d5b815bc103f142aa054f561d9187d191692ec7c2d1e2b4737f8dbd7296",
+    "crate_size": 88879,
+    "created_at": "2026-03-26T21:57:53.722533Z",
+    "description": "A fast, correct and safe jpeg decoder",
+    "license": "MIT OR Apache-2.0 OR Zlib",
+    "published_by": "etemesi254",
+    "repository": "https://github.com/etemesi254/zune-image/tree/dev/crates/zune-jpeg",
+    "rust_version": "1.75.0"
+   },
+   "name": "zune-jpeg",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by etemesi254 on 2026-03-26."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.5.15"
+  }
+ }
+}

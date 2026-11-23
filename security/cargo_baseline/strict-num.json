@@ -1,0 +1,46 @@
+{
+ "name": "strict-num",
+ "versions": {
+  "0.1.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 9,
+    "links": "",
+    "manifest": "c1cfdd898da4ee2563145d815553dcd152a38b61ac28fd323a3400cf16fd6323",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "6637bab7722d379c8b41ba849228d680cc12d0a45ba1fa2b48f2a30577a06731",
+    "vcs": {
+     "git": {
+      "sha1": "edf5020c215063c3a9eb8fcac463c82eaceba6df"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "6637bab7722d379c8b41ba849228d680cc12d0a45ba1fa2b48f2a30577a06731",
+    "crate_size": 5104,
+    "created_at": "2023-05-27T11:09:54.687279Z",
+    "description": "A collection of bounded numeric types",
+    "license": "MIT",
+    "published_by": "RazrFalcon",
+    "repository": "https://github.com/RazrFalcon/strict-num"
+   },
+   "name": "strict-num",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by RazrFalcon on 2023-05-27."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.1.1"
+  }
+ }
+}

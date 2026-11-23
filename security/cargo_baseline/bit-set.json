@@ -1,0 +1,47 @@
+{
+ "name": "bit-set",
+ "versions": {
+  "0.10.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "fb26515b7ede087f0f958c51832030a17fbb771eaf01a5709a4b2788ca322ac1",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "09ec2f926cc3060f09db9ebc5b52823d85268d24bb917e472c0c4bea35780a7d",
+    "vcs": {
+     "git": {
+      "sha1": "2a569e1a5bffaee2c2974bcf070ef4e8ee85550b"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "09ec2f926cc3060f09db9ebc5b52823d85268d24bb917e472c0c4bea35780a7d",
+    "crate_size": 20439,
+    "created_at": "2026-03-29T13:55:52.257477Z",
+    "description": "A set of bits",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "pczarn",
+    "repository": "https://github.com/contain-rs/bit-set",
+    "rust_version": "1.82"
+   },
+   "name": "bit-set",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by pczarn on 2026-03-29."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.10.0"
+  }
+ }
+}

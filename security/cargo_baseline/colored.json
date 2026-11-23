@@ -1,0 +1,53 @@
+{
+ "name": "colored",
+ "versions": {
+  "2.2.0": {
+   "accepted_findings": [
+    "yara|lolbas_net|.github/workflows/publish.yml|e637f23e10189bca"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 32,
+    "links": "",
+    "manifest": "8d6072e3094607875d9dc5a1dc2830d21486491a7cc4a58b23f2abcaba14aee6",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "117725a109d387c937a1533ce01b450cbde6b88abceea8473c4d7a85853cda3c",
+    "vcs": {
+     "git": {
+      "sha1": "ef1484c713e1340d842cc7b76f79dc976afe891f"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "117725a109d387c937a1533ce01b450cbde6b88abceea8473c4d7a85853cda3c",
+    "crate_size": 35062,
+    "created_at": "2024-12-15T14:39:54.235213Z",
+    "description": "The most simple way to add colors in your terminal",
+    "license": "MPL-2.0",
+    "published_by": "hwittenborn",
+    "repository": "https://github.com/mackwic/colored",
+    "rust_version": "1.70"
+   },
+   "name": "colored",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by hwittenborn on 2024-12-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|lolbas_net|.github/workflows/publish.yml|e637f23e10189bca"
+    ],
+    "yara": [
+     "capability_network_lolbas:lolbas_net .github/workflows/publish.yml"
+    ]
+   },
+   "version": "2.2.0"
+  }
+ }
+}

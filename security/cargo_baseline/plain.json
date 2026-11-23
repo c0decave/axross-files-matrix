@@ -1,0 +1,40 @@
+{
+ "name": "plain",
+ "versions": {
+  "0.2.3": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 12,
+    "links": "",
+    "manifest": "6265222ab8a82f5615a7c25bb00e7cf616f4801b24f7c44e1f417f09428b80c7",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6",
+    "vcs": {}
+   },
+   "crates_io": {
+    "checksum": "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6",
+    "crate_size": 10664,
+    "created_at": "2017-11-24T15:28:33.966750Z",
+    "description": "A small Rust library that allows users to reinterpret data of certain types safely.",
+    "license": "MIT/Apache-2.0",
+    "repository": "https://github.com/randomites/plain"
+   },
+   "name": "plain",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by trusted publishing on 2017-11-24."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.3"
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "name": "phf_shared",
+ "versions": {
+  "0.14.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 10,
+    "links": "",
+    "manifest": "2a046be99d0c735871599bc652bdee05f1b69123b4919a026a2f927bb92882a6",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "c6fd9027e2d9319be6349febd1db4e8d02aa544921200c9b777720ac34a3aa89",
+    "vcs": {
+     "git": {
+      "sha1": "1620d169aad09b02ef02a97b272470152e100bd6"
+     },
+     "path_in_vcs": "phf_shared"
+    }
+   },
+   "crates_io": {
+    "checksum": "c6fd9027e2d9319be6349febd1db4e8d02aa544921200c9b777720ac34a3aa89",
+    "crate_size": 20291,
+    "created_at": "2026-06-21T00:37:12.234879Z",
+    "description": "Support code shared by PHF libraries",
+    "license": "MIT",
+    "published_by": "JohnTitor",
+    "repository": "https://github.com/rust-phf/rust-phf",
+    "rust_version": "1.85"
+   },
+   "name": "phf_shared",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by JohnTitor on 2026-06-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.14.0"
+  }
+ }
+}

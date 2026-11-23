@@ -1,0 +1,47 @@
+{
+ "name": "icu_collections",
+ "versions": {
+  "2.4.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 76,
+    "links": "",
+    "manifest": "11ff7e83e64d71c2533ce83aa59f53fb1456e7a454d89b93bb6dba5073ae6c01",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "fe090a42a0d3140fed8c63263ed1fecc02422cb2f4bfe55cd8de2de1b8e105dd",
+    "vcs": {
+     "git": {
+      "sha1": "031d9e89f6a3fd26a14491e090729d46094328fd"
+     },
+     "path_in_vcs": "components/collections"
+    }
+   },
+   "crates_io": {
+    "checksum": "fe090a42a0d3140fed8c63263ed1fecc02422cb2f4bfe55cd8de2de1b8e105dd",
+    "crate_size": 102334,
+    "created_at": "2026-10-22T08:56:10.314911Z",
+    "description": "Collection of API for use in ICU libraries.",
+    "license": "Unicode-3.0",
+    "published_by": "robertbastian",
+    "repository": "https://github.com/unicode-org/icu4x",
+    "rust_version": "1.88"
+   },
+   "name": "icu_collections",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by robertbastian on 2026-10-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "2.4.0"
+  }
+ }
+}

@@ -1,0 +1,48 @@
+{
+ "name": "orbclient",
+ "versions": {
+  "0.3.55": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "868469b1445f28fa127ff67e33a1503b04035c7d071438349c6d029d09ceb709"
+    },
+    "files": 28,
+    "links": "",
+    "manifest": "f8be8cfb117b28b73032bfba50b38c9508e011a97e30561a86a5745c2ec06f5b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "5df339f526ea9a60e371768d50efc2f2508c7203290731565d1f7a6f71d21747",
+    "vcs": {
+     "git": {
+      "sha1": "5e16bc813e6c53fe40a6145975b2566fb0e890b6"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "5df339f526ea9a60e371768d50efc2f2508c7203290731565d1f7a6f71d21747",
+    "crate_size": 1341189,
+    "created_at": "2026-05-24T15:16:32.462236Z",
+    "description": "The Orbital Client Library",
+    "license": "MIT",
+    "published_by": "jackpot51",
+    "repository": "https://gitlab.redox-os.org/redox-os/orbclient"
+   },
+   "name": "orbclient",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by jackpot51 on 2026-05-24."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.3.55"
+  }
+ }
+}

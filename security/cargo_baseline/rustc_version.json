@@ -1,0 +1,56 @@
+{
+ "name": "rustc_version",
+ "versions": {
+  "0.4.1": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/lib.rs|6d0dbf7bd12ba712",
+    "yara|capability_process_spawn|tests/all.rs|7b2969022feab85a"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "7b40c4cd054913553d745e748882901c77b1102d8c75b25485f6a067d1cc5521",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92",
+    "vcs": {
+     "git": {
+      "sha1": "eeca449cca83e24150e46739e797aa82e9142809"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92",
+    "crate_size": 12245,
+    "created_at": "2024-08-28T09:21:22.033328Z",
+    "description": "A library for querying the version of a installed rustc compiler",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "djc",
+    "repository": "https://github.com/djc/rustc-version-rs",
+    "rust_version": "1.32"
+   },
+   "name": "rustc_version",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by djc on 2024-08-28."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/lib.rs|6d0dbf7bd12ba712",
+     "yara|capability_process_spawn|tests/all.rs|7b2969022feab85a"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/lib.rs",
+     "capability_process_spawn:capability_process_spawn tests/all.rs"
+    ]
+   },
+   "version": "0.4.1"
+  }
+ }
+}

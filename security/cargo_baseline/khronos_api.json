@@ -1,0 +1,50 @@
+{
+ "name": "khronos_api",
+ "versions": {
+  "3.1.0": {
+   "accepted_findings": [
+    "rs-fs-write|build.rs|bbb4e41dda4d60ae",
+    "rs-include-bytes|build.rs|ed570193c61c6bec"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "88b55daa5f6f0c90e1ab906c08b74834671316bdadc88d7cc25adfa19fc57e62"
+    },
+    "files": 72,
+    "links": "",
+    "manifest": "5b43c665b7ea9fca83ed8fb6bc1aa3f2937b031a5371ab3290ce4a4bf52cd7ec",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "e2db585e1d738fc771bf08a151420d3ed193d9d895a36df7f6f8a9456b911ddc",
+    "vcs": {
+     "git": {
+      "sha1": "f150967b1c44ae888e6676f93f639ebc82771bdc"
+     }
+    }
+   },
+   "crates_io": {
+    "checksum": "e2db585e1d738fc771bf08a151420d3ed193d9d895a36df7f6f8a9456b911ddc",
+    "crate_size": 599718,
+    "created_at": "2019-04-01T04:52:05.349671Z",
+    "description": "The Khronos XML API Registry, exposed as byte string constants.",
+    "license": "Apache-2.0",
+    "published_by": "brendanzab",
+    "repository": "https://github.com/brendanzab/gl-rs/"
+   },
+   "name": "khronos_api",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: writes only into OUT_DIR; no network. No binary; checksum = crates.io's; published by brendanzab on 2019-04-01."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "3.1.0"
+  }
+ }
+}

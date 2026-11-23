@@ -1,0 +1,55 @@
+{
+ "name": "poll-promise",
+ "versions": {
+  "0.3.0": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/lib.rs|dd9d63371df04c3c",
+    "yara|capability_process_spawn|src/promise.rs|de84781e34bfabe4"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 10,
+    "links": "",
+    "manifest": "491a44fa4cbcf30647db4d8b50a00d0048457c36811c09ab7946c36891d3f7f2",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "5f6a58fecbf9da8965bcdb20ce4fd29788d1acee68ddbb64f0ba1b81bccdb7df",
+    "vcs": {
+     "git": {
+      "sha1": "14a032ecd8a9fac24303b4cc43888e9b0d2dc582"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "5f6a58fecbf9da8965bcdb20ce4fd29788d1acee68ddbb64f0ba1b81bccdb7df",
+    "crate_size": 18973,
+    "created_at": "2023-08-27T12:03:28.234019Z",
+    "description": "Poll the result of an async operation in a game or immediate mode GUI.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "emilk",
+    "repository": "https://github.com/EmbarkStudios/poll-promise"
+   },
+   "name": "poll-promise",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by emilk on 2023-08-27."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/lib.rs|dd9d63371df04c3c",
+     "yara|capability_process_spawn|src/promise.rs|de84781e34bfabe4"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/lib.rs",
+     "capability_process_spawn:capability_process_spawn src/promise.rs"
+    ]
+   },
+   "version": "0.3.0"
+  }
+ }
+}

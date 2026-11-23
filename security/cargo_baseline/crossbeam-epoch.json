@@ -1,0 +1,79 @@
+{
+ "name": "crossbeam-epoch",
+ "versions": {
+  "0.9.21": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|benches/defer.rs|c330b704d96b2ad1",
+    "yara|capability_process_spawn|benches/flush.rs|0389ac6c473632f0",
+    "yara|capability_process_spawn|benches/pin.rs|2f649a5153745c79",
+    "yara|capability_process_spawn|examples/sanitize.rs|a39d1635fa61e643",
+    "yara|capability_process_spawn|src/collector.rs|12c6a00496fd702f",
+    "yara|capability_process_spawn|src/default.rs|a153392422d2a473",
+    "yara|capability_process_spawn|src/sync/list.rs|6950177b01fa6f51",
+    "yara|capability_process_spawn|src/sync/queue.rs|0324e9b07dfd0f76",
+    "yara|capability_process_spawn|tests/loom.rs|db772f4478966de6"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "c8c35fc536a2e6481549bc13979293cb51244cd9c72d4ed9e35c22a1d70fa9ae"
+    },
+    "files": 26,
+    "links": "",
+    "manifest": "24cd243250b6f5601854cbf95d85d246f18ea6085a1304aa88b58934ffa0f4a5",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "dc74980687109a3b14c72fd458107bf0baa1da1a1a805e178d15501ba9b86d9d",
+    "vcs": {
+     "git": {
+      "sha1": "2920c984290229ab4e0ca0452ef09e48a82063f3"
+     },
+     "path_in_vcs": "crossbeam-epoch"
+    }
+   },
+   "crates_io": {
+    "checksum": "dc74980687109a3b14c72fd458107bf0baa1da1a1a805e178d15501ba9b86d9d",
+    "crate_size": 47936,
+    "created_at": "2026-09-05T17:46:49.471801Z",
+    "description": "Epoch-based garbage collection",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "taiki-e",
+    "repository": "https://github.com/crossbeam-rs/crossbeam",
+    "rust_version": "1.61"
+   },
+   "name": "crossbeam-epoch",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by taiki-e on 2026-09-05."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|benches/defer.rs|c330b704d96b2ad1",
+     "yara|capability_process_spawn|benches/flush.rs|0389ac6c473632f0",
+     "yara|capability_process_spawn|benches/pin.rs|2f649a5153745c79",
+     "yara|capability_process_spawn|examples/sanitize.rs|a39d1635fa61e643",
+     "yara|capability_process_spawn|src/collector.rs|12c6a00496fd702f",
+     "yara|capability_process_spawn|src/default.rs|a153392422d2a473",
+     "yara|capability_process_spawn|src/sync/list.rs|6950177b01fa6f51",
+     "yara|capability_process_spawn|src/sync/queue.rs|0324e9b07dfd0f76",
+     "yara|capability_process_spawn|tests/loom.rs|db772f4478966de6"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn benches/defer.rs",
+     "capability_process_spawn:capability_process_spawn benches/flush.rs",
+     "capability_process_spawn:capability_process_spawn benches/pin.rs",
+     "capability_process_spawn:capability_process_spawn examples/sanitize.rs",
+     "capability_process_spawn:capability_process_spawn src/collector.rs",
+     "capability_process_spawn:capability_process_spawn src/default.rs",
+     "capability_process_spawn:capability_process_spawn src/sync/list.rs",
+     "capability_process_spawn:capability_process_spawn src/sync/queue.rs",
+     "capability_process_spawn:capability_process_spawn tests/loom.rs"
+    ]
+   },
+   "version": "0.9.21"
+  }
+ }
+}

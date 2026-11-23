@@ -1,0 +1,45 @@
+{
+ "name": "android-properties",
+ "versions": {
+  "0.2.2": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 17,
+    "links": "",
+    "manifest": "dc0ca1416d05fde7380ef876440cf55bc8ec04f0c07859150bb757b57e7b93b7",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "fc7eb209b1518d6bb87b283c20095f5228ecda460da70b44f0802523dea6da04",
+    "vcs": {
+     "git": {
+      "sha1": "35f123fa53be399307eb861b033a62f0ed193d83"
+     }
+    }
+   },
+   "crates_io": {
+    "checksum": "fc7eb209b1518d6bb87b283c20095f5228ecda460da70b44f0802523dea6da04",
+    "crate_size": 4563,
+    "created_at": "2021-01-11T20:37:22.070209Z",
+    "description": "Rust-based Android properties wrapper",
+    "license": "MIT",
+    "published_by": "miklelappo",
+    "repository": "https://github.com/miklelappo/android-properties"
+   },
+   "name": "android-properties",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by miklelappo on 2021-01-11."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.2"
+  }
+ }
+}

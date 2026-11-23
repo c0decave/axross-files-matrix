@@ -1,0 +1,89 @@
+{
+ "name": "linux-raw-sys",
+ "versions": {
+  "0.12.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 473,
+    "links": "",
+    "manifest": "b5835ff122332a5b123c3753a99f7c525b1b11c876a667da3eb78ea60eca61a7",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53",
+    "vcs": {
+     "git": {
+      "sha1": "0e2918cf3e366d9c923d4ca05f169b49d826db56"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53",
+    "crate_size": 3006116,
+    "created_at": "2025-12-23T00:00:07.059646Z",
+    "description": "Generated bindings for Linux's userspace API",
+    "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+    "published_by": "sunfishcode",
+    "repository": "https://github.com/sunfishcode/linux-raw-sys",
+    "rust_version": "1.63"
+   },
+   "name": "linux-raw-sys",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by sunfishcode on 2025-12-23."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.12.1"
+  },
+  "0.4.15": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 354,
+    "links": "",
+    "manifest": "9b934e504ca298de7db74981d4cc7016f5d693c6c65aa6505425308f93df3f0c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d26c52dbd32dccf2d10cac7725f8eae5296885fb5703b261f7d0a0739ec807ab",
+    "vcs": {
+     "git": {
+      "sha1": "77e4a4223b14957ad8fa2958ea411cd4b54314e7"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "d26c52dbd32dccf2d10cac7725f8eae5296885fb5703b261f7d0a0739ec807ab",
+    "crate_size": 2150898,
+    "created_at": "2025-01-08T00:37:56.538364Z",
+    "description": "Generated bindings for Linux's userspace API",
+    "license": "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT",
+    "published_by": "sunfishcode",
+    "repository": "https://github.com/sunfishcode/linux-raw-sys",
+    "rust_version": "1.63"
+   },
+   "name": "linux-raw-sys",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by sunfishcode on 2025-01-08."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.4.15"
+  }
+ }
+}

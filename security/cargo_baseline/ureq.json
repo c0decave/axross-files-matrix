@@ -1,0 +1,113 @@
+{
+ "name": "ureq",
+ "versions": {
+  "3.5.1": {
+   "accepted_findings": [
+    "raw-ip-url|src/io_timeout_tests.rs|084acd2b2531bdb9",
+    "raw-ip-url|src/io_timeout_tests.rs|8dff2ce92d6bce34",
+    "raw-ip-url|src/io_timeout_tests.rs|937ff4b0206c6046",
+    "raw-ip-url|src/io_timeout_tests.rs|a205028c2faaec05",
+    "raw-ip-url|src/io_timeout_tests.rs|cd755b067e5477de",
+    "raw-ip-url|src/pool.rs|2f9857760bee9611",
+    "raw-ip-url|src/pool.rs|e1e761429c981df0",
+    "raw-ip-url|src/shutdown_tests.rs|393cc8d57513c01b",
+    "raw-ip-url|src/unversioned/transport/socks.rs|c9f77fe68667fe9b",
+    "raw-ip-url|src/unversioned/transport/socks.rs|f6ddfa9ab8575bb2",
+    "raw-ip-url|src/util.rs|24d35665fc120811",
+    "raw-ip-url|tests/socks.rs|825bb9ca16a3abb3",
+    "rs-include-bytes|src/lib.rs|85873e55ce7648f4",
+    "rs-include-bytes|src/unversioned/transport/test.rs|068147d9a5846d61",
+    "rs-include-bytes|src/unversioned/transport/test.rs|a6fc7c676842d725",
+    "yara|capability_network_outbound|src/run.rs|0a7869da051013c5",
+    "yara|capability_network_outbound|src/shutdown_tests.rs|f61aab10f5ce832a",
+    "yara|capability_network_outbound|src/unversioned/resolver.rs|76f847ca5c9e7c61",
+    "yara|capability_network_outbound|src/unversioned/transport/connect.rs|a0e5736c4f6124d5",
+    "yara|capability_network_outbound|src/unversioned/transport/socks.rs|2886b19030f7e53e",
+    "yara|capability_network_outbound|src/unversioned/transport/tcp.rs|633aca14845c5571",
+    "yara|capability_network_outbound|tests/native_tls.rs|d36de2e20df52bc6",
+    "yara|capability_network_outbound|tests/socks.rs|e2976fe5265b4b35",
+    "yara|capability_process_spawn|examples/mpsc-transport.rs|2467cb144f054270",
+    "yara|capability_process_spawn|src/agent.rs|5e5b349e99882e48",
+    "yara|capability_process_spawn|src/shutdown_tests.rs|f61aab10f5ce832a",
+    "yara|capability_process_spawn|src/unversioned/resolver.rs|76f847ca5c9e7c61",
+    "yara|capability_process_spawn|src/unversioned/transport/socks.rs|2886b19030f7e53e",
+    "yara|capability_process_spawn|src/unversioned/transport/test.rs|40772bb2502048c1",
+    "yara|capability_process_spawn|tests/native_tls.rs|d36de2e20df52bc6",
+    "yara|capability_process_spawn|tests/socks.rs|e2976fe5265b4b35"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 64,
+    "links": "",
+    "manifest": "1711ded0788c8f7b9cefd3dcea1918fbd3cc6b0843bcec6e9d975588093e1f3a",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "e7be76686bdf7198002062423ca0d8cf9b75a27c8e1de804513b97e97b555d9d",
+    "vcs": {
+     "git": {
+      "sha1": "33ca9d35e97b6a10e767fb0fa3139f01d315e89c"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "e7be76686bdf7198002062423ca0d8cf9b75a27c8e1de804513b97e97b555d9d",
+    "crate_size": 186237,
+    "created_at": "2026-11-02T18:02:33.553904Z",
+    "description": "Simple, safe HTTP client",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "algesten",
+    "repository": "https://github.com/algesten/ureq",
+    "rust_version": "1.85"
+   },
+   "name": "ureq",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "127.0.0.1 URLs in its timeout/pool/socks tests; include_bytes of LICENSE-MIT and the test cert/key. Diff against the reviewed 3.5.2 is only 3.5.2's NetworkDown connect handling (here absent). No advisories in RustSec or OSV; no binary; checksum = crates.io's; published by algesten on 2026-11-02 (same publisher)."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/run.rs|0a7869da051013c5",
+     "yara|capability_network_outbound|src/shutdown_tests.rs|f61aab10f5ce832a",
+     "yara|capability_network_outbound|src/unversioned/resolver.rs|76f847ca5c9e7c61",
+     "yara|capability_network_outbound|src/unversioned/transport/connect.rs|a0e5736c4f6124d5",
+     "yara|capability_network_outbound|src/unversioned/transport/socks.rs|2886b19030f7e53e",
+     "yara|capability_network_outbound|src/unversioned/transport/tcp.rs|633aca14845c5571",
+     "yara|capability_network_outbound|tests/native_tls.rs|d36de2e20df52bc6",
+     "yara|capability_network_outbound|tests/socks.rs|e2976fe5265b4b35",
+     "yara|capability_process_spawn|examples/mpsc-transport.rs|2467cb144f054270",
+     "yara|capability_process_spawn|src/agent.rs|5e5b349e99882e48",
+     "yara|capability_process_spawn|src/shutdown_tests.rs|f61aab10f5ce832a",
+     "yara|capability_process_spawn|src/unversioned/resolver.rs|76f847ca5c9e7c61",
+     "yara|capability_process_spawn|src/unversioned/transport/socks.rs|2886b19030f7e53e",
+     "yara|capability_process_spawn|src/unversioned/transport/test.rs|40772bb2502048c1",
+     "yara|capability_process_spawn|tests/native_tls.rs|d36de2e20df52bc6",
+     "yara|capability_process_spawn|tests/socks.rs|e2976fe5265b4b35"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/run.rs",
+     "capability_network_outbound:capability_network_outbound src/shutdown_tests.rs",
+     "capability_network_outbound:capability_network_outbound src/unversioned/resolver.rs",
+     "capability_network_outbound:capability_network_outbound src/unversioned/transport/connect.rs",
+     "capability_network_outbound:capability_network_outbound src/unversioned/transport/socks.rs",
+     "capability_network_outbound:capability_network_outbound src/unversioned/transport/tcp.rs",
+     "capability_network_outbound:capability_network_outbound tests/native_tls.rs",
+     "capability_network_outbound:capability_network_outbound tests/socks.rs",
+     "capability_process_spawn:capability_process_spawn examples/mpsc-transport.rs",
+     "capability_process_spawn:capability_process_spawn src/agent.rs",
+     "capability_process_spawn:capability_process_spawn src/shutdown_tests.rs",
+     "capability_process_spawn:capability_process_spawn src/unversioned/resolver.rs",
+     "capability_process_spawn:capability_process_spawn src/unversioned/transport/socks.rs",
+     "capability_process_spawn:capability_process_spawn src/unversioned/transport/test.rs",
+     "capability_process_spawn:capability_process_spawn tests/native_tls.rs",
+     "capability_process_spawn:capability_process_spawn tests/socks.rs"
+    ]
+   },
+   "version": "3.5.1"
+  }
+ }
+}

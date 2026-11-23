@@ -1,0 +1,47 @@
+{
+ "name": "async-broadcast",
+ "versions": {
+  "0.7.2": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 17,
+    "links": "",
+    "manifest": "258ad16b721f78f46f2ec183db7cfeef68bb2b2e5da951d1b9783ec2e2d5e765",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "435a87a52755b8f27fcf321ac4f04b2802e337c8c4872923137471ec39c37532",
+    "vcs": {
+     "git": {
+      "sha1": "f7a99132b7e12cb03945013df78b93a35ceafbc1"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "435a87a52755b8f27fcf321ac4f04b2802e337c8c4872923137471ec39c37532",
+    "crate_size": 22746,
+    "created_at": "2024-12-23T21:10:23.927278Z",
+    "description": "Async broadcast channels",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "zeenix",
+    "repository": "https://github.com/smol-rs/async-broadcast",
+    "rust_version": "1.60"
+   },
+   "name": "async-broadcast",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by zeenix on 2024-12-23."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.7.2"
+  }
+ }
+}

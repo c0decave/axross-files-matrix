@@ -1,0 +1,47 @@
+{
+ "name": "base64",
+ "versions": {
+  "0.23.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 39,
+    "links": "",
+    "manifest": "49b5799e882e354a4139a3f3534da9cdd33f1d58a8018c20278f842a1c199803",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5",
+    "vcs": {
+     "git": {
+      "sha1": "069bf7067b949f5c0a92b6ceb82492920502f2c2"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5",
+    "crate_size": 93605,
+    "created_at": "2026-08-04T12:34:31.976297Z",
+    "description": "encodes and decodes base64 as bytes or utf8",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "marshallpierce",
+    "repository": "https://github.com/marshallpierce/rust-base64",
+    "rust_version": "1.71.0"
+   },
+   "name": "base64",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by marshallpierce on 2026-08-04."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.23.1"
+  }
+ }
+}

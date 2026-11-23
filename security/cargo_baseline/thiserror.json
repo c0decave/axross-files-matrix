@@ -1,0 +1,111 @@
+{
+ "name": "thiserror",
+ "versions": {
+  "1.0.69": {
+   "accepted_findings": [
+    "rs-command|build.rs|10b299cc2295e108",
+    "rs-fs-write|build.rs|91fabdfc35eb9844",
+    "yara|capability_process_spawn|build.rs|275d0ddbb22d5f01"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "275d0ddbb22d5f015fba360f51a48da10b6309410efe8c6ca678412b1e8c9288"
+    },
+    "files": 91,
+    "links": "",
+    "manifest": "c1e005cf1c1259306a4e858135b3e313aa6deeacb04bebc179e1236ddc799a7e",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "b6aaf5339b578ea85b50e080feb250a3e8ae8cfcdff9a461c9ec2904bc923f52",
+    "vcs": {
+     "git": {
+      "sha1": "41938bd3a03a70d34ed8e53d99c89c770c7c9c41"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "b6aaf5339b578ea85b50e080feb250a3e8ae8cfcdff9a461c9ec2904bc923f52",
+    "crate_size": 22198,
+    "created_at": "2024-11-10T06:24:10.762680Z",
+    "description": "derive(Error)",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "dtolnay",
+    "repository": "https://github.com/dtolnay/thiserror",
+    "rust_version": "1.61"
+   },
+   "name": "thiserror",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: runs rustc to probe its version; writes only into OUT_DIR; no network. No binary; checksum = crates.io's; published by dtolnay on 2024-11-10."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|build.rs|275d0ddbb22d5f01"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn build.rs"
+    ]
+   },
+   "version": "1.0.69"
+  },
+  "2.0.21": {
+   "accepted_findings": [
+    "rs-command|build.rs|10b299cc2295e108",
+    "rs-command|build.rs|a6a61c5c15299c38",
+    "rs-fs-write|build.rs|91fabdfc35eb9844",
+    "rs-fs-write|build.rs|dcc34fe1c9237941",
+    "yara|capability_process_spawn|build.rs|ccc38283604f9923"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "ccc38283604f99237ad2333bbe395259e29fdf2ff4e04a60a95de9e4499c09a3"
+    },
+    "files": 105,
+    "links": "",
+    "manifest": "09a3be58d2be1adaf34f924af8adc8da8fafcbb99bb9b2d2299d3f65d8e77d52",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "09e52cb86a36cede5cb101bf8908837b3e4c6e5e59fe7fd85c23fb56200d189e",
+    "vcs": {
+     "git": {
+      "sha1": "b1827ee06f81a7d7f954e676771e19a97f9f8e3b"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "09e52cb86a36cede5cb101bf8908837b3e4c6e5e59fe7fd85c23fb56200d189e",
+    "crate_size": 29021,
+    "created_at": "2026-09-23T20:24:07.771104Z",
+    "description": "derive(Error)",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "dtolnay",
+    "repository": "https://github.com/dtolnay/thiserror",
+    "rust_version": "1.77"
+   },
+   "name": "thiserror",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: runs rustc to probe its version; writes only into OUT_DIR; no network. No binary; checksum = crates.io's; published by dtolnay on 2026-09-23."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|build.rs|ccc38283604f9923"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn build.rs"
+    ]
+   },
+   "version": "2.0.21"
+  }
+ }
+}

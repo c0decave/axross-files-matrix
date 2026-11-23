@@ -1,0 +1,53 @@
+{
+ "name": "windows-future",
+ "versions": {
+  "0.3.2": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/async_spawn.rs|632b8fd0bc5157d7"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 17,
+    "links": "",
+    "manifest": "ad873f7be9662998a749296c4f359ed13eb366ad9fa2c469c9233e505c418bcb",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "e1d6f90251fe18a279739e78025bd6ddc52a7e22f921070ccdc67dde84c605cb",
+    "vcs": {
+     "git": {
+      "sha1": "32c3144490c016fe496a0aed769bce60987a2e9d"
+     },
+     "path_in_vcs": "crates/libs/future"
+    }
+   },
+   "crates_io": {
+    "checksum": "e1d6f90251fe18a279739e78025bd6ddc52a7e22f921070ccdc67dde84c605cb",
+    "crate_size": 17944,
+    "created_at": "2025-10-06T19:15:33.355015Z",
+    "description": "Windows async types",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "kennykerr",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "rust_version": "1.82"
+   },
+   "name": "windows-future",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by kennykerr on 2025-10-06."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/async_spawn.rs|632b8fd0bc5157d7"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/async_spawn.rs"
+    ]
+   },
+   "version": "0.3.2"
+  }
+ }
+}

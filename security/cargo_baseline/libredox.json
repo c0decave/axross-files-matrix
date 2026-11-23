@@ -1,0 +1,46 @@
+{
+ "name": "libredox",
+ "versions": {
+  "0.1.25": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 7,
+    "links": "",
+    "manifest": "926a874c73c79b61c71e77168b2d57827aeecefaebabc7a043bc8b3e075ed8a0",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "61ff90caf6077a803a240f62fdbe88645a890bbca49ef8174c3cb0404362171d",
+    "vcs": {
+     "git": {
+      "sha1": "9a9fc664b027a93a2fa5b27167858956c7566d2d"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "61ff90caf6077a803a240f62fdbe88645a890bbca49ef8174c3cb0404362171d",
+    "crate_size": 10671,
+    "created_at": "2026-09-21T13:30:01.781331Z",
+    "description": "Redox stable ABI",
+    "license": "MIT",
+    "published_by": "4lDO2",
+    "repository": "https://gitlab.redox-os.org/redox-os/libredox.git"
+   },
+   "name": "libredox",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by 4lDO2 on 2026-09-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.1.25"
+  }
+ }
+}

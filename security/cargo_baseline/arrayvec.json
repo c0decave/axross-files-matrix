@@ -1,0 +1,47 @@
+{
+ "name": "arrayvec",
+ "versions": {
+  "0.7.8": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 22,
+    "links": "",
+    "manifest": "d44b428dcba2c9956eae11953fdc84ac20b7b573f329b97d7f17948ff8dc7cf5",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56",
+    "vcs": {
+     "git": {
+      "sha1": "0cb664cf505844348538230479b0040b44f3faf1"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56",
+    "crate_size": 33260,
+    "created_at": "2026-07-02T12:44:35.487269Z",
+    "description": "A vector with fixed capacity, backed by an array (it can be stored on the stack too). Implements fixed capacity ArrayVec and ArrayString.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "bluss",
+    "repository": "https://github.com/bluss/arrayvec",
+    "rust_version": "1.51"
+   },
+   "name": "arrayvec",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by bluss on 2026-07-02."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.7.8"
+  }
+ }
+}

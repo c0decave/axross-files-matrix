@@ -1,0 +1,46 @@
+{
+ "name": "ordered-stream",
+ "versions": {
+  "0.2.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 11,
+    "links": "",
+    "manifest": "476cdd143d967ad1b535888f44caf3dcfa28bff0192f4f07779974631d530794",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "9aa2b01e1d916879f73a53d01d1d6cee68adbb31d6d9177a8cfce093cced1d50",
+    "vcs": {
+     "git": {
+      "sha1": "5c58ca1a3d680c2406f0c6a1520c3476c27048aa"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "9aa2b01e1d916879f73a53d01d1d6cee68adbb31d6d9177a8cfce093cced1d50",
+    "crate_size": 19077,
+    "created_at": "2023-02-11T15:42:09.415977Z",
+    "description": "Streams that are ordered relative to external events",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "danieldg",
+    "repository": "https://github.com/danieldg/ordered-stream"
+   },
+   "name": "ordered-stream",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by danieldg on 2023-02-11."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.0"
+  }
+ }
+}

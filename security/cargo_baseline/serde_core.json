@@ -1,0 +1,57 @@
+{
+ "name": "serde_core",
+ "versions": {
+  "1.0.229": {
+   "accepted_findings": [
+    "rs-command|build.rs|a6a61c5c15299c38",
+    "rs-fs-write|build.rs|dcc34fe1c9237941",
+    "yara|capability_process_spawn|build.rs|7bc6b1eec8913ff4"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "7bc6b1eec8913ff4cd8e4b9b92cd04a82a4f38beb30a0b73a64c1e6e49f07b5f"
+    },
+    "files": 27,
+    "links": "",
+    "manifest": "8f7415d093154424f619faa63052924e26c84df4cff114333622bbdccdc8d01e",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "67dca2c9c51e58a4791a4b1ed58308b39c64224d349a935ab5039aa360942a48",
+    "vcs": {
+     "git": {
+      "sha1": "7fc3b4c30c94f73a96ebd1553f2b090d928fc3a8"
+     },
+     "path_in_vcs": "serde_core"
+    }
+   },
+   "crates_io": {
+    "checksum": "67dca2c9c51e58a4791a4b1ed58308b39c64224d349a935ab5039aa360942a48",
+    "crate_size": 63100,
+    "created_at": "2026-07-18T23:05:10.896830Z",
+    "description": "Serde traits only, with no support for derive -- use the `serde` crate instead",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "dtolnay",
+    "repository": "https://github.com/serde-rs/serde",
+    "rust_version": "1.56"
+   },
+   "name": "serde_core",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: runs rustc to probe its version; writes only into OUT_DIR; no network. No binary; checksum = crates.io's; published by dtolnay on 2026-07-18."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|build.rs|7bc6b1eec8913ff4"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn build.rs"
+    ]
+   },
+   "version": "1.0.229"
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "name": "epaint_default_fonts",
+ "versions": {
+  "0.37.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 17,
+    "links": "",
+    "manifest": "382fc41bf492b1c143d4c77b110d584e241efdc1844b51d79d1962b4891c757b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "cfc1cc505827f4c23eedc297975a0fd038268d41293f389dd8ff3b574aefab19",
+    "vcs": {
+     "git": {
+      "sha1": "7c0b40402271e8d40cda69f87cf3c2617c2e4382"
+     },
+     "path_in_vcs": "crates/epaint_default_fonts"
+    }
+   },
+   "crates_io": {
+    "checksum": "cfc1cc505827f4c23eedc297975a0fd038268d41293f389dd8ff3b574aefab19",
+    "crate_size": 793050,
+    "created_at": "2026-10-15T14:48:55.676178Z",
+    "description": "Default fonts for use in epaint / egui",
+    "license": "(MIT OR Apache-2.0) AND OFL-1.1 AND Ubuntu-font-1.0",
+    "published_by": "rerunio",
+    "repository": "https://github.com/emilk/egui/tree/main/crates/epaint_default_fonts",
+    "rust_version": "1.95"
+   },
+   "name": "epaint_default_fonts",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rerunio on 2026-10-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.37.0"
+  }
+ }
+}

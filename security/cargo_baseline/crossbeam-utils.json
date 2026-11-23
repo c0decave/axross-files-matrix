@@ -1,0 +1,85 @@
+{
+ "name": "crossbeam-utils",
+ "versions": {
+  "0.8.23": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|benches/atomic_cell.rs|c927eb3cd1e5ecc4",
+    "yara|capability_process_spawn|src/backoff.rs|8715f0303ec91d18",
+    "yara|capability_process_spawn|src/sync/parker.rs|698996e7530da1f3",
+    "yara|capability_process_spawn|src/sync/sharded_lock.rs|8f493c837c6af276",
+    "yara|capability_process_spawn|src/sync/wait_group.rs|227566971a4c0fe9",
+    "yara|capability_process_spawn|src/thread.rs|04610787ba88f1f5",
+    "yara|capability_process_spawn|tests/atomic_cell.rs|442a8bf4c35c43f0",
+    "yara|capability_process_spawn|tests/parker.rs|3564f5b7d0460583",
+    "yara|capability_process_spawn|tests/sharded_lock.rs|6f1c2359ebf409c5",
+    "yara|capability_process_spawn|tests/thread.rs|9a7d7d3028c552fd",
+    "yara|capability_process_spawn|tests/wait_group.rs|2a41533a5f7f113d"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "79cc5363313f77ab76e2de4779e384c672a747fbcd4b96647a79286568714807"
+    },
+    "files": 32,
+    "links": "",
+    "manifest": "80b7a5bc4faf1ff60fd6996dbc3ce37493a3c34449871311ecb7a24231540dff",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "a31eee39dddec8330830986fcd7625edb5a24ec90ea038215273bbc3adb08ac6",
+    "vcs": {
+     "git": {
+      "sha1": "2920c984290229ab4e0ca0452ef09e48a82063f3"
+     },
+     "path_in_vcs": "crossbeam-utils"
+    }
+   },
+   "crates_io": {
+    "checksum": "a31eee39dddec8330830986fcd7625edb5a24ec90ea038215273bbc3adb08ac6",
+    "crate_size": 47174,
+    "created_at": "2026-09-05T17:46:14.665751Z",
+    "description": "Utilities for concurrent programming",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "taiki-e",
+    "repository": "https://github.com/crossbeam-rs/crossbeam",
+    "rust_version": "1.60"
+   },
+   "name": "crossbeam-utils",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by taiki-e on 2026-09-05."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|benches/atomic_cell.rs|c927eb3cd1e5ecc4",
+     "yara|capability_process_spawn|src/backoff.rs|8715f0303ec91d18",
+     "yara|capability_process_spawn|src/sync/parker.rs|698996e7530da1f3",
+     "yara|capability_process_spawn|src/sync/sharded_lock.rs|8f493c837c6af276",
+     "yara|capability_process_spawn|src/sync/wait_group.rs|227566971a4c0fe9",
+     "yara|capability_process_spawn|src/thread.rs|04610787ba88f1f5",
+     "yara|capability_process_spawn|tests/atomic_cell.rs|442a8bf4c35c43f0",
+     "yara|capability_process_spawn|tests/parker.rs|3564f5b7d0460583",
+     "yara|capability_process_spawn|tests/sharded_lock.rs|6f1c2359ebf409c5",
+     "yara|capability_process_spawn|tests/thread.rs|9a7d7d3028c552fd",
+     "yara|capability_process_spawn|tests/wait_group.rs|2a41533a5f7f113d"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn benches/atomic_cell.rs",
+     "capability_process_spawn:capability_process_spawn src/backoff.rs",
+     "capability_process_spawn:capability_process_spawn src/sync/parker.rs",
+     "capability_process_spawn:capability_process_spawn src/sync/sharded_lock.rs",
+     "capability_process_spawn:capability_process_spawn src/sync/wait_group.rs",
+     "capability_process_spawn:capability_process_spawn src/thread.rs",
+     "capability_process_spawn:capability_process_spawn tests/atomic_cell.rs",
+     "capability_process_spawn:capability_process_spawn tests/parker.rs",
+     "capability_process_spawn:capability_process_spawn tests/sharded_lock.rs",
+     "capability_process_spawn:capability_process_spawn tests/thread.rs",
+     "capability_process_spawn:capability_process_spawn tests/wait_group.rs"
+    ]
+   },
+   "version": "0.8.23"
+  }
+ }
+}

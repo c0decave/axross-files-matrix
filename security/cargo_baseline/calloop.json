@@ -1,0 +1,110 @@
+{
+ "name": "calloop",
+ "versions": {
+  "0.13.0": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/loop_logic.rs|c9d26630c35a37be",
+    "yara|lolbas_net|.cirrus.yml|8b2811790c2a23a2"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 34,
+    "links": "",
+    "manifest": "dc46e93fa46067572edd5d0faf406dc18650e3b3358c1f1adf60e7bde3865780",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "b99da2f8558ca23c71f4fd15dc57c906239752dd27ff3c00a1d56b685b7cbfec",
+    "vcs": {
+     "git": {
+      "sha1": "72ab703e65681001aa69df798cf9fcd729b78a74"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "b99da2f8558ca23c71f4fd15dc57c906239752dd27ff3c00a1d56b685b7cbfec",
+    "crate_size": 69698,
+    "created_at": "2024-03-01T02:42:00.830871Z",
+    "description": "A callback-based event loop",
+    "license": "MIT",
+    "published_by": "notgull",
+    "repository": "https://github.com/Smithay/calloop",
+    "rust_version": "1.63.0"
+   },
+   "name": "calloop",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by notgull on 2024-03-01."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/loop_logic.rs|c9d26630c35a37be",
+     "yara|lolbas_net|.cirrus.yml|8b2811790c2a23a2"
+    ],
+    "yara": [
+     "capability_network_lolbas:lolbas_net .cirrus.yml",
+     "capability_process_spawn:capability_process_spawn src/loop_logic.rs"
+    ]
+   },
+   "version": "0.13.0"
+  },
+  "0.14.5": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/loop_logic.rs|2e4b995c86984128",
+    "yara|capability_process_spawn|src/sources/stream.rs|7e4e0bcf95d6d5b1",
+    "yara|lolbas_net|.cirrus.yml|010e9963e1a6a826"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 36,
+    "links": "",
+    "manifest": "39d9b2461aa7414a62e994876243766cf9b1a3b60a3b04403aacd8a6af8d8795",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "43b32313e937c8721c9d17ee9bf60699a6402b4b7c2cb6ac1bee0ffcaa4b4e5e",
+    "vcs": {
+     "git": {
+      "sha1": "c0d9940eb4764e6a244f0ee46bc99e988f9d9b7c"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "43b32313e937c8721c9d17ee9bf60699a6402b4b7c2cb6ac1bee0ffcaa4b4e5e",
+    "crate_size": 79025,
+    "created_at": "2026-10-01T22:59:02.117890Z",
+    "description": "A callback-based event loop",
+    "license": "MIT",
+    "published_by": "ids1024",
+    "repository": "https://github.com/Smithay/calloop",
+    "rust_version": "1.86.0"
+   },
+   "name": "calloop",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by ids1024 on 2026-10-01."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/loop_logic.rs|2e4b995c86984128",
+     "yara|capability_process_spawn|src/sources/stream.rs|7e4e0bcf95d6d5b1",
+     "yara|lolbas_net|.cirrus.yml|010e9963e1a6a826"
+    ],
+    "yara": [
+     "capability_network_lolbas:lolbas_net .cirrus.yml",
+     "capability_process_spawn:capability_process_spawn src/loop_logic.rs",
+     "capability_process_spawn:capability_process_spawn src/sources/stream.rs"
+    ]
+   },
+   "version": "0.14.5"
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "name": "futures-macro",
+ "versions": {
+  "0.3.34": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 11,
+    "links": "",
+    "manifest": "6a169eff9f7b337e43a738d4007b67a8d8596cad3975a32e697fc1d2745ba58c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "9fb9654ba8355388abeb8dcb4fc62f511300867002afc858860463bdd9fe0c44",
+    "vcs": {
+     "git": {
+      "sha1": "705e6b5c0f06535b1aac1cb1989a172b3d45be8c"
+     },
+     "path_in_vcs": "futures-macro"
+    }
+   },
+   "crates_io": {
+    "checksum": "9fb9654ba8355388abeb8dcb4fc62f511300867002afc858860463bdd9fe0c44",
+    "crate_size": 11926,
+    "created_at": "2026-08-11T12:13:14.842510Z",
+    "description": "The futures-rs procedural macro implementations.\n",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "taiki-e",
+    "repository": "https://github.com/rust-lang/futures-rs",
+    "rust_version": "1.71"
+   },
+   "name": "futures-macro",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by taiki-e on 2026-08-11."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.3.34"
+  }
+ }
+}

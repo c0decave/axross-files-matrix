@@ -1,0 +1,49 @@
+{
+ "name": "ahash",
+ "versions": {
+  "0.8.12": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "d7dd5428c78b80bb3c99068561641ec661f0f94defbda17f85b443e358ab6396"
+    },
+    "files": 24,
+    "links": "",
+    "manifest": "4b790df6ad5205cab2aa18e5e72e651110fd0c54fb804ef4f2053b0b6822777c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "5a15f179cd60c4584b8a8c596927aadc462e27f2ca70c04e0071964a73ba7a75",
+    "vcs": {
+     "git": {
+      "sha1": "9aa1ba20f05ed582eda04ea625d5658c92195a57"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "5a15f179cd60c4584b8a8c596927aadc462e27f2ca70c04e0071964a73ba7a75",
+    "crate_size": 43413,
+    "created_at": "2025-05-08T05:05:32.999746Z",
+    "description": "A non-cryptographic hash function using AES-NI for high performance",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "tkaitchuck",
+    "repository": "https://github.com/tkaitchuck/ahash",
+    "rust_version": "1.60.0"
+   },
+   "name": "ahash",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by tkaitchuck on 2025-05-08."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.8.12"
+  }
+ }
+}

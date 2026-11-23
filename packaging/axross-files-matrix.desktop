@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=axross files matrix
+GenericName=File System City
+Comment=Fly through the data on your mountpoints as a 3D city, Matrix style
+Exec=axross-files-matrix %F
+Icon=axross-files-matrix
+Terminal=false
+Categories=Utility;FileTools;System;Filesystem;
+Keywords=files;disk;usage;treemap;3d;city;matrix;mount;
+StartupWMClass=axross-files-matrix
+SingleMainWindow=true

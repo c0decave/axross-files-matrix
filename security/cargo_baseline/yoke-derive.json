@@ -1,0 +1,47 @@
+{
+ "name": "yoke-derive",
+ "versions": {
+  "0.8.4": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 10,
+    "links": "",
+    "manifest": "4f07736c3d6d0ae9fc97d2462dd5d38e280784e698d6c1ef6783bc07961a7461",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "ec8ebde2db3681e8c9980cc27822030e68752690ddfa9473e739aeb4dbde6d71",
+    "vcs": {
+     "git": {
+      "sha1": "a59ab860d4bda548e94dfbf992d87fe1f761bc55"
+     },
+     "path_in_vcs": "utils/yoke/derive"
+    }
+   },
+   "crates_io": {
+    "checksum": "ec8ebde2db3681e8c9980cc27822030e68752690ddfa9473e739aeb4dbde6d71",
+    "crate_size": 15054,
+    "created_at": "2026-09-30T13:19:39.412870Z",
+    "description": "Custom derive for the yoke crate",
+    "license": "Unicode-3.0",
+    "published_by": "robertbastian",
+    "repository": "https://github.com/unicode-org/icu4x",
+    "rust_version": "1.82"
+   },
+   "name": "yoke-derive",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by robertbastian on 2026-09-30."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.8.4"
+  }
+ }
+}

@@ -1,0 +1,54 @@
+{
+ "name": "eframe",
+ "versions": {
+  "0.37.0": {
+   "accepted_findings": [
+    "rs-include-bytes|src/native/epi_integration.rs|21d22785785d55f5",
+    "yara|capability_process_spawn|src/native/file_storage.rs|a4e86acf8c0298d9"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 36,
+    "links": "",
+    "manifest": "1fc0b09528bca62019e56ddb370a4552fbb4a26e3b911115c4d1197f294bff0f",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "9c5642501a65ca657d05f00c643a5c14ff2346cb3818032bfe23d58e1f8e5f84",
+    "vcs": {
+     "git": {
+      "sha1": "3c6eb8261c3293ad9c7ea1ed58487e038860ebef"
+     },
+     "path_in_vcs": "crates/eframe"
+    }
+   },
+   "crates_io": {
+    "checksum": "9c5642501a65ca657d05f00c643a5c14ff2346cb3818032bfe23d58e1f8e5f84",
+    "crate_size": 152925,
+    "created_at": "2026-10-15T15:28:53.621684Z",
+    "description": "egui framework - write GUI apps that compiles to web and/or natively",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rerunio",
+    "repository": "https://github.com/emilk/egui/tree/main/crates/eframe",
+    "rust_version": "1.95"
+   },
+   "name": "eframe",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rerunio on 2026-10-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/native/file_storage.rs|a4e86acf8c0298d9"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/native/file_storage.rs"
+    ]
+   },
+   "version": "0.37.0"
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "name": "objc2-user-notifications",
+ "versions": {
+  "0.2.2": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 22,
+    "links": "",
+    "manifest": "63287460511c6235f541525df4bab8a7a1c7a89f5412b9a47081de129229ca1a",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "76cfcbf642358e8689af64cee815d139339f3ed8ad05103ed5eaf73db8d84cb3",
+    "vcs": {
+     "git": {
+      "sha1": "e282618be4c3a3b9542957e0c8540e9588472ce8"
+     },
+     "path_in_vcs": "framework-crates/objc2-user-notifications"
+    }
+   },
+   "crates_io": {
+    "checksum": "76cfcbf642358e8689af64cee815d139339f3ed8ad05103ed5eaf73db8d84cb3",
+    "crate_size": 9600,
+    "created_at": "2024-05-21T08:33:43.504686Z",
+    "description": "Bindings to the UserNotifications framework",
+    "license": "MIT",
+    "published_by": "madsmtm",
+    "repository": "https://github.com/madsmtm/objc2",
+    "rust_version": "1.60"
+   },
+   "name": "objc2-user-notifications",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by madsmtm on 2024-05-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.2"
+  }
+ }
+}

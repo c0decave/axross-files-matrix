@@ -1,0 +1,47 @@
+{
+ "name": "fontique",
+ "versions": {
+  "0.11.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 29,
+    "links": "",
+    "manifest": "42b40d282aeda0196c4fbd9aa887d964f3771a3de5a47f819eb444763df988b0",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "6688bc1294fe7117d788937b6c53480169b29c566954af490830d4c09da9516a",
+    "vcs": {
+     "git": {
+      "sha1": "eea3503dd6cf17130cbb07348e0ff2c918300e94"
+     },
+     "path_in_vcs": "fontique"
+    }
+   },
+   "crates_io": {
+    "checksum": "6688bc1294fe7117d788937b6c53480169b29c566954af490830d4c09da9516a",
+    "crate_size": 59110,
+    "created_at": "2026-08-16T22:38:27.352023Z",
+    "description": "Font enumeration and fallback.",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "nicoburns",
+    "repository": "https://github.com/linebender/parley",
+    "rust_version": "1.88"
+   },
+   "name": "fontique",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by nicoburns on 2026-08-16."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.11.1"
+  }
+ }
+}

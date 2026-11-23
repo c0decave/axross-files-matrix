@@ -1,0 +1,47 @@
+{
+ "name": "windows-numerics",
+ "versions": {
+  "0.3.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 14,
+    "links": "",
+    "manifest": "0e4e6c08c8f74344dee25efe5b312e27905b86b17f48655769ec9e97d227edf2",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "6e2e40844ac143cdb44aead537bbf727de9b044e107a0f1220392177d15b0f26",
+    "vcs": {
+     "git": {
+      "sha1": "32c3144490c016fe496a0aed769bce60987a2e9d"
+     },
+     "path_in_vcs": "crates/libs/numerics"
+    }
+   },
+   "crates_io": {
+    "checksum": "6e2e40844ac143cdb44aead537bbf727de9b044e107a0f1220392177d15b0f26",
+    "crate_size": 9772,
+    "created_at": "2025-10-06T19:17:19.909774Z",
+    "description": "Windows numeric types",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "kennykerr",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "rust_version": "1.82"
+   },
+   "name": "windows-numerics",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by kennykerr on 2025-10-06."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.3.1"
+  }
+ }
+}

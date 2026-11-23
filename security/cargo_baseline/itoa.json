@@ -1,0 +1,47 @@
+{
+ "name": "itoa",
+ "versions": {
+  "1.0.18": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 14,
+    "links": "",
+    "manifest": "a0a8d87fafda7c9e5083a834dbde022dfc2b02dff50f1d19e991848d6208bfc5",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682",
+    "vcs": {
+     "git": {
+      "sha1": "af77385d0daf4d0e949e81f2588be2e44f69f086"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682",
+    "crate_size": 15935,
+    "created_at": "2026-03-20T00:12:37.043881Z",
+    "description": "Fast integer primitive to string conversion",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "dtolnay",
+    "repository": "https://github.com/dtolnay/itoa",
+    "rust_version": "1.68"
+   },
+   "name": "itoa",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by dtolnay on 2026-03-20."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.0.18"
+  }
+ }
+}

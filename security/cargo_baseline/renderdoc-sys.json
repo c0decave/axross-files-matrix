@@ -1,0 +1,52 @@
+{
+ "name": "renderdoc-sys",
+ "versions": {
+  "1.1.0": {
+   "accepted_findings": [
+    "yara|lolbas_net|generate_bindings.sh|8ac506a7a3281569"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 9,
+    "links": "",
+    "manifest": "7e89514257d5ba076da055787fb72c61b93aae4a48ee2ba59b74b46b2516665e",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832",
+    "vcs": {
+     "git": {
+      "sha1": "0276afc3686dd3ee9475798ed8ab89026d74143d"
+     },
+     "path_in_vcs": "renderdoc-sys"
+    }
+   },
+   "crates_io": {
+    "checksum": "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832",
+    "crate_size": 10366,
+    "created_at": "2024-03-02T02:20:53.768859Z",
+    "description": "Low-level bindings to the RenderDoc API",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "ebkalderon",
+    "repository": "https://github.com/ebkalderon/renderdoc-rs"
+   },
+   "name": "renderdoc-sys",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by ebkalderon on 2024-03-02."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|lolbas_net|generate_bindings.sh|8ac506a7a3281569"
+    ],
+    "yara": [
+     "capability_network_lolbas:lolbas_net generate_bindings.sh"
+    ]
+   },
+   "version": "1.1.0"
+  }
+ }
+}

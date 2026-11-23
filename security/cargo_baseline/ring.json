@@ -1,0 +1,174 @@
+{
+ "name": "ring",
+ "versions": {
+  "0.17.14": {
+   "accepted_findings": [
+    "rs-command|build.rs|cef7eed48482933e",
+    "rs-command|build.rs|e42cde827a36f431",
+    "rs-fs-write|build.rs|e2e0861fc19522c4",
+    "rs-include-bytes|src/ec/curve25519/ed25519/signing.rs|a82fd20c2a5fc6c3",
+    "rs-include-bytes|src/ec/suite_b/ecdsa/signing.rs|066e8264684cece5",
+    "rs-include-bytes|src/ec/suite_b/ecdsa/signing.rs|f4dcfa6baac05d5e",
+    "rs-include-bytes|tests/rsa_tests.rs|ed949af0b920225d",
+    "yara|capability_process_spawn|build.rs|9d1928ffb1d8e157"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "9d1928ffb1d8e15766c1c1b9ead73e4b81a21703dd25f7c27b87842a2e6e9cee"
+    },
+    "files": 391,
+    "links": "ring_core_0_17_14_",
+    "manifest": "c2751e278b2e24242c0e41aa8b9c046042a0f3c4a1f170b113d7adb72c6f183c",
+    "native": {
+     "pregenerated/aes-gcm-avx2-x86_64-nasm.o": {
+      "kind": "coff-x86_64",
+      "sha256": "78b04a1cdf412d3f288e743df2d8a1d42b4d61ba1c62ccf31642614de2b46ae4"
+     },
+     "pregenerated/aesni-gcm-x86_64-nasm.o": {
+      "kind": "coff-x86_64",
+      "sha256": "b0567127aa4fad7752ddaa5efc35ce3ebd5fc00a9dd5a6cfe851b30d917839b5"
+     },
+     "pregenerated/aesni-x86-win32n.o": {
+      "kind": "coff-i386",
+      "sha256": "7aac096c17b19a3db102c18b985083f4cc36426469e128ec1773d3da3fce3c83"
+     },
+     "pregenerated/aesni-x86_64-nasm.o": {
+      "kind": "coff-x86_64",
+      "sha256": "7a0f5946072b1bd43712460f83f32c693d5998eff88c95a18d73101bf86ae598"
+     },
+     "pregenerated/chacha-x86-win32n.o": {
+      "kind": "coff-i386",
+      "sha256": "f7fdc6f43052e625da062085c792136c9813bbfe2f6118fed9da84101fb8c69e"
+     },
+     "pregenerated/chacha-x86_64-nasm.o": {
+      "kind": "coff-x86_64",
+      "sha256": "8bda22cae2f0d116ad54ca30395a4d19db9702f800cc97f7f6c9dbe0e36f03e5"
+     },
+     "pregenerated/chacha20_poly1305_x86_64-nasm.o": {
+      "kind": "coff-x86_64",
+      "sha256": "19d76b32b14bb5c91391f52dffd80e32a9c3e8f33295353cbdec00971aee73c8"
+     },
+     "pregenerated/ghash-x86-win32n.o": {
+      "kind": "coff-i386",
+      "sha256": "4e08a503d2c99d5e6f15173b17cb82d09f8394b45f3fc26f4003576c348f49b2"
+     },
+     "pregenerated/ghash-x86_64-nasm.o": {
+      "kind": "coff-x86_64",
+      "sha256": "297a912601488fa8453ab538119f7be27212a02024c7ca6fc5a37575e4c276a3"
+     },
+     "pregenerated/p256-x86_64-asm-nasm.o": {
+      "kind": "coff-x86_64",
+      "sha256": "89bff078176c99f3fe22292d08b0be2c16434c37a7a059ebcbf7901bc37ddd3b"
+     },
+     "pregenerated/sha256-x86_64-nasm.o": {
+      "kind": "coff-x86_64",
+      "sha256": "da82affac410c37d36ca92b9639b09198331d2e3bb5ed24a3312b1ea428ed913"
+     },
+     "pregenerated/sha512-x86_64-nasm.o": {
+      "kind": "coff-x86_64",
+      "sha256": "8c86c34b61f998ca12715d2c0bcf0c08c23151eb5b16bb8d3c9eaa176f9a94db"
+     },
+     "pregenerated/vpaes-x86-win32n.o": {
+      "kind": "coff-i386",
+      "sha256": "ef8114349f6eeab746ece2b5b36ca3f524ed3f0db69aa41e830460c372e21309"
+     },
+     "pregenerated/vpaes-x86_64-nasm.o": {
+      "kind": "coff-x86_64",
+      "sha256": "c818c028e4b9c9504b67be3979f5eaa35dd39aa7c26549352d77ce26f8967bde"
+     },
+     "pregenerated/x86-mont-win32n.o": {
+      "kind": "coff-i386",
+      "sha256": "ec05c30686f1fb3dc152d08bc93e0cebe04255e85e78c19d4915f4227f655916"
+     },
+     "pregenerated/x86_64-mont-nasm.o": {
+      "kind": "coff-x86_64",
+      "sha256": "4bad2df173975ec987f2e932e4239bc7de02be4cc8b22f7e343d066bfae59787"
+     },
+     "pregenerated/x86_64-mont5-nasm.o": {
+      "kind": "coff-x86_64",
+      "sha256": "704a8637afb3536feaa3c9318d0be653e7f266c38e027e7a29ed7f3096b90103"
+     }
+    },
+    "native_profiles": {
+     "pregenerated/aes-gcm-avx2-x86_64-nasm.o": [],
+     "pregenerated/aesni-gcm-x86_64-nasm.o": [],
+     "pregenerated/aesni-x86-win32n.o": [],
+     "pregenerated/aesni-x86_64-nasm.o": [
+      "undefined:__imp_RtlVirtualUnwind"
+     ],
+     "pregenerated/chacha-x86-win32n.o": [],
+     "pregenerated/chacha-x86_64-nasm.o": [
+      "undefined:__imp_RtlVirtualUnwind"
+     ],
+     "pregenerated/chacha20_poly1305_x86_64-nasm.o": [],
+     "pregenerated/ghash-x86-win32n.o": [],
+     "pregenerated/ghash-x86_64-nasm.o": [],
+     "pregenerated/p256-x86_64-asm-nasm.o": [
+      "undefined:__imp_RtlVirtualUnwind"
+     ],
+     "pregenerated/sha256-x86_64-nasm.o": [
+      "undefined:__imp_RtlVirtualUnwind"
+     ],
+     "pregenerated/sha512-x86_64-nasm.o": [
+      "undefined:__imp_RtlVirtualUnwind"
+     ],
+     "pregenerated/vpaes-x86-win32n.o": [],
+     "pregenerated/vpaes-x86_64-nasm.o": [
+      "undefined:__imp_RtlVirtualUnwind"
+     ],
+     "pregenerated/x86-mont-win32n.o": [],
+     "pregenerated/x86_64-mont-nasm.o": [
+      "undefined:__imp_RtlVirtualUnwind",
+      "undefined:ring_core_0_17_14__bn_sqr8x_internal",
+      "undefined:ring_core_0_17_14__bn_sqrx8x_internal"
+     ],
+     "pregenerated/x86_64-mont5-nasm.o": [
+      "undefined:__imp_RtlVirtualUnwind"
+     ]
+    },
+    "native_sources": {
+     "crypto": 31,
+     "include": 7,
+     "pregenerated": 89,
+     "third_party": 9
+    },
+    "proc_macro": false,
+    "sha256": "a4689e6c2294d81e88dc6261c768b63bc4fcdb852be6d1352498b114f61383b7",
+    "vcs": {
+     "git": {
+      "dirty": true,
+      "sha1": "2723abbca9e83347d82b056d5b239c6604f786df"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "a4689e6c2294d81e88dc6261c768b63bc4fcdb852be6d1352498b114f61383b7",
+    "crate_size": 1502610,
+    "created_at": "2025-03-11T19:42:03.889273Z",
+    "description": "An experiment.",
+    "lib_links": "ring_core_0_17_14_",
+    "license": "Apache-2.0 AND ISC",
+    "published_by": "briansmith",
+    "repository": "https://github.com/briansmith/ring",
+    "rust_version": "1.66.0"
+   },
+   "name": "ring",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Build script compiles ring's C/assembly with cc (nasm only in ring's own pregenerate mode). 17 prebuilt COFF objects in pregenerated/ (Windows x86/x86_64, NASM output of ring's perlasm): their external symbols are only RtlVirtualUnwind (SEH unwinding) and ring's own bn_sqr8x_internal - no other call out; used only for Windows targets. include_bytes! of PKCS#8 templates and test keys. .cargo_vcs_info marks the publish tree dirty (upstream's release practice). No YARA threat. 17 native file(s) as described; checksum = crates.io's; published by briansmith on 2025-03-11."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|build.rs|9d1928ffb1d8e157"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn build.rs"
+    ]
+   },
+   "version": "0.17.14"
+  }
+ }
+}

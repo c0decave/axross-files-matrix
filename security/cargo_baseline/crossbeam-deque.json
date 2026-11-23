@@ -1,0 +1,61 @@
+{
+ "name": "crossbeam-deque",
+ "versions": {
+  "0.8.8": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|tests/fifo.rs|3d98e0d4ca7cfddf",
+    "yara|capability_process_spawn|tests/injector.rs|859a0e6fd306e844",
+    "yara|capability_process_spawn|tests/lifo.rs|57abdb3fc5920a42"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "c8c35fc536a2e6481549bc13979293cb51244cd9c72d4ed9e35c22a1d70fa9ae"
+    },
+    "files": 15,
+    "links": "",
+    "manifest": "5366750c81e2ca06354009175334cee1f809bf0e8cb8bb5af03868b22cdde296",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "622f3fc73690be383c7214310406f28a90e6edeadc3cea882f9d71e495b9711a",
+    "vcs": {
+     "git": {
+      "sha1": "2920c984290229ab4e0ca0452ef09e48a82063f3"
+     },
+     "path_in_vcs": "crossbeam-deque"
+    }
+   },
+   "crates_io": {
+    "checksum": "622f3fc73690be383c7214310406f28a90e6edeadc3cea882f9d71e495b9711a",
+    "crate_size": 24634,
+    "created_at": "2026-09-05T17:47:08.254122Z",
+    "description": "Concurrent work-stealing deque",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "taiki-e",
+    "repository": "https://github.com/crossbeam-rs/crossbeam",
+    "rust_version": "1.61"
+   },
+   "name": "crossbeam-deque",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by taiki-e on 2026-09-05."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|tests/fifo.rs|3d98e0d4ca7cfddf",
+     "yara|capability_process_spawn|tests/injector.rs|859a0e6fd306e844",
+     "yara|capability_process_spawn|tests/lifo.rs|57abdb3fc5920a42"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn tests/fifo.rs",
+     "capability_process_spawn:capability_process_spawn tests/injector.rs",
+     "capability_process_spawn:capability_process_spawn tests/lifo.rs"
+    ]
+   },
+   "version": "0.8.8"
+  }
+ }
+}

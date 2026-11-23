@@ -1,0 +1,46 @@
+{
+ "name": "naga-types",
+ "versions": {
+  "30.0.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 12,
+    "links": "",
+    "manifest": "c63cdf72c5cd21e8036e3a8131250b8356c3be0d49debd43456cb7cb32ea6969",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "590afbf58a6f4f62873cd5cff4468061844bafa1cdf399cc954537c22d768d49",
+    "vcs": {
+     "git": {
+      "sha1": "40f4a34ebaf56f9a046231f54125ad046239d3f3"
+     },
+     "path_in_vcs": "naga-types"
+    }
+   },
+   "crates_io": {
+    "checksum": "590afbf58a6f4f62873cd5cff4468061844bafa1cdf399cc954537c22d768d49",
+    "crate_size": 12127,
+    "created_at": "2026-08-22T02:53:24.527553Z",
+    "description": "Common types for naga and wgpu",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "cwfitzgerald",
+    "repository": "https://github.com/gfx-rs/wgpu"
+   },
+   "name": "naga-types",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by cwfitzgerald on 2026-08-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "30.0.1"
+  }
+ }
+}

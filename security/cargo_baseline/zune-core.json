@@ -1,0 +1,47 @@
+{
+ "name": "zune-core",
+ "versions": {
+  "0.5.3": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 27,
+    "links": "",
+    "manifest": "b57f5b81e923afa963d60f6fa45b6529cc0164351e48c86ff1bf4963ca2decf5",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d56377fd46368984a170bc5aac5567e52ca5da874caa60bea39fcbca78fb658b",
+    "vcs": {
+     "git": {
+      "sha1": "de5dfc800cfa063116eb695edb6ccd01cb96ea7a"
+     },
+     "path_in_vcs": "crates/zune-core"
+    }
+   },
+   "crates_io": {
+    "checksum": "d56377fd46368984a170bc5aac5567e52ca5da874caa60bea39fcbca78fb658b",
+    "crate_size": 30419,
+    "created_at": "2026-08-07T20:55:44.361773Z",
+    "description": "Core utilities for image processing in the zune family of crates",
+    "license": "MIT OR Apache-2.0 OR Zlib",
+    "published_by": "etemesi254",
+    "repository": "https://github.com/etemesi254/zune-image",
+    "rust_version": "1.75.0"
+   },
+   "name": "zune-core",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by etemesi254 on 2026-08-07."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.5.3"
+  }
+ }
+}

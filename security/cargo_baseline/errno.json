@@ -1,0 +1,56 @@
+{
+ "name": "errno",
+ "versions": {
+  "0.3.14": {
+   "accepted_findings": [
+    "yara|lolbas_net|.github/workflows/main.yml|e917468e0ddc7271",
+    "yara|suspicious_network_tools|.github/workflows/main.yml|e917468e0ddc7271"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 18,
+    "links": "",
+    "manifest": "fda3dadaea2ca23953cf479589990a59ebad2c6b77800cae9740b2455a5a96ca",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb",
+    "vcs": {
+     "git": {
+      "sha1": "ffc03bfb9eb491013567115e6eea560948cd9e52"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb",
+    "crate_size": 12002,
+    "created_at": "2025-09-09T04:35:15.362504Z",
+    "description": "Cross-platform interface to the `errno` variable.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "sunfishcode",
+    "repository": "https://github.com/lambda-fairy/rust-errno",
+    "rust_version": "1.56"
+   },
+   "name": "errno",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "YARA: a CI workflow under .github/ with curl/wget (shipped in the crate, never built). No binary; checksum = crates.io's; published by sunfishcode on 2025-09-09."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|lolbas_net|.github/workflows/main.yml|e917468e0ddc7271",
+     "yara|suspicious_network_tools|.github/workflows/main.yml|e917468e0ddc7271"
+    ],
+    "yara": [
+     "axross_backdoor_rules:suspicious_network_tools .github/workflows/main.yml",
+     "capability_network_lolbas:lolbas_net .github/workflows/main.yml"
+    ]
+   },
+   "version": "0.3.14"
+  }
+ }
+}

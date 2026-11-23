@@ -1,0 +1,52 @@
+{
+ "name": "ttf-parser",
+ "versions": {
+  "0.25.1": {
+   "accepted_advisories": {
+    "RUSTSEC-2026-0192": "ttf-parser is unmaintained (author's statement, no vulnerability). It comes with egui (epaint -> ab_glyph -> owned_ttf_parser) and parses only the fonts egui ships; replacing it is egui's change (skrifa). Re-check when egui moves."
+   },
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 118,
+    "links": "",
+    "manifest": "5f04f174757e6f696138d06ac3b22673bce0687da46c8bf91675d4ee39b727df",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {
+     "testing-tools": 12
+    },
+    "proc_macro": false,
+    "sha256": "d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31",
+    "vcs": {
+     "git": {
+      "sha1": "56c33b910b03ca152f78363ec471c5dfd97c3069"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "d2df906b07856748fa3f6e0ad0cbaa047052d4a7dd609e231c4f72cee8c36f31",
+    "crate_size": 201121,
+    "created_at": "2024-11-29T19:59:37.395141Z",
+    "description": "A high-level, safe, zero-allocation font parser for TrueType, OpenType, and AAT.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "alerque",
+    "repository": "https://github.com/harfbuzz/ttf-parser",
+    "rust_version": "1.63.0"
+   },
+   "name": "ttf-parser",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "RUSTSEC-2026-0192 unmaintained notice (accepted below). Font parser used by egui's ab_glyph; no build script, no binary, nothing flagged in content. No binary; checksum = crates.io's; published by alerque on 2024-11-29."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.25.1"
+  }
+ }
+}

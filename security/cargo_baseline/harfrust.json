@@ -1,0 +1,56 @@
+{
+ "name": "harfrust",
+ "versions": {
+  "0.12.0": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/hb/ot_shaper_indic.rs|06128dc721876bce",
+    "yara|capability_network_outbound|src/hb/tables.rs|77d54d0ae2fbeb27"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 83,
+    "links": "",
+    "manifest": "457ab1a14d9d1c1d1303df6dfb9466ab99a5e8ae97c77f05969d2921aba8699d",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "c03d949a14aa089bbb282f7dd76a498a7f684428e4257202efc119ec010376f9",
+    "vcs": {
+     "git": {
+      "sha1": "60b28ea22b5261710018d69c168a762bcb28794c"
+     },
+     "path_in_vcs": "harfrust"
+    }
+   },
+   "crates_io": {
+    "checksum": "c03d949a14aa089bbb282f7dd76a498a7f684428e4257202efc119ec010376f9",
+    "crate_size": 291579,
+    "created_at": "2026-07-03T19:32:00.510158Z",
+    "description": "A complete HarfBuzz shaping algorithm port to Rust.",
+    "license": "MIT",
+    "published_by": "behdad",
+    "repository": "https://github.com/harfbuzz/harfrust",
+    "rust_version": "1.85"
+   },
+   "name": "harfrust",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by behdad on 2026-07-03."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/hb/ot_shaper_indic.rs|06128dc721876bce",
+     "yara|capability_network_outbound|src/hb/tables.rs|77d54d0ae2fbeb27"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/hb/ot_shaper_indic.rs",
+     "capability_network_outbound:capability_network_outbound src/hb/tables.rs"
+    ]
+   },
+   "version": "0.12.0"
+  }
+ }
+}

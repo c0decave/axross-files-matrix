@@ -1,0 +1,47 @@
+{
+ "name": "tinystr",
+ "versions": {
+  "0.8.5": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 22,
+    "links": "",
+    "manifest": "0efdb46b0fc14c5ba60e494f5f195c66c9c983c94381b5426cf86f4f01e18d95",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "abc840c238154d58f9e86b2792261edfde565a17696e1cda1a449de27979801a",
+    "vcs": {
+     "git": {
+      "sha1": "031d9e89f6a3fd26a14491e090729d46094328fd"
+     },
+     "path_in_vcs": "utils/tinystr"
+    }
+   },
+   "crates_io": {
+    "checksum": "abc840c238154d58f9e86b2792261edfde565a17696e1cda1a449de27979801a",
+    "crate_size": 25049,
+    "created_at": "2026-10-22T08:51:49.200908Z",
+    "description": "A small ASCII-only bounded length string representation.",
+    "license": "Unicode-3.0",
+    "published_by": "robertbastian",
+    "repository": "https://github.com/unicode-org/icu4x",
+    "rust_version": "1.82"
+   },
+   "name": "tinystr",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by robertbastian on 2026-10-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.8.5"
+  }
+ }
+}

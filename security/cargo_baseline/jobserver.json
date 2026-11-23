@@ -1,0 +1,77 @@
+{
+ "name": "jobserver",
+ "versions": {
+  "0.1.35": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|tests/make-as-a-client.rs|8be1f3fef1e9e65c",
+    "yara|capability_process_spawn|src/lib.rs|9b82f32a87deae5b",
+    "yara|capability_process_spawn|src/unix.rs|353cc1b9653bc30e",
+    "yara|capability_process_spawn|src/wasm.rs|74db7bd1441b7b4d",
+    "yara|capability_process_spawn|src/windows.rs|d939574ff187be4f",
+    "yara|capability_process_spawn|tests/client-of-myself.rs|ca09bf398f69df4b",
+    "yara|capability_process_spawn|tests/client.rs|0bca143e76ae137b",
+    "yara|capability_process_spawn|tests/make-as-a-client.rs|8be1f3fef1e9e65c",
+    "yara|capability_process_spawn|tests/server.rs|da15bf12e1df1883"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 21,
+    "links": "",
+    "manifest": "3dbb385d3e0af7ef824d0ad33129495fc7c1702d1f05d9ae0f706064c39b41bc",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "1c00acbd29eabad4a2392fa0e921c874934dbbf4194312ad20f04a0ed67a3cb3",
+    "vcs": {
+     "git": {
+      "sha1": "85ba04e3cf89e5c10e7b82de69f6be6dff9d3ec3"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "1c00acbd29eabad4a2392fa0e921c874934dbbf4194312ad20f04a0ed67a3cb3",
+    "crate_size": 28890,
+    "created_at": "2026-07-06T01:43:15.155394Z",
+    "description": "An implementation of the GNU Make jobserver for Rust.\n",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rust-lang-owner",
+    "repository": "https://github.com/rust-lang/jobserver-rs",
+    "rust_version": "1.85"
+   },
+   "name": "jobserver",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rust-lang-owner on 2026-07-06."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|tests/make-as-a-client.rs|8be1f3fef1e9e65c",
+     "yara|capability_process_spawn|src/lib.rs|9b82f32a87deae5b",
+     "yara|capability_process_spawn|src/unix.rs|353cc1b9653bc30e",
+     "yara|capability_process_spawn|src/wasm.rs|74db7bd1441b7b4d",
+     "yara|capability_process_spawn|src/windows.rs|d939574ff187be4f",
+     "yara|capability_process_spawn|tests/client-of-myself.rs|ca09bf398f69df4b",
+     "yara|capability_process_spawn|tests/client.rs|0bca143e76ae137b",
+     "yara|capability_process_spawn|tests/make-as-a-client.rs|8be1f3fef1e9e65c",
+     "yara|capability_process_spawn|tests/server.rs|da15bf12e1df1883"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound tests/make-as-a-client.rs",
+     "capability_process_spawn:capability_process_spawn src/lib.rs",
+     "capability_process_spawn:capability_process_spawn src/unix.rs",
+     "capability_process_spawn:capability_process_spawn src/wasm.rs",
+     "capability_process_spawn:capability_process_spawn src/windows.rs",
+     "capability_process_spawn:capability_process_spawn tests/client-of-myself.rs",
+     "capability_process_spawn:capability_process_spawn tests/client.rs",
+     "capability_process_spawn:capability_process_spawn tests/make-as-a-client.rs",
+     "capability_process_spawn:capability_process_spawn tests/server.rs"
+    ]
+   },
+   "version": "0.1.35"
+  }
+ }
+}

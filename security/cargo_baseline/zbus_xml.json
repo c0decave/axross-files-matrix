@@ -1,0 +1,53 @@
+{
+ "name": "zbus_xml",
+ "versions": {
+  "5.2.1": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|tests/tests.rs|550dc75153fc25bf"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 28,
+    "links": "",
+    "manifest": "15d94a3409589c6e7cd2aa65ecd8b888657f4b7e9dd8d4a9d9bd7dd331787e49",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d1586c021a01ca0a9216dcd874e546382e156a5cbab5fab6cb5f10087e22682a",
+    "vcs": {
+     "git": {
+      "sha1": "39483146d1e625a0a6da297b3aa1749ddf4bfe2a"
+     },
+     "path_in_vcs": "zbus_xml"
+    }
+   },
+   "crates_io": {
+    "checksum": "d1586c021a01ca0a9216dcd874e546382e156a5cbab5fab6cb5f10087e22682a",
+    "crate_size": 47559,
+    "created_at": "2026-07-17T20:50:50.345061Z",
+    "description": "API to handle D-Bus introspection XML",
+    "license": "MIT",
+    "published_by": "zeenix",
+    "repository": "https://github.com/z-galaxy/zbus/",
+    "rust_version": "1.87"
+   },
+   "name": "zbus_xml",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by zeenix on 2026-07-17."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|tests/tests.rs|550dc75153fc25bf"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn tests/tests.rs"
+    ]
+   },
+   "version": "5.2.1"
+  }
+ }
+}

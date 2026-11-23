@@ -1,0 +1,47 @@
+{
+ "name": "ureq-proto",
+ "versions": {
+  "0.7.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 55,
+    "links": "",
+    "manifest": "cd27d5d134cad32bf794f684b863f3abc02ec261e1ce0aa610585c08aee5c080",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "622dce33c252115466d83f63e9744a18f12b4406aae51a01c15ad8fcf1185eb3",
+    "vcs": {
+     "git": {
+      "sha1": "acb5cc3ee1261709316acd6538be08e82f84f3c6"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "622dce33c252115466d83f63e9744a18f12b4406aae51a01c15ad8fcf1185eb3",
+    "crate_size": 74855,
+    "created_at": "2026-11-02T17:48:40.385271Z",
+    "description": "ureq support crate",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "algesten",
+    "repository": "https://github.com/algesten/ureq-proto",
+    "rust_version": "1.85"
+   },
+   "name": "ureq-proto",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by algesten on 2026-11-02."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.7.1"
+  }
+ }
+}

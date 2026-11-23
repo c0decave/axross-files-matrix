@@ -1,0 +1,104 @@
+{
+ "name": "objc2-app-kit",
+ "versions": {
+  "0.2.2": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/generated/NSObjectController.rs|30b940c85a03ea1f"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 292,
+    "links": "",
+    "manifest": "3e218447315684bd2857a3fe133a44a09e2e07a5bc63fe78f7ddae85730aeff9",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "e4e89ad9e3d7d297152b17d39ed92cd50ca8063a89a9fa569046d41568891eff",
+    "vcs": {
+     "git": {
+      "sha1": "e282618be4c3a3b9542957e0c8540e9588472ce8"
+     },
+     "path_in_vcs": "framework-crates/objc2-app-kit"
+    }
+   },
+   "crates_io": {
+    "checksum": "e4e89ad9e3d7d297152b17d39ed92cd50ca8063a89a9fa569046d41568891eff",
+    "crate_size": 337435,
+    "created_at": "2024-05-21T08:25:08.369660Z",
+    "description": "Bindings to the AppKit framework",
+    "license": "MIT",
+    "published_by": "madsmtm",
+    "repository": "https://github.com/madsmtm/objc2",
+    "rust_version": "1.60"
+   },
+   "name": "objc2-app-kit",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by madsmtm on 2024-05-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/generated/NSObjectController.rs|30b940c85a03ea1f"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/generated/NSObjectController.rs"
+    ]
+   },
+   "version": "0.2.2"
+  },
+  "0.3.2": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/generated/NSObjectController.rs|7acf1ffef9621c23",
+    "yara|capability_process_spawn|src/generated/NSApplication.rs|d3c31020ebb7c1f8"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 309,
+    "links": "",
+    "manifest": "d671609b2f8ca911cdc6eaa3896f75c24658b6306e6911ad092fbe97e8e69c8b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d49e936b501e5c5bf01fda3a9452ff86dc3ea98ad5f283e1455153142d97518c",
+    "vcs": {
+     "git": {
+      "sha1": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b"
+     },
+     "path_in_vcs": "framework-crates/objc2-app-kit"
+    }
+   },
+   "crates_io": {
+    "checksum": "d49e936b501e5c5bf01fda3a9452ff86dc3ea98ad5f283e1455153142d97518c",
+    "crate_size": 531744,
+    "created_at": "2025-10-04T16:16:50.311115Z",
+    "description": "Bindings to the AppKit framework",
+    "license": "Zlib OR Apache-2.0 OR MIT",
+    "published_by": "madsmtm",
+    "repository": "https://github.com/madsmtm/objc2",
+    "rust_version": "1.71"
+   },
+   "name": "objc2-app-kit",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by madsmtm on 2025-10-04."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/generated/NSObjectController.rs|7acf1ffef9621c23",
+     "yara|capability_process_spawn|src/generated/NSApplication.rs|d3c31020ebb7c1f8"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/generated/NSObjectController.rs",
+     "capability_process_spawn:capability_process_spawn src/generated/NSApplication.rs"
+    ]
+   },
+   "version": "0.3.2"
+  }
+ }
+}

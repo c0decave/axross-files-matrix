@@ -1,0 +1,47 @@
+{
+ "name": "atspi-common",
+ "versions": {
+  "0.13.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 57,
+    "links": "",
+    "manifest": "0e5647f549975aff6af75714a4cf6562b7b1db4d48b0b3773edd79c902c93bec",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "20c5617155740c98003016429ad13fe43ce7a77b007479350a9f8bf95a29f63d",
+    "vcs": {
+     "git": {
+      "sha1": "f486755b9bf993613f63a779133aafc54925004a"
+     },
+     "path_in_vcs": "atspi-common"
+    }
+   },
+   "crates_io": {
+    "checksum": "20c5617155740c98003016429ad13fe43ce7a77b007479350a9f8bf95a29f63d",
+    "crate_size": 129527,
+    "created_at": "2025-09-18T14:15:21.072701Z",
+    "description": "Primitive types used for sending and receiving Linux accessibility events.",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "TTWNO",
+    "repository": "https://github.com/odilia-app/atspi",
+    "rust_version": "1.77.2"
+   },
+   "name": "atspi-common",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by TTWNO on 2025-09-18."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.13.0"
+  }
+ }
+}

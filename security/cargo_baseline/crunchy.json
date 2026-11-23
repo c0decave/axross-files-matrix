@@ -1,0 +1,50 @@
+{
+ "name": "crunchy",
+ "versions": {
+  "0.2.4": {
+   "accepted_findings": [
+    "rs-fs-write|build.rs|22a9bed35beacd5c"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "08bfcfa380ded6870ed262baa4b6e87ec54482306aebffabefbd19c83ad4b6ba"
+    },
+    "files": 9,
+    "links": "",
+    "manifest": "e4941854bc6deeb45cf6b081ad01d3b6d619096b622448152abf9597bb2e8aac",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5",
+    "vcs": {
+     "git": {
+      "sha1": "ba7b86cea6ba89ccfc72ccb24cc4a4ac6d9c6272"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5",
+    "crate_size": 3887,
+    "created_at": "2025-06-25T12:54:43.146786Z",
+    "description": "Crunchy unroller: deterministically unroll constant loops",
+    "license": "MIT",
+    "published_by": "eira-fransham",
+    "repository": "https://github.com/eira-fransham/crunchy"
+   },
+   "name": "crunchy",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: writes only into OUT_DIR; no network. No binary; checksum = crates.io's; published by eira-fransham on 2025-06-25."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.4"
+  }
+ }
+}

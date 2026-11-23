@@ -1,0 +1,48 @@
+{
+ "name": "percent-encoding",
+ "versions": {
+  "2.3.2": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 8,
+    "links": "",
+    "manifest": "ad90c0aca1c33cf5894a9dbfe3b232d77410b6ea8c1ac58ca481ce185b4d3e96",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220",
+    "vcs": {
+     "git": {
+      "dirty": true,
+      "sha1": "91377f48bf35011d042aa5abef9e7f2a0a625aaa"
+     },
+     "path_in_vcs": "percent_encoding"
+    }
+   },
+   "crates_io": {
+    "checksum": "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220",
+    "crate_size": 11583,
+    "created_at": "2025-08-21T08:46:50.131801Z",
+    "description": "Percent encoding and decoding",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "valenting",
+    "repository": "https://github.com/servo/rust-url/",
+    "rust_version": "1.51"
+   },
+   "name": "percent-encoding",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by valenting on 2025-08-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "2.3.2"
+  }
+ }
+}

@@ -1,0 +1,56 @@
+{
+ "name": "proc-macro-crate",
+ "versions": {
+  "3.5.0": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/lib.rs|d2ef10bd020f6486",
+    "yara|capability_process_spawn|tests/workspace_deps.rs|d8722fdbda99135c"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 14,
+    "links": "",
+    "manifest": "86e1dcc2e325e785632e34bdf4d405f26f25db13621a4a182f68d03a0479fa38",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "e67ba7e9b2b56446f1d419b1d807906278ffa1a658a8a5d8a39dcb1f5a78614f",
+    "vcs": {
+     "git": {
+      "sha1": "8f3d8b04539f732e09c07907f138a248c8d0eed9"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "e67ba7e9b2b56446f1d419b1d807906278ffa1a658a8a5d8a39dcb1f5a78614f",
+    "crate_size": 12709,
+    "created_at": "2026-03-04T11:12:33.029865Z",
+    "description": "Replacement for crate (macro_rules keyword) in proc-macros\n",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "bkchr",
+    "repository": "https://github.com/bkchr/proc-macro-crate",
+    "rust_version": "1.82.0"
+   },
+   "name": "proc-macro-crate",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by bkchr on 2026-03-04."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/lib.rs|d2ef10bd020f6486",
+     "yara|capability_process_spawn|tests/workspace_deps.rs|d8722fdbda99135c"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/lib.rs",
+     "capability_process_spawn:capability_process_spawn tests/workspace_deps.rs"
+    ]
+   },
+   "version": "3.5.0"
+  }
+ }
+}

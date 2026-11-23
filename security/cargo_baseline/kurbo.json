@@ -1,0 +1,107 @@
+{
+ "name": "kurbo",
+ "versions": {
+  "0.13.1": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|benches/quad_arclen.rs|f447a066c32703cb",
+    "yara|capability_process_spawn|examples/arclen_accuracy.rs|7bf354d4d34b42e9",
+    "yara|capability_process_spawn|examples/cubic_arclen.rs|467bcf52b26e3480",
+    "yara|capability_process_spawn|examples/quad_intersect.rs|56becf3a522316e1",
+    "yara|capability_process_spawn|src/affine.rs|7288c89bb5ce16ac",
+    "yara|capability_process_spawn|src/arc.rs|f1479f3e54c7e471",
+    "yara|capability_process_spawn|src/bezpath.rs|6d9d5769715dfc4c",
+    "yara|capability_process_spawn|src/cubicbez.rs|de793f84444c5546",
+    "yara|capability_process_spawn|src/expand.rs|f0ef21c917900974",
+    "yara|capability_process_spawn|src/fit.rs|3d7dace4a4452ce6",
+    "yara|capability_process_spawn|src/lib.rs|f513dc1a758bc061",
+    "yara|capability_process_spawn|src/line.rs|66fba2df6d9653aa",
+    "yara|capability_process_spawn|src/mindist.rs|3f6e98e5cc25395e",
+    "yara|capability_process_spawn|src/offset.rs|8999fdb31334a6c0",
+    "yara|capability_process_spawn|src/param_curve.rs|5cac1495643a9cb5",
+    "yara|capability_process_spawn|src/quadbez.rs|37ab1037750d32ee",
+    "yara|capability_process_spawn|src/simplify.rs|771fc68a2dd0a00d",
+    "yara|capability_process_spawn|src/stroke.rs|9ae69c57571d653a",
+    "yara|capability_process_spawn|src/vec2.rs|05b37bf834417a04"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 53,
+    "links": "",
+    "manifest": "2a5c5a140e407c9757a2ff9aacd61ead45cf7cb762e9e1efb26cd3f772cf4d56",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "4b60dfc32f652b926df6192e55525b16d186c69d47876c3ead4da5cc9f8450e2",
+    "vcs": {
+     "git": {
+      "sha1": "838b69ef35f3381cefc007d86aa8364f5a6dc673"
+     },
+     "path_in_vcs": "kurbo"
+    }
+   },
+   "crates_io": {
+    "checksum": "4b60dfc32f652b926df6192e55525b16d186c69d47876c3ead4da5cc9f8450e2",
+    "crate_size": 169000,
+    "created_at": "2026-05-13T16:32:09.461806Z",
+    "description": "A 2D curves library",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "tomcur",
+    "repository": "https://github.com/linebender/kurbo",
+    "rust_version": "1.85"
+   },
+   "name": "kurbo",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by tomcur on 2026-05-13."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|benches/quad_arclen.rs|f447a066c32703cb",
+     "yara|capability_process_spawn|examples/arclen_accuracy.rs|7bf354d4d34b42e9",
+     "yara|capability_process_spawn|examples/cubic_arclen.rs|467bcf52b26e3480",
+     "yara|capability_process_spawn|examples/quad_intersect.rs|56becf3a522316e1",
+     "yara|capability_process_spawn|src/affine.rs|7288c89bb5ce16ac",
+     "yara|capability_process_spawn|src/arc.rs|f1479f3e54c7e471",
+     "yara|capability_process_spawn|src/bezpath.rs|6d9d5769715dfc4c",
+     "yara|capability_process_spawn|src/cubicbez.rs|de793f84444c5546",
+     "yara|capability_process_spawn|src/expand.rs|f0ef21c917900974",
+     "yara|capability_process_spawn|src/fit.rs|3d7dace4a4452ce6",
+     "yara|capability_process_spawn|src/lib.rs|f513dc1a758bc061",
+     "yara|capability_process_spawn|src/line.rs|66fba2df6d9653aa",
+     "yara|capability_process_spawn|src/mindist.rs|3f6e98e5cc25395e",
+     "yara|capability_process_spawn|src/offset.rs|8999fdb31334a6c0",
+     "yara|capability_process_spawn|src/param_curve.rs|5cac1495643a9cb5",
+     "yara|capability_process_spawn|src/quadbez.rs|37ab1037750d32ee",
+     "yara|capability_process_spawn|src/simplify.rs|771fc68a2dd0a00d",
+     "yara|capability_process_spawn|src/stroke.rs|9ae69c57571d653a",
+     "yara|capability_process_spawn|src/vec2.rs|05b37bf834417a04"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn benches/quad_arclen.rs",
+     "capability_process_spawn:capability_process_spawn examples/arclen_accuracy.rs",
+     "capability_process_spawn:capability_process_spawn examples/cubic_arclen.rs",
+     "capability_process_spawn:capability_process_spawn examples/quad_intersect.rs",
+     "capability_process_spawn:capability_process_spawn src/affine.rs",
+     "capability_process_spawn:capability_process_spawn src/arc.rs",
+     "capability_process_spawn:capability_process_spawn src/bezpath.rs",
+     "capability_process_spawn:capability_process_spawn src/cubicbez.rs",
+     "capability_process_spawn:capability_process_spawn src/expand.rs",
+     "capability_process_spawn:capability_process_spawn src/fit.rs",
+     "capability_process_spawn:capability_process_spawn src/lib.rs",
+     "capability_process_spawn:capability_process_spawn src/line.rs",
+     "capability_process_spawn:capability_process_spawn src/mindist.rs",
+     "capability_process_spawn:capability_process_spawn src/offset.rs",
+     "capability_process_spawn:capability_process_spawn src/param_curve.rs",
+     "capability_process_spawn:capability_process_spawn src/quadbez.rs",
+     "capability_process_spawn:capability_process_spawn src/simplify.rs",
+     "capability_process_spawn:capability_process_spawn src/stroke.rs",
+     "capability_process_spawn:capability_process_spawn src/vec2.rs"
+    ]
+   },
+   "version": "0.13.1"
+  }
+ }
+}

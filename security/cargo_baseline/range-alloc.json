@@ -1,0 +1,46 @@
+{
+ "name": "range-alloc",
+ "versions": {
+  "0.1.5": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 10,
+    "links": "",
+    "manifest": "2a79907bbe8cca21ae4509c85ba541f374586333ab677bff5802d99fabf5555a",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "ca45419789ae5a7899559e9512e58ca889e41f04f1f2445e9f4b290ceccd1d08",
+    "vcs": {
+     "git": {
+      "sha1": "34a5b93f04850e25315f87841d2555f2c0e0ed80"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "ca45419789ae5a7899559e9512e58ca889e41f04f1f2445e9f4b290ceccd1d08",
+    "crate_size": 11163,
+    "created_at": "2026-02-27T20:12:28.520394Z",
+    "description": "Generic range allocator",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "cwfitzgerald",
+    "repository": "https://github.com/gfx-rs/range-alloc"
+   },
+   "name": "range-alloc",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by cwfitzgerald on 2026-02-27."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.1.5"
+  }
+ }
+}

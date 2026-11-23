@@ -1,0 +1,46 @@
+{
+ "name": "siphasher",
+ "versions": {
+  "1.0.4": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 17,
+    "links": "",
+    "manifest": "eb9373ba8ac9372130c955885f84a8d521c6cae2600a928c337cea9b95935468",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "33f4fe9184a62d842c9ef383018f3306d8ba224fd9d836f56d7288308847c256",
+    "vcs": {
+     "git": {
+      "sha1": "ed028f01a16205b0819fa83b0cdc052e2d5ac3b7"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "33f4fe9184a62d842c9ef383018f3306d8ba224fd9d836f56d7288308847c256",
+    "crate_size": 16131,
+    "created_at": "2026-09-25T08:51:05.944322Z",
+    "description": "SipHash-2-4 and SipHash-1-3 keyed hash functions in pure Rust, with 64-bit and 128-bit output and no_std support",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "jedisct1",
+    "repository": "https://github.com/jedisct1/rust-siphash"
+   },
+   "name": "siphasher",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by jedisct1 on 2026-09-25."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.0.4"
+  }
+ }
+}

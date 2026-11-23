@@ -1,0 +1,46 @@
+{
+ "name": "lazy_static",
+ "versions": {
+  "1.5.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 21,
+    "links": "",
+    "manifest": "192abba434e5ac40361da3dbbd87b45b56c8d33eec6c7b5ea6168090f3de7628",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "20870f649af7073d53e38067b2a84312175d56ea15217e1b15bc83506ec50afb",
+    "vcs": {
+     "git": {
+      "sha1": "4c1b9a170c157d679592e2682b13cc780c1db814"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "20870f649af7073d53e38067b2a84312175d56ea15217e1b15bc83506ec50afb",
+    "crate_size": 13937,
+    "created_at": "2026-10-01T07:18:53.602470Z",
+    "description": "A macro for declaring lazily evaluated statics in Rust.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rust-lang-owner",
+    "repository": "https://github.com/rust-lang-nursery/lazy-static.rs"
+   },
+   "name": "lazy_static",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rust-lang-owner on 2026-10-01."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.5.1"
+  }
+ }
+}

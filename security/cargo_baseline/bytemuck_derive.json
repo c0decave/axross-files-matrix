@@ -1,0 +1,47 @@
+{
+ "name": "bytemuck_derive",
+ "versions": {
+  "1.12.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "d121dae8a4aa763f78398325986944ee0c278e67078d942ade3082141b1d47c8",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "6a1f896587b6f2c069c73d2f0913e2d590c3990285cd2f0b6aa02b786b4c679c",
+    "vcs": {
+     "git": {
+      "sha1": "839ee557dd9b1ac5a0b0155cabba71f96b4ccd06"
+     },
+     "path_in_vcs": "derive"
+    }
+   },
+   "crates_io": {
+    "checksum": "6a1f896587b6f2c069c73d2f0913e2d590c3990285cd2f0b6aa02b786b4c679c",
+    "crate_size": 26509,
+    "created_at": "2026-09-11T20:47:15.014342Z",
+    "description": "derive proc-macros for `bytemuck`",
+    "license": "Zlib OR Apache-2.0 OR MIT",
+    "published_by": "Lokathor",
+    "repository": "https://github.com/Lokathor/bytemuck",
+    "rust_version": "1.71"
+   },
+   "name": "bytemuck_derive",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by Lokathor on 2026-09-11."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.12.1"
+  }
+ }
+}

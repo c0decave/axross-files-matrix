@@ -1,0 +1,77 @@
+{
+ "name": "async-executor",
+ "versions": {
+  "1.14.1": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|benches/executor.rs|22202b9a4ab5603b",
+    "yara|capability_process_spawn|examples/limit.rs|a5d8c08557e69fc6",
+    "yara|capability_process_spawn|examples/priority.rs|1095bf43f86cd6dd",
+    "yara|capability_process_spawn|src/lib.rs|65eabeaf24f0a0b0",
+    "yara|capability_process_spawn|src/static_executors.rs|fafca8605550e833",
+    "yara|capability_process_spawn|tests/different_executors.rs|d38672cee1870cde",
+    "yara|capability_process_spawn|tests/drop.rs|56adc4fb94d5375b",
+    "yara|capability_process_spawn|tests/larger_tasks.rs|60cd59aae847c2c7",
+    "yara|capability_process_spawn|tests/panic_prop.rs|b85d3943214d8ae9"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 19,
+    "links": "",
+    "manifest": "f64b0adc530ea524318cee78291aa09a2b7c1915c88abbdb776837bb33a166d8",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "f426a31126c735126297bc5ea7a521263c9faff4f63ca415267ee625651c4f37",
+    "vcs": {
+     "git": {
+      "sha1": "a75cad623bd5c6c80ab19a5befb3d9b93a79bfcd"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "f426a31126c735126297bc5ea7a521263c9faff4f63ca415267ee625651c4f37",
+    "crate_size": 28817,
+    "created_at": "2026-11-02T18:53:51.122336Z",
+    "description": "Async executor",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "taiki-e",
+    "repository": "https://github.com/smol-rs/async-executor",
+    "rust_version": "1.63"
+   },
+   "name": "async-executor",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by taiki-e on 2026-11-02."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|benches/executor.rs|22202b9a4ab5603b",
+     "yara|capability_process_spawn|examples/limit.rs|a5d8c08557e69fc6",
+     "yara|capability_process_spawn|examples/priority.rs|1095bf43f86cd6dd",
+     "yara|capability_process_spawn|src/lib.rs|65eabeaf24f0a0b0",
+     "yara|capability_process_spawn|src/static_executors.rs|fafca8605550e833",
+     "yara|capability_process_spawn|tests/different_executors.rs|d38672cee1870cde",
+     "yara|capability_process_spawn|tests/drop.rs|56adc4fb94d5375b",
+     "yara|capability_process_spawn|tests/larger_tasks.rs|60cd59aae847c2c7",
+     "yara|capability_process_spawn|tests/panic_prop.rs|b85d3943214d8ae9"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn benches/executor.rs",
+     "capability_process_spawn:capability_process_spawn examples/limit.rs",
+     "capability_process_spawn:capability_process_spawn examples/priority.rs",
+     "capability_process_spawn:capability_process_spawn src/lib.rs",
+     "capability_process_spawn:capability_process_spawn src/static_executors.rs",
+     "capability_process_spawn:capability_process_spawn tests/different_executors.rs",
+     "capability_process_spawn:capability_process_spawn tests/drop.rs",
+     "capability_process_spawn:capability_process_spawn tests/larger_tasks.rs",
+     "capability_process_spawn:capability_process_spawn tests/panic_prop.rs"
+    ]
+   },
+   "version": "1.14.1"
+  }
+ }
+}

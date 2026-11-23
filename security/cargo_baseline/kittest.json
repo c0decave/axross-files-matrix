@@ -1,0 +1,47 @@
+{
+ "name": "kittest",
+ "versions": {
+  "0.5.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 12,
+    "links": "",
+    "manifest": "11fc009d3541714cdb4719752d25ac47ea86a11533eba5460071f0f678a65b5a",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "0bb81a721ba76aa095b7f45deb180504f786904e56ca4b8e141f66eb89a78b75",
+    "vcs": {
+     "git": {
+      "sha1": "805a987f76dfa2b5e61ff1081d64d8939401bdf9"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "0bb81a721ba76aa095b7f45deb180504f786904e56ca4b8e141f66eb89a78b75",
+    "crate_size": 13637,
+    "created_at": "2026-10-05T11:43:34.731497Z",
+    "description": "Automated GUI testing using AccessKit",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rerunio",
+    "repository": "https://github.com/rerun-io/kittest",
+    "rust_version": "1.95"
+   },
+   "name": "kittest",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rerunio on 2026-10-05."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.5.0"
+  }
+ }
+}

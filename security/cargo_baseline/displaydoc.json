@@ -1,0 +1,50 @@
+{
+ "name": "displaydoc",
+ "versions": {
+  "0.2.7": {
+   "accepted_findings": [
+    "rs-fs-read-outside|tests/happy.rs|cbf8f9beb4a2f9c9",
+    "rs-url|src/lib.rs|7f942b3da6088269"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 25,
+    "links": "",
+    "manifest": "4450f46a3f551b38b767481e314bad4caf49187563bc5da979367b051677f5d6",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "c6232dd377dcc64799954cbd3a9bb882e9cdc1308ccd87b1c098f1fb2eaf82a8",
+    "vcs": {
+     "git": {
+      "sha1": "20016487354a96b22a7b97974483ae4f51a1bddc"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "c6232dd377dcc64799954cbd3a9bb882e9cdc1308ccd87b1c098f1fb2eaf82a8",
+    "crate_size": 21343,
+    "created_at": "2026-07-28T13:58:21.461609Z",
+    "description": "A derive macro for implementing the display Trait via a doc comment and string interpolation\n",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "Manishearth",
+    "repository": "https://github.com/yaahc/displaydoc",
+    "rust_version": "1.71.0"
+   },
+   "name": "displaydoc",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by Manishearth on 2026-07-28; other medium findings read: ['rs-fs-read-outside']."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.7"
+  }
+ }
+}

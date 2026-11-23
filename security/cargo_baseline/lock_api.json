@@ -1,0 +1,47 @@
+{
+ "name": "lock_api",
+ "versions": {
+  "0.4.14": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 10,
+    "links": "",
+    "manifest": "f9b9a2835ef857901d410bcecaa5ce89a189cda61b4c766ea700d0267ace2e19",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "224399e74b87b5f3557511d98dff8b14089b3dadafcab6bb93eab67d3aace965",
+    "vcs": {
+     "git": {
+      "sha1": "d7828fff7b5d6327ae608e82db45f888b344449a"
+     },
+     "path_in_vcs": "lock_api"
+    }
+   },
+   "crates_io": {
+    "checksum": "224399e74b87b5f3557511d98dff8b14089b3dadafcab6bb93eab67d3aace965",
+    "crate_size": 29249,
+    "created_at": "2025-10-03T23:33:12.850087Z",
+    "description": "Wrappers to create fully-featured Mutex and RwLock types. Compatible with no_std.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "Amanieu",
+    "repository": "https://github.com/Amanieu/parking_lot",
+    "rust_version": "1.71.0"
+   },
+   "name": "lock_api",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by Amanieu on 2025-10-03."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.4.14"
+  }
+ }
+}

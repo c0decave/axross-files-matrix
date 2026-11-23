@@ -1,0 +1,67 @@
+{
+ "name": "ndk-sys",
+ "versions": {
+  "0.6.0+11769913": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/ffi_aarch64.rs|d93eb87810876180",
+    "yara|capability_process_spawn|src/ffi_arm.rs|62b88068ea170726",
+    "yara|capability_process_spawn|src/ffi_i686.rs|ede1fa2a87d3c156",
+    "yara|capability_process_spawn|src/ffi_x86_64.rs|0a4fc4dc60378ca3",
+    "yara|lolbas_net|generate_bindings.sh|ac09eddd85323507"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "bc3f0fa41a5a5a96bad04420565de381f2a99e826e3c722e18aa3e6e58a1ef72",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {
+     ".": 1
+    },
+    "proc_macro": false,
+    "sha256": "ee6cda3051665f1fb8d9e08fc35c96d5a244fb1be711a03b71118828afc9a873",
+    "vcs": {
+     "git": {
+      "sha1": "49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25"
+     },
+     "path_in_vcs": "ndk-sys"
+    }
+   },
+   "crates_io": {
+    "checksum": "ee6cda3051665f1fb8d9e08fc35c96d5a244fb1be711a03b71118828afc9a873",
+    "crate_size": 329984,
+    "created_at": "2024-04-26T15:14:59.325509Z",
+    "description": "FFI bindings for the Android NDK",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "MarijnS95",
+    "repository": "https://github.com/rust-mobile/ndk",
+    "rust_version": "1.60"
+   },
+   "name": "ndk-sys",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by MarijnS95 on 2024-04-26."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/ffi_aarch64.rs|d93eb87810876180",
+     "yara|capability_process_spawn|src/ffi_arm.rs|62b88068ea170726",
+     "yara|capability_process_spawn|src/ffi_i686.rs|ede1fa2a87d3c156",
+     "yara|capability_process_spawn|src/ffi_x86_64.rs|0a4fc4dc60378ca3",
+     "yara|lolbas_net|generate_bindings.sh|ac09eddd85323507"
+    ],
+    "yara": [
+     "capability_network_lolbas:lolbas_net generate_bindings.sh",
+     "capability_process_spawn:capability_process_spawn src/ffi_aarch64.rs",
+     "capability_process_spawn:capability_process_spawn src/ffi_arm.rs",
+     "capability_process_spawn:capability_process_spawn src/ffi_i686.rs",
+     "capability_process_spawn:capability_process_spawn src/ffi_x86_64.rs"
+    ]
+   },
+   "version": "0.6.0+11769913"
+  }
+ }
+}

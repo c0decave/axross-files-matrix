@@ -1,0 +1,58 @@
+{
+ "name": "sctk-adwaita",
+ "versions": {
+  "0.10.1": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/config.rs|3c1258249f4f3ec8",
+    "yara|capability_process_spawn|src/title/ab_glyph_renderer.rs|adcdc6fc99f19554",
+    "yara|capability_process_spawn|src/title/config.rs|b07148665c1875e9"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 26,
+    "links": "",
+    "manifest": "414205bfc62a2fba01692ef09842e5e20e680e957dc7c730c18bebbf86ff809a",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "b6277f0217056f77f1d8f49f2950ac6c278c0d607c45f5ee99328d792ede24ec",
+    "vcs": {
+     "git": {
+      "sha1": "d5f343c45c04d4a026db57f76760819b7325db00"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "b6277f0217056f77f1d8f49f2950ac6c278c0d607c45f5ee99328d792ede24ec",
+    "crate_size": 53237,
+    "created_at": "2024-07-02T22:21:03.270890Z",
+    "description": "Adwaita-like SCTK Frame",
+    "license": "MIT",
+    "published_by": "PolyMeilex",
+    "repository": "https://github.com/PolyMeilex/sctk-adwaita"
+   },
+   "name": "sctk-adwaita",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by PolyMeilex on 2024-07-02."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/config.rs|3c1258249f4f3ec8",
+     "yara|capability_process_spawn|src/title/ab_glyph_renderer.rs|adcdc6fc99f19554",
+     "yara|capability_process_spawn|src/title/config.rs|b07148665c1875e9"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/config.rs",
+     "capability_process_spawn:capability_process_spawn src/title/ab_glyph_renderer.rs",
+     "capability_process_spawn:capability_process_spawn src/title/config.rs"
+    ]
+   },
+   "version": "0.10.1"
+  }
+ }
+}

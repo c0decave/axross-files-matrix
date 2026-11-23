@@ -1,0 +1,56 @@
+{
+ "name": "vello_common",
+ "versions": {
+  "0.2.0": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/paint.rs|9f511c059287eba6",
+    "yara|capability_process_spawn|src/flatten_simd.rs|90424cdf38b981f7"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 42,
+    "links": "",
+    "manifest": "41b9d538b00e7741c34141b8910c10513cfebb649612f3deb0885f464d501d61",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "bbb2141a2bca6e6d598e471fd4d1d7eed8e020aad6a28187edda07f091a325dd",
+    "vcs": {
+     "git": {
+      "sha1": "7073a85d61ee099d1d3595651ddf92302b074348"
+     },
+     "path_in_vcs": "sparse_strips/vello_common"
+    }
+   },
+   "crates_io": {
+    "checksum": "bbb2141a2bca6e6d598e471fd4d1d7eed8e020aad6a28187edda07f091a325dd",
+    "crate_size": 132078,
+    "created_at": "2026-08-07T11:00:10.051964Z",
+    "description": "Core data structures and utilities shared across the Vello rendering, including geometry processing and tiling logic.",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "LaurenzV",
+    "repository": "https://github.com/linebender/vello",
+    "rust_version": "1.88"
+   },
+   "name": "vello_common",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by LaurenzV on 2026-08-07."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/paint.rs|9f511c059287eba6",
+     "yara|capability_process_spawn|src/flatten_simd.rs|90424cdf38b981f7"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/paint.rs",
+     "capability_process_spawn:capability_process_spawn src/flatten_simd.rs"
+    ]
+   },
+   "version": "0.2.0"
+  }
+ }
+}

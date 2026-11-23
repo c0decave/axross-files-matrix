@@ -1,0 +1,55 @@
+{
+ "name": "zbus_macros",
+ "versions": {
+  "5.19.0": {
+   "accepted_findings": [
+    "rs-url|src/lib.rs|89baa5d886eb399b",
+    "rs-url|src/proxy.rs|0a982a5934215e1c",
+    "rs-url|src/proxy.rs|20bba536bd09e8cf",
+    "rs-url|src/proxy.rs|7ef9dcfa1f4ac337",
+    "rs-url|src/proxy.rs|94f809d898ae1aab",
+    "rs-url|src/proxy.rs|b7743955d166aca1",
+    "rs-url|src/proxy.rs|c08df86e34e5bcda"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "a6494979cb16f829f9e0a2098c6a68531679712c66371c12417918a336b8db91",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "2990635d09ade6df1868f72f8cac69a876a90981e8bd3c40b1be413f8dc88f40",
+    "vcs": {
+     "git": {
+      "sha1": "7518d73db4dbf830ec1c9c43865bf8aeae9a8ffd"
+     },
+     "path_in_vcs": "zbus_macros"
+    }
+   },
+   "crates_io": {
+    "checksum": "2990635d09ade6df1868f72f8cac69a876a90981e8bd3c40b1be413f8dc88f40",
+    "crate_size": 39517,
+    "created_at": "2026-08-09T17:48:14.994171Z",
+    "description": "proc-macros for zbus",
+    "license": "MIT",
+    "published_by": "zeenix",
+    "repository": "https://github.com/z-galaxy/zbus/",
+    "rust_version": "1.87"
+   },
+   "name": "zbus_macros",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by zeenix on 2026-08-09."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "5.19.0"
+  }
+ }
+}

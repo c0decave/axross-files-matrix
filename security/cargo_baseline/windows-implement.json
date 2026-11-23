@@ -1,0 +1,54 @@
+{
+ "name": "windows-implement",
+ "versions": {
+  "0.60.2": {
+   "accepted_findings": [
+    "rs-command|src/tests.rs|c837ffd15f1fc55c",
+    "yara|capability_process_spawn|src/tests.rs|ea34a27316c2c744"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 10,
+    "links": "",
+    "manifest": "8c9a005e4024c060f309f1a94b9e75f99e549633f26e5734493e5f839962d297",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "053e2e040ab57b9dc951b72c264860db7eb3b0200ba345b4e4c3b14f67855ddf",
+    "vcs": {
+     "git": {
+      "sha1": "32c3144490c016fe496a0aed769bce60987a2e9d"
+     },
+     "path_in_vcs": "crates/libs/implement"
+    }
+   },
+   "crates_io": {
+    "checksum": "053e2e040ab57b9dc951b72c264860db7eb3b0200ba345b4e4c3b14f67855ddf",
+    "crate_size": 15325,
+    "created_at": "2025-10-06T19:13:31.467507Z",
+    "description": "The implement macro for the Windows crates",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "kennykerr",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "rust_version": "1.74"
+   },
+   "name": "windows-implement",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Proc macro; rustfmt only in src/tests.rs. No network. No binary; checksum = crates.io's; published by kennykerr on 2025-10-06."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/tests.rs|ea34a27316c2c744"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/tests.rs"
+    ]
+   },
+   "version": "0.60.2"
+  }
+ }
+}

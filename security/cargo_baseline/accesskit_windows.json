@@ -1,0 +1,59 @@
+{
+ "name": "accesskit_windows",
+ "versions": {
+  "0.35.2": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/node.rs|97c73e0e11eadc2f",
+    "yara|capability_process_spawn|src/tests/mod.rs|de33703d001a7415",
+    "yara|capability_process_spawn|src/util.rs|9a8eda748e568ea4"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 18,
+    "links": "",
+    "manifest": "047a9ee93fc9df701f9568b0afb56b6c02b432c88fee5d2ed8df52d3820c3e09",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "498668b90da9995302a0055aaecad4756932333da2ddef6baee1c00844c430fc",
+    "vcs": {
+     "git": {
+      "sha1": "f3026222559c7f5f46d8f25cb7404de68eb149f0"
+     },
+     "path_in_vcs": "adapters/windows"
+    }
+   },
+   "crates_io": {
+    "checksum": "498668b90da9995302a0055aaecad4756932333da2ddef6baee1c00844c430fc",
+    "crate_size": 57191,
+    "created_at": "2026-10-25T21:06:46.045264Z",
+    "description": "AccessKit UI accessibility infrastructure: Windows adapter",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "DataTriny",
+    "repository": "https://github.com/AccessKit/accesskit",
+    "rust_version": "1.87"
+   },
+   "name": "accesskit_windows",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by DataTriny on 2026-10-25."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/node.rs|97c73e0e11eadc2f",
+     "yara|capability_process_spawn|src/tests/mod.rs|de33703d001a7415",
+     "yara|capability_process_spawn|src/util.rs|9a8eda748e568ea4"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/node.rs",
+     "capability_process_spawn:capability_process_spawn src/tests/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/util.rs"
+    ]
+   },
+   "version": "0.35.2"
+  }
+ }
+}

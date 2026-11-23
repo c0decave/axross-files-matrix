@@ -1,0 +1,80 @@
+{
+ "name": "windows",
+ "versions": {
+  "0.62.2": {
+   "accepted_findings": [
+    "browser-data|src/Windows/ApplicationModel/Calls/mod.rs|99822111592894da",
+    "browser-data|src/Windows/ApplicationModel/Calls/mod.rs|ceb248ab209e75c2",
+    "browser-data|src/Windows/ApplicationModel/Calls/mod.rs|d151aeb1ab3833c3",
+    "browser-data|src/Windows/ApplicationModel/Calls/mod.rs|d96b05bd1f44a60d",
+    "browser-data|src/Windows/ApplicationModel/DataTransfer/mod.rs|ad204c19d24ab372",
+    "browser-data|src/Windows/ApplicationModel/UserActivities/mod.rs|83bfa3c82d1af16b",
+    "browser-data|src/Windows/ApplicationModel/UserActivities/mod.rs|d40c437679838ed8",
+    "browser-data|src/Windows/Security/Authentication/Web/Provider/mod.rs|4fee6cc2f0497de6",
+    "browser-data|src/Windows/UI/Notifications/mod.rs|09a3c38f450bc549",
+    "browser-data|src/Windows/Win32/System/UpdateAgent/mod.rs|fb2a07bf710a0a80",
+    "crontab-autostart|src/Windows/Win32/System/Registry/mod.rs|311c0ce9252ef6b0",
+    "crontab-autostart|src/Windows/Win32/System/Registry/mod.rs|5b13d67326ce18d3",
+    "crontab-autostart|src/Windows/Win32/System/Registry/mod.rs|67e427bd95a7ba2f",
+    "crontab-autostart|src/Windows/Win32/System/Registry/mod.rs|73adbeac094d8d8e",
+    "crontab-autostart|src/Windows/Win32/System/Registry/mod.rs|f08a15605edcd4b8",
+    "hidden-process|src/Windows/Win32/System/Threading/mod.rs|875a3a3ab6090c3a",
+    "hidden-process|src/Windows/Win32/System/Threading/mod.rs|a3769d487f91ffc2",
+    "keyring-stores|src/Windows/Win32/UI/Shell/mod.rs|43c8488015567674",
+    "yara|capability_process_spawn|src/Windows/Storage/mod.rs|96897b26e2f83c88",
+    "yara|capability_process_spawn|src/Windows/Win32/System/Ole/mod.rs|6c5d958b9319e275",
+    "yara|threat_network_exfiltration|src/Windows/ApplicationModel/DataTransfer/ShareTarget/mod.rs|da706e953b1d9245",
+    "yara|threat_network_exfiltration|src/Windows/ApplicationModel/DataTransfer/mod.rs|ec3248a8c01a3f0b"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 701,
+    "links": "",
+    "manifest": "2171b110a584b0c367cd73b10946a5e7403712e6f1e716a7ae42f9d0106bba33",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "527fadee13e0c05939a6a05d5bd6eec6cd2e3dbd648b9f8e447c6518133d8580",
+    "vcs": {
+     "git": {
+      "sha1": "32c3144490c016fe496a0aed769bce60987a2e9d"
+     },
+     "path_in_vcs": "crates/libs/windows"
+    }
+   },
+   "crates_io": {
+    "checksum": "527fadee13e0c05939a6a05d5bd6eec6cd2e3dbd648b9f8e447c6518133d8580",
+    "crate_size": 9360572,
+    "created_at": "2025-10-06T19:19:49.704461Z",
+    "description": "Rust for Windows",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "kennykerr",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "rust_version": "1.82"
+   },
+   "name": "windows",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Generated Windows API bindings (microsoft/windows-rs): the browser-data / Transfer.Sh / Run-key hits are API names (PhoneCallHistory, ClipboardHistory, DataTransfer.ShareTarget, REGSTR_PATH_RUN). No build script, no binary. No binary; checksum = crates.io's; published by kennykerr on 2025-10-06; other medium findings read: ['crontab-autostart', 'hidden-process', 'keyring-stores']."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/Windows/Storage/mod.rs|96897b26e2f83c88",
+     "yara|capability_process_spawn|src/Windows/Win32/System/Ole/mod.rs|6c5d958b9319e275",
+     "yara|threat_network_exfiltration|src/Windows/ApplicationModel/DataTransfer/ShareTarget/mod.rs|da706e953b1d9245",
+     "yara|threat_network_exfiltration|src/Windows/ApplicationModel/DataTransfer/mod.rs|ec3248a8c01a3f0b"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/Windows/Storage/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/Windows/Win32/System/Ole/mod.rs",
+     "threat_network_exfiltration:threat_network_exfiltration src/Windows/ApplicationModel/DataTransfer/ShareTarget/mod.rs",
+     "threat_network_exfiltration:threat_network_exfiltration src/Windows/ApplicationModel/DataTransfer/mod.rs"
+    ]
+   },
+   "version": "0.62.2"
+  }
+ }
+}

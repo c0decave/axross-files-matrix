@@ -1,0 +1,51 @@
+{
+ "name": "document-features",
+ "versions": {
+  "0.2.12": {
+   "accepted_findings": [
+    "rs-url|lib.rs|a0047a8d776f881f",
+    "rs-url|lib.rs|e0947614df616909",
+    "rs-url|lib.rs|ec62744c295e7c22"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "4f5f01ce3366ec5ca67cf5b1954b662776083831f7d15b3fa29440aec720a54b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "d4b8a88685455ed29a21542a33abd9cb6510b6b129abadabdcef0f4c55bc8f61",
+    "vcs": {
+     "git": {
+      "sha1": "721e708012254b81760bd2befdae0970e7a2615e"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "d4b8a88685455ed29a21542a33abd9cb6510b6b129abadabdcef0f4c55bc8f61",
+    "crate_size": 14739,
+    "created_at": "2025-10-24T09:43:31.356480Z",
+    "description": "Extract documentation for the feature flags from comments in Cargo.toml",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "ogoffart",
+    "repository": "https://github.com/slint-ui/document-features",
+    "rust_version": "1.56"
+   },
+   "name": "document-features",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by ogoffart on 2025-10-24."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.12"
+  }
+ }
+}

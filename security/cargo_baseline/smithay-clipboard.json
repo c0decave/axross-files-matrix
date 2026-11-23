@@ -1,0 +1,56 @@
+{
+ "name": "smithay-clipboard",
+ "versions": {
+  "0.7.3": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/lib.rs|ad96abaf7bf9c0a2",
+    "yara|capability_process_spawn|src/worker.rs|3d9665e4794af1fa"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 17,
+    "links": "",
+    "manifest": "0d3d8221e8ff57da70186acf7b6927d889c006031de6a5e1e06733c03306c043",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "71704c03f739f7745053bde45fa203a46c58d25bc5c4efba1d9a60e9dba81226",
+    "vcs": {
+     "git": {
+      "sha1": "26c2f53f15f6bdc4f41a442d0ae2c2d63bbc617c"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "71704c03f739f7745053bde45fa203a46c58d25bc5c4efba1d9a60e9dba81226",
+    "crate_size": 18270,
+    "created_at": "2025-11-02T20:12:35.216592Z",
+    "description": "Provides access to the wayland clipboard for client applications.",
+    "license": "MIT",
+    "published_by": "wash2",
+    "repository": "https://github.com/smithay/smithay-clipboard",
+    "rust_version": "1.85.0"
+   },
+   "name": "smithay-clipboard",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by wash2 on 2025-11-02."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/lib.rs|ad96abaf7bf9c0a2",
+     "yara|capability_process_spawn|src/worker.rs|3d9665e4794af1fa"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/lib.rs",
+     "capability_process_spawn:capability_process_spawn src/worker.rs"
+    ]
+   },
+   "version": "0.7.3"
+  }
+ }
+}

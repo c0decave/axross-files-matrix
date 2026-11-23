@@ -1,0 +1,70 @@
+{
+ "name": "unicode-script",
+ "versions": {
+  "0.5.9": {
+   "accepted_findings": [
+    "yara|capability_filesystem_delete|scripts/unicode.py|00950a315ea3fb4a",
+    "yara|capability_network_download|scripts/unicode.py|00950a315ea3fb4a",
+    "yara|capability_network_lolbas|scripts/unicode.py|00950a315ea3fb4a",
+    "yara|capability_network_outbound|scripts/unicode.py|00950a315ea3fb4a",
+    "yara|capability_process_spawn|scripts/unicode.py|00950a315ea3fb4a",
+    "yara|lolbas_net|scripts/unicode.py|00950a315ea3fb4a",
+    "yara|threat_process_download_exec|scripts/unicode.py|00950a315ea3fb4a"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "5309ca36e694b8173ca47c62d1c428d44564e33ec65e00ad98415a8016d51772",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "aa04c955db05429d464c74d495c1ee677e1866e783a4c3747f9c0cef7756cabf",
+    "vcs": {
+     "git": {
+      "sha1": "e4a3c2e7af8ab8c29f33f7154893608f22eeb2c7"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "aa04c955db05429d464c74d495c1ee677e1866e783a4c3747f9c0cef7756cabf",
+    "crate_size": 48814,
+    "created_at": "2026-11-02T06:21:35.949096Z",
+    "description": "This crate exposes the Unicode `Script` and `Script_Extension` properties from [UAX #24](http://www.unicode.org/reports/tr24/)\n",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "Manishearth",
+    "repository": "https://github.com/unicode-rs/unicode-script"
+   },
+   "name": "unicode-script",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "scripts/unicode.py downloads Unicode data with curl to regenerate tables - a maintainer script shipped in the crate, never run by the build. Nothing else flagged. No binary; checksum = crates.io's; published by Manishearth on 2026-11-02."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_filesystem_delete|scripts/unicode.py|00950a315ea3fb4a",
+     "yara|capability_network_download|scripts/unicode.py|00950a315ea3fb4a",
+     "yara|capability_network_lolbas|scripts/unicode.py|00950a315ea3fb4a",
+     "yara|capability_network_outbound|scripts/unicode.py|00950a315ea3fb4a",
+     "yara|capability_process_spawn|scripts/unicode.py|00950a315ea3fb4a",
+     "yara|lolbas_net|scripts/unicode.py|00950a315ea3fb4a",
+     "yara|threat_process_download_exec|scripts/unicode.py|00950a315ea3fb4a"
+    ],
+    "yara": [
+     "capability_filesystem_delete:capability_filesystem_delete scripts/unicode.py",
+     "capability_network_download:capability_network_download scripts/unicode.py",
+     "capability_network_lolbas:capability_network_lolbas scripts/unicode.py",
+     "capability_network_lolbas:lolbas_net scripts/unicode.py",
+     "capability_network_outbound:capability_network_outbound scripts/unicode.py",
+     "capability_process_spawn:capability_process_spawn scripts/unicode.py",
+     "threat_process_download_exec:threat_process_download_exec scripts/unicode.py"
+    ]
+   },
+   "version": "0.5.9"
+  }
+ }
+}

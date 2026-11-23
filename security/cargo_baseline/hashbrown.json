@@ -1,0 +1,158 @@
+{
+ "name": "hashbrown",
+ "versions": {
+  "0.15.5": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/map.rs|7ad82c1a141b824b",
+    "yara|capability_process_spawn|src/raw/mod.rs|a88cd291be71cd2f"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 46,
+    "links": "",
+    "manifest": "aa609dcfc552d2df52d543c04649a950f542ca39cc3f78ce6c99e9270e6e916c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1",
+    "vcs": {
+     "git": {
+      "sha1": "b751eef8e99ccf3652046ef4a9e1ec47c1bfb78d"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1",
+    "crate_size": 140908,
+    "created_at": "2025-08-07T23:58:32.116553Z",
+    "description": "A Rust port of Google's SwissTable hash map",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rust-lang-owner",
+    "repository": "https://github.com/rust-lang/hashbrown",
+    "rust_version": "1.65.0"
+   },
+   "name": "hashbrown",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rust-lang-owner on 2025-08-07."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/map.rs|7ad82c1a141b824b",
+     "yara|capability_process_spawn|src/raw/mod.rs|a88cd291be71cd2f"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/map.rs",
+     "capability_process_spawn:capability_process_spawn src/raw/mod.rs"
+    ]
+   },
+   "version": "0.15.5"
+  },
+  "0.16.1": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/map.rs|2f42092439f32775",
+    "yara|capability_process_spawn|src/raw/mod.rs|c24d6b9c8a945650"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 48,
+    "links": "",
+    "manifest": "a122ccadd59e1444857ade17c2a74c6f0694fec8f14106517ca83db40c97ac8a",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "841d1cc9bed7f9236f321df977030373f4a4163ae1a7dbfe1a51a2c1a51d9100",
+    "vcs": {
+     "git": {
+      "sha1": "1876e4f02708b93903d55ef598f68e82a826518f"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "841d1cc9bed7f9236f321df977030373f4a4163ae1a7dbfe1a51a2c1a51d9100",
+    "crate_size": 147785,
+    "created_at": "2025-11-20T16:47:18.741054Z",
+    "description": "A Rust port of Google's SwissTable hash map",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rust-lang-owner",
+    "repository": "https://github.com/rust-lang/hashbrown",
+    "rust_version": "1.65.0"
+   },
+   "name": "hashbrown",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rust-lang-owner on 2025-11-20."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/map.rs|2f42092439f32775",
+     "yara|capability_process_spawn|src/raw/mod.rs|c24d6b9c8a945650"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/map.rs",
+     "capability_process_spawn:capability_process_spawn src/raw/mod.rs"
+    ]
+   },
+   "version": "0.16.1"
+  },
+  "0.17.1": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/map.rs|b79497ce537ffc5e",
+    "yara|capability_process_spawn|src/raw.rs|0c8ad353ba95817e"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 50,
+    "links": "",
+    "manifest": "cf83b0ef8da6abe9a109006456edd7db4702fc111353f8cbf30cdab9d0d916a6",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a",
+    "vcs": {
+     "git": {
+      "sha1": "c62a63a61b7caf2de8f9ecb7b06a66b0ab6bdf3d"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a",
+    "crate_size": 155512,
+    "created_at": "2026-05-09T04:35:04.251Z",
+    "description": "A Rust port of Google's SwissTable hash map",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rust-lang-owner",
+    "repository": "https://github.com/rust-lang/hashbrown",
+    "rust_version": "1.85.0"
+   },
+   "name": "hashbrown",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rust-lang-owner on 2026-05-09."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/map.rs|b79497ce537ffc5e",
+     "yara|capability_process_spawn|src/raw.rs|0c8ad353ba95817e"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/map.rs",
+     "capability_process_spawn:capability_process_spawn src/raw.rs"
+    ]
+   },
+   "version": "0.17.1"
+  }
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "name": "arboard",
+ "versions": {
+  "3.7.0": {
+   "accepted_findings": [
+    "keyring-stores|Cargo.toml|7aef64c8ab0ae53b",
+    "keyring-stores|src/platform/linux/mod.rs|3728a1e1321c14cd",
+    "keyring-stores|src/platform/osx.rs|949c51f98ed6c3e6",
+    "yara|capability_process_spawn|examples/daemonize.rs|be9cd22867387c8f",
+    "yara|capability_process_spawn|src/lib.rs|e08fb203b64aba1f",
+    "yara|capability_process_spawn|src/platform/linux/x11.rs|f6076b753597cb1d"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 27,
+    "links": "",
+    "manifest": "18f928db873582e6e855c45aca2f52fa736b2bd7f2236527e1bce18c47c7c622",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "aeb9553e62312c8756a5979254fc6d7da8bbeb5986a1e17037fab932f7037917",
+    "vcs": {
+     "git": {
+      "sha1": "5f5c8637911ba219edee619105a19b4f74e66a9f"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "aeb9553e62312c8756a5979254fc6d7da8bbeb5986a1e17037fab932f7037917",
+    "crate_size": 54873,
+    "created_at": "2026-10-15T11:58:54.736100Z",
+    "description": "Image and text handling for the OS clipboard.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "1PasswordCratePublisher",
+    "repository": "https://github.com/1Password/arboard",
+    "rust_version": "1.71.0"
+   },
+   "name": "arboard",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "'1Password' is the publisher's name in URLs/comments (keyring-stores rule). Clipboard crate. No binary; checksum = crates.io's; published by 1PasswordCratePublisher on 2026-10-15; other medium findings read: ['keyring-stores']."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|examples/daemonize.rs|be9cd22867387c8f",
+     "yara|capability_process_spawn|src/lib.rs|e08fb203b64aba1f",
+     "yara|capability_process_spawn|src/platform/linux/x11.rs|f6076b753597cb1d"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn examples/daemonize.rs",
+     "capability_process_spawn:capability_process_spawn src/lib.rs",
+     "capability_process_spawn:capability_process_spawn src/platform/linux/x11.rs"
+    ]
+   },
+   "version": "3.7.0"
+  }
+ }
+}

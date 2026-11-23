@@ -1,0 +1,47 @@
+{
+ "name": "getopts",
+ "versions": {
+  "0.2.24": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 15,
+    "links": "",
+    "manifest": "e766bd26591b2ccbc1f58ff39a1eb01be9ce2a83cc747466c06a4a0fbbca0053",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "cfe4fbac503b8d1f88e6676011885f34b7174f46e59956bba534ba83abded4df",
+    "vcs": {
+     "git": {
+      "sha1": "40846923f0ce024bcf8d3e9100cab64a38c8dd08"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "cfe4fbac503b8d1f88e6676011885f34b7174f46e59956bba534ba83abded4df",
+    "crate_size": 21467,
+    "created_at": "2025-08-29T15:00:18.327189Z",
+    "description": "getopts-like option parsing",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rust-lang-owner",
+    "repository": "https://github.com/rust-lang/getopts",
+    "rust_version": "1.66"
+   },
+   "name": "getopts",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rust-lang-owner on 2025-08-29."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.24"
+  }
+ }
+}

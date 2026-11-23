@@ -1,0 +1,47 @@
+{
+ "name": "atspi-proxies",
+ "versions": {
+  "0.13.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 31,
+    "links": "",
+    "manifest": "287b470f8e84cc751091688d7d29765b5285d0235359c90a67e7a4fe23a877a8",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "2230e48787ed3eb4088996eab66a32ca20c0b67bbd4fd6cdfe79f04f1f04c9fc",
+    "vcs": {
+     "git": {
+      "sha1": "f486755b9bf993613f63a779133aafc54925004a"
+     },
+     "path_in_vcs": "atspi-proxies"
+    }
+   },
+   "crates_io": {
+    "checksum": "2230e48787ed3eb4088996eab66a32ca20c0b67bbd4fd6cdfe79f04f1f04c9fc",
+    "crate_size": 29030,
+    "created_at": "2025-09-18T14:15:33.961842Z",
+    "description": "AT-SPI2 proxies to query or manipulate UI objects",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "TTWNO",
+    "repository": "https://github.com/odilia-app/atspi",
+    "rust_version": "1.77.2"
+   },
+   "name": "atspi-proxies",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by TTWNO on 2025-09-18."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.13.0"
+  }
+ }
+}

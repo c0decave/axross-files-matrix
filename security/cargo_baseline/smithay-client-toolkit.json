@@ -1,0 +1,92 @@
+{
+ "name": "smithay-client-toolkit",
+ "versions": {
+  "0.19.2": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "58716b46f494cd0bf20df2c2ea32c364d7eb46790ca39a1ae265f5f3ef54cf0b"
+    },
+    "files": 71,
+    "links": "",
+    "manifest": "f0260ec91cea311b177db9a38989d1529a6501ff48aa29899c069e0944d6128c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "3457dea1f0eb631b4034d61d4d8c32074caa6cd1ab2d59f2327bd8461e2c0016",
+    "vcs": {
+     "git": {
+      "sha1": "c583de8dd5651f8168c6513cd282137c42aae049"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "3457dea1f0eb631b4034d61d4d8c32074caa6cd1ab2d59f2327bd8461e2c0016",
+    "crate_size": 131504,
+    "created_at": "2024-07-15T21:49:23.606060Z",
+    "description": "Toolkit for making client wayland applications.",
+    "license": "MIT",
+    "published_by": "wash2",
+    "repository": "https://github.com/smithay/client-toolkit"
+   },
+   "name": "smithay-client-toolkit",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: uses pkg-config; no network. No binary; checksum = crates.io's; published by wash2 on 2024-07-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.19.2"
+  },
+  "0.20.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "58716b46f494cd0bf20df2c2ea32c364d7eb46790ca39a1ae265f5f3ef54cf0b"
+    },
+    "files": 76,
+    "links": "",
+    "manifest": "ea9d3001347d72684c5c42a3236cffb302a5a7c6e492cffafa69c47eba3e3c0c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "0512da38f5e2b31201a93524adb8d3136276fa4fe4aafab4e1f727a82b534cc0",
+    "vcs": {
+     "git": {
+      "sha1": "8a0b33616145b38c7f989f8e468d57e69a2a6748"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "0512da38f5e2b31201a93524adb8d3136276fa4fe4aafab4e1f727a82b534cc0",
+    "crate_size": 142597,
+    "created_at": "2025-08-08T20:51:28.245952Z",
+    "description": "Toolkit for making client wayland applications.",
+    "license": "MIT",
+    "published_by": "wash2",
+    "repository": "https://github.com/smithay/client-toolkit",
+    "rust_version": "1.65"
+   },
+   "name": "smithay-client-toolkit",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: uses pkg-config; no network. No binary; checksum = crates.io's; published by wash2 on 2025-08-08."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.20.0"
+  }
+ }
+}

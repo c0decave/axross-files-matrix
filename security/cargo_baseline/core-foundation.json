@@ -1,0 +1,55 @@
+{
+ "name": "core-foundation",
+ "versions": {
+  "0.9.4": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/runloop.rs|ff5bbb8a145befa7",
+    "yara|capability_process_spawn|src/timezone.rs|7b8e46bde9e8aa71"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 27,
+    "links": "",
+    "manifest": "d194fd3605496030919c572f4976de67a057159948c386137060b68252a7b2f9",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "91e195e091a93c46f7102ec7818a2aa394e1e1771c3ab4825963fa03e45afb8f",
+    "vcs": {
+     "git": {
+      "sha1": "795398aa3775bbdaf03419fcd2cc0dad7ebbc4dc"
+     },
+     "path_in_vcs": "core-foundation"
+    }
+   },
+   "crates_io": {
+    "checksum": "91e195e091a93c46f7102ec7818a2aa394e1e1771c3ab4825963fa03e45afb8f",
+    "crate_size": 27743,
+    "created_at": "2023-11-30T16:04:49.362965Z",
+    "description": "Bindings to Core Foundation for macOS",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "jrmuizel",
+    "repository": "https://github.com/servo/core-foundation-rs"
+   },
+   "name": "core-foundation",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by jrmuizel on 2023-11-30."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/runloop.rs|ff5bbb8a145befa7",
+     "yara|capability_process_spawn|src/timezone.rs|7b8e46bde9e8aa71"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/runloop.rs",
+     "capability_process_spawn:capability_process_spawn src/timezone.rs"
+    ]
+   },
+   "version": "0.9.4"
+  }
+ }
+}

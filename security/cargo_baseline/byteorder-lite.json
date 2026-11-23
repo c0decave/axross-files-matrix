@@ -1,0 +1,47 @@
+{
+ "name": "byteorder-lite",
+ "versions": {
+  "0.1.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 8,
+    "links": "",
+    "manifest": "c6eaca329da01a517af1376e5a83df03e4b1eee252eebe99ec7eea9f687a5b8f",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "8f1fe948ff07f4bd06c30984e69f5b4899c516a3ef74f34df92a2df2ab535495",
+    "vcs": {
+     "git": {
+      "sha1": "7d44da06a48fe10d7e23efd9a932d18a7a2def63"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "8f1fe948ff07f4bd06c30984e69f5b4899c516a3ef74f34df92a2df2ab535495",
+    "crate_size": 15909,
+    "created_at": "2024-04-07T19:09:06.481843Z",
+    "description": "Library for reading/writing numbers in big-endian and little-endian.",
+    "license": "Unlicense OR MIT",
+    "published_by": "fintelia",
+    "repository": "https://github.com/image-rs/byteorder-lite",
+    "rust_version": "1.60"
+   },
+   "name": "byteorder-lite",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by fintelia on 2024-04-07."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.1.0"
+  }
+ }
+}

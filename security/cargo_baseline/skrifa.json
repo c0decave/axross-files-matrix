@@ -1,0 +1,56 @@
+{
+ "name": "skrifa",
+ "versions": {
+  "0.44.0": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/color/instance.rs|7d60bf14d30d90db",
+    "yara|capability_network_outbound|src/color/traversal.rs|7f384857b4921388"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 92,
+    "links": "",
+    "manifest": "1b958fee8f309c617f09a8ad445ceda9c68335e3413ec63202c1408884e84ca0",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "819ab7d62b1d3e72d9d9dea5650bac30424f9111364bb94928dbf5ecad1baa68",
+    "vcs": {
+     "git": {
+      "sha1": "b373cdbc6043a791fb23b3e0f413649458f5e63a"
+     },
+     "path_in_vcs": "skrifa"
+    }
+   },
+   "crates_io": {
+    "checksum": "819ab7d62b1d3e72d9d9dea5650bac30424f9111364bb94928dbf5ecad1baa68",
+    "crate_size": 299025,
+    "created_at": "2026-07-04T01:17:33.247998Z",
+    "description": "Metadata reader and glyph scaler for OpenType fonts.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "cmyr",
+    "repository": "https://github.com/googlefonts/fontations",
+    "rust_version": "1.85"
+   },
+   "name": "skrifa",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by cmyr on 2026-07-04."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/color/instance.rs|7d60bf14d30d90db",
+     "yara|capability_network_outbound|src/color/traversal.rs|7f384857b4921388"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/color/instance.rs",
+     "capability_network_outbound:capability_network_outbound src/color/traversal.rs"
+    ]
+   },
+   "version": "0.44.0"
+  }
+ }
+}

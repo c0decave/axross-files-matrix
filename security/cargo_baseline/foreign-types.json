@@ -1,0 +1,45 @@
+{
+ "name": "foreign-types",
+ "versions": {
+  "0.5.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 8,
+    "links": "",
+    "manifest": "8d82cee0bae42389129137a13f142ecfafaf0ebeb2cd7a318f2c01c2d792e2c5",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d737d9aa519fb7b749cbc3b962edcf310a8dd1f4b67c91c4f83975dbdd17d965",
+    "vcs": {
+     "git": {
+      "sha1": "c5a90ed3f39dd5fe8b5af6e9cee1bc446746272c"
+     }
+    }
+   },
+   "crates_io": {
+    "checksum": "d737d9aa519fb7b749cbc3b962edcf310a8dd1f4b67c91c4f83975dbdd17d965",
+    "crate_size": 7824,
+    "created_at": "2019-10-13T19:24:15.900127Z",
+    "description": "A framework for Rust wrappers over C APIs",
+    "license": "MIT/Apache-2.0",
+    "published_by": "sfackler",
+    "repository": "https://github.com/sfackler/foreign-types"
+   },
+   "name": "foreign-types",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by sfackler on 2019-10-13."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.5.0"
+  }
+ }
+}

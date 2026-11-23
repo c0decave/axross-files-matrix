@@ -1,0 +1,45 @@
+{
+ "name": "nohash-hasher",
+ "versions": {
+  "0.2.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 9,
+    "links": "",
+    "manifest": "bf1eaec311e75e6a6395e0f763c8ec9b57aa61d43742d115dc59d9fbbf8a72a9",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451",
+    "vcs": {
+     "git": {
+      "sha1": "99b021664e9d7fd3e1f7ffb8633a137e21e12149"
+     }
+    }
+   },
+   "crates_io": {
+    "checksum": "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451",
+    "crate_size": 8051,
+    "created_at": "2020-02-17T11:38:13.111407Z",
+    "description": "An implementation of `std::hash::Hasher` which does not hash at all.",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "twittner",
+    "repository": "https://github.com/paritytech/nohash-hasher"
+   },
+   "name": "nohash-hasher",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by twittner on 2020-02-17."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.0"
+  }
+ }
+}

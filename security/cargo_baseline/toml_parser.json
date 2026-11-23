@@ -1,0 +1,47 @@
+{
+ "name": "toml_parser",
+ "versions": {
+  "1.1.5+spec-1.1.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 22,
+    "links": "",
+    "manifest": "828a5492fec2d897d3545a0cf50bff02cb09266d9b354e1fa664dcc53c511a6e",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "baa693a8032d7e1cada7d0041e96126df243179ff061456783ac7f12bda4744c",
+    "vcs": {
+     "git": {
+      "sha1": "ceac6e4412420d5a5c19e4f7293ad005cf1a31b2"
+     },
+     "path_in_vcs": "crates/toml_parser"
+    }
+   },
+   "crates_io": {
+    "checksum": "baa693a8032d7e1cada7d0041e96126df243179ff061456783ac7f12bda4744c",
+    "crate_size": 36159,
+    "created_at": "2026-10-09T02:46:29.844417Z",
+    "description": "Yet another format-preserving TOML parser.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "epage",
+    "repository": "https://github.com/toml-rs/toml",
+    "rust_version": "1.85"
+   },
+   "name": "toml_parser",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by epage on 2026-10-09."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.1.5+spec-1.1.0"
+  }
+ }
+}

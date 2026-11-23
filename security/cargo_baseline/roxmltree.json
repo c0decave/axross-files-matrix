@@ -1,0 +1,56 @@
+{
+ "name": "roxmltree",
+ "versions": {
+  "0.21.2": {
+   "accepted_findings": [
+    "yara|capability_filesystem_read|testing-tools/test-lxml.py|665c0c86ca9be82b",
+    "yara|capability_process_spawn|testing-tools/test-lxml.py|665c0c86ca9be82b"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 209,
+    "links": "",
+    "manifest": "57c7b727509a8a9f153fe930b5ca66c9df9082281ad36d8527aa295b5de6621d",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "9da7f59328b09405b181fee1018925fad50f157afb43c0c0f5c522c256dd5907",
+    "vcs": {
+     "git": {
+      "sha1": "b04f75f6a0d17c6248de3eb1b1013bf1bbac44ae"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "9da7f59328b09405b181fee1018925fad50f157afb43c0c0f5c522c256dd5907",
+    "crate_size": 57280,
+    "created_at": "2026-10-24T06:49:28.599056Z",
+    "description": "Represent an XML as a read-only tree.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "adamreichold",
+    "repository": "https://github.com/RazrFalcon/roxmltree",
+    "rust_version": "1.60"
+   },
+   "name": "roxmltree",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by adamreichold on 2026-10-24."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_filesystem_read|testing-tools/test-lxml.py|665c0c86ca9be82b",
+     "yara|capability_process_spawn|testing-tools/test-lxml.py|665c0c86ca9be82b"
+    ],
+    "yara": [
+     "capability_filesystem_read:capability_filesystem_read testing-tools/test-lxml.py",
+     "capability_process_spawn:capability_process_spawn testing-tools/test-lxml.py"
+    ]
+   },
+   "version": "0.21.2"
+  }
+ }
+}

@@ -1,0 +1,52 @@
+{
+ "name": "memmap2",
+ "versions": {
+  "0.9.12": {
+   "accepted_findings": [
+    "rs-exec-memory|src/unix.rs|cb57f07a14a1f6c1",
+    "rs-exec-memory|src/unix.rs|dd3d636bd5595a9f",
+    "rs-exec-memory|src/windows.rs|eb67aeddcfd88286",
+    "rs-exec-memory|src/windows.rs|f5dcc8d77bc57958"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 17,
+    "links": "",
+    "manifest": "268e43efcd5fe4cc6c06b70cde76a2a80609faf6bcaa7ba6b8bdec0136125b95",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "6b0ca1155a9ecc25aa12e8313a119f32edf0255fea2f44839c4ac0a12b2ac157",
+    "vcs": {
+     "git": {
+      "sha1": "4692b056b327aa08dace3a7e345a99e4cff77534"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "6b0ca1155a9ecc25aa12e8313a119f32edf0255fea2f44839c4ac0a12b2ac157",
+    "crate_size": 39123,
+    "created_at": "2026-10-21T17:56:30.027126Z",
+    "description": "Cross-platform Rust API for memory-mapped file IO",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "de-vri-es",
+    "repository": "https://github.com/RazrFalcon/memmap2-rs",
+    "rust_version": "1.65"
+   },
+   "name": "memmap2",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "PROT_EXEC / PAGE_EXECUTE_READWRITE: memmap2's documented make_exec / map_exec API, not called by axross-amp's code paths of its own. Nothing else flagged. No binary; checksum = crates.io's; published by de-vri-es on 2026-10-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.9.12"
+  }
+ }
+}

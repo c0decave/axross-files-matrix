@@ -1,0 +1,47 @@
+{
+ "name": "phf_macros",
+ "versions": {
+  "0.14.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 9,
+    "links": "",
+    "manifest": "e91e0a4023e5a0164172e2b40d37e471e83735bf3d10da7b426dc98ddf51ce09",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "5fa8d0ca26d424d27630da600c6624696e7dec8bf7b3b492b383c5dc49e5e085",
+    "vcs": {
+     "git": {
+      "sha1": "1620d169aad09b02ef02a97b272470152e100bd6"
+     },
+     "path_in_vcs": "phf_macros"
+    }
+   },
+   "crates_io": {
+    "checksum": "5fa8d0ca26d424d27630da600c6624696e7dec8bf7b3b492b383c5dc49e5e085",
+    "crate_size": 23963,
+    "created_at": "2026-06-21T00:37:40.436223Z",
+    "description": "Macros to generate types in the phf crate",
+    "license": "MIT",
+    "published_by": "JohnTitor",
+    "repository": "https://github.com/rust-phf/rust-phf",
+    "rust_version": "1.85"
+   },
+   "name": "phf_macros",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by JohnTitor on 2026-06-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.14.0"
+  }
+ }
+}

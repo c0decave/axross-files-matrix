@@ -1,0 +1,81 @@
+{
+ "name": "url",
+ "versions": {
+  "2.5.9": {
+   "accepted_findings": [
+    "raw-ip-url|src/lib.rs|8c2bd705976f398a",
+    "raw-ip-url|src/lib.rs|b5b18c3dd4d69c14",
+    "raw-ip-url|src/lib.rs|f5fa06ffce9298d5",
+    "raw-ip-url|tests/unit.rs|018ac7792cc93ab1",
+    "raw-ip-url|tests/unit.rs|0b2b959cf8267722",
+    "raw-ip-url|tests/unit.rs|245aed92d73e8a72",
+    "raw-ip-url|tests/unit.rs|2a0a3383126ce6f1",
+    "raw-ip-url|tests/unit.rs|35e590b4c470db8b",
+    "raw-ip-url|tests/unit.rs|5e149599b7a61075",
+    "raw-ip-url|tests/unit.rs|65756937b4346f0a",
+    "raw-ip-url|tests/unit.rs|72353c839f387c06",
+    "raw-ip-url|tests/unit.rs|856000015ce68855",
+    "raw-ip-url|tests/unit.rs|8fbc8ea9614ee773",
+    "raw-ip-url|tests/unit.rs|8fd51d5f34144146",
+    "raw-ip-url|tests/unit.rs|90155b771c3d5c0c",
+    "raw-ip-url|tests/unit.rs|92a08ed14d5cc797",
+    "raw-ip-url|tests/unit.rs|b5218fa502a0c189",
+    "raw-ip-url|tests/unit.rs|c544b65bddf870c0",
+    "raw-ip-url|tests/unit.rs|c9520b0f9b29b5b6",
+    "raw-ip-url|tests/unit.rs|cdd2ef6458f2db50",
+    "raw-ip-url|tests/unit.rs|de1a491689d51679",
+    "raw-ip-url|tests/unit.rs|e86698778f72ce98",
+    "raw-ip-url|tests/unit.rs|ef29b5f2dd5d8231",
+    "raw-ip-url|tests/unit.rs|f30128c88b551652",
+    "yara|capability_network_outbound|src/lib.rs|208c0d522e74e04b",
+    "yara|threat_network_exfiltration|tests/unit.rs|3c95ebee99f84189"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 19,
+    "links": "",
+    "manifest": "0bd86e4b152055c13fcc9b79f88d5dd8b7023506fa349c64d268e6e59832f73e",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "f00cd2407bb42c0ef17be88d4cf020f5cceffd121665bac9b8b9493a369b3b1a",
+    "vcs": {
+     "git": {
+      "sha1": "ad1c66cbff6e318393d872641e30589ff9687b9c"
+     },
+     "path_in_vcs": "url"
+    }
+   },
+   "crates_io": {
+    "checksum": "f00cd2407bb42c0ef17be88d4cf020f5cceffd121665bac9b8b9493a369b3b1a",
+    "crate_size": 89968,
+    "created_at": "2026-11-20T23:03:07.148548Z",
+    "description": "URL library for Rust, based on the WHATWG URL Standard",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "Manishearth",
+    "repository": "https://github.com/servo/rust-url",
+    "rust_version": "1.63"
+   },
+   "name": "url",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-22",
+    "note": "Both .crate files from static.crates.io diffed file by file against 2.5.8 (checksums = Cargo.lock's = crates.io's; published by Manishearth 2026-11-20; vcs ad1c66cb). src/origin.rs: a blob: URL takes the inner URL's origin only for http/https/file, else opaque - no recursion, the fix for RUSTSEC-2026-0592 (test_origin_nested_blob, 10 000 nested blob:). Besides, WHATWG alignment in src/parser.rs: the path percent-encode set gains ^ and ` (QUERY moved up), a file URL's host is no longer dropped before a drive letter, a backslash after a port ends it only for special schemes, last_slash_can_be_removed searches the path only (quadratic parse fixed); src/lib.rs doc and html_root_url; form_urlencoded 1.2.3 required. Tests and WPT data updated. No build.rs, no proc macro, no new dependency, the same one unsafe block as 2.5.8, no new network or process code; the medium findings (127.0.0.1 and 1.35.33.49 URLs in tests and doc examples) and the YARA network rules are the same as 2.5.8's. axross-amp does not call Url::origin(): url reaches it only through eframe -> egui-winit -> webbrowser (Url::parse, Url::from_file_path); ureq 3 does not use url."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/lib.rs|208c0d522e74e04b",
+     "yara|threat_network_exfiltration|tests/unit.rs|3c95ebee99f84189"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/lib.rs",
+     "threat_network_exfiltration:threat_network_exfiltration tests/unit.rs"
+    ]
+   },
+   "version": "2.5.9",
+   "young_release": "The fix for RUSTSEC-2026-0592 (stack overflow in Url::origin() on nested blob: URLs), 1.5 days old; the whole diff against the reviewed 2.5.8 read."
+  }
+ }
+}

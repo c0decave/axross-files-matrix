@@ -1,0 +1,140 @@
+{
+ "name": "redox_syscall",
+ "versions": {
+  "0.4.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 31,
+    "links": "",
+    "manifest": "02f1b6f3ee63ac3d1517985cca7e00d0201d2a23d5bb716c2c1c8ba06f29688a",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "4722d768eff46b75989dd134e5c353f0d6296e5aaa3132e776cbdb56be7731aa",
+    "vcs": {
+     "git": {
+      "sha1": "f94a5a7dcafdcbcd8d43af586a637148515bc86a"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "4722d768eff46b75989dd134e5c353f0d6296e5aaa3132e776cbdb56be7731aa",
+    "crate_size": 24858,
+    "created_at": "2023-09-08T17:14:57.408432Z",
+    "description": "A Rust library to access raw Redox system calls",
+    "license": "MIT",
+    "published_by": "jackpot51",
+    "repository": "https://gitlab.redox-os.org/redox-os/syscall"
+   },
+   "name": "redox_syscall",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by jackpot51 on 2023-09-08."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.4.1"
+  },
+  "0.5.18": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/sigabi.rs|a1c5961831ff7d9f"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 32,
+    "links": "",
+    "manifest": "49f248c685426cc29bb675e3c6d7c2db1c9b45428001628d909ab03b98c101d7",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d",
+    "vcs": {
+     "git": {
+      "sha1": "15aa8e32ef0f3328dd9d48cc8ca02e148a362069"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d",
+    "crate_size": 30747,
+    "created_at": "2025-10-04T14:57:04.747959Z",
+    "description": "A Rust library to access raw Redox system calls",
+    "license": "MIT",
+    "published_by": "4lDO2",
+    "repository": "https://gitlab.redox-os.org/redox-os/syscall"
+   },
+   "name": "redox_syscall",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by 4lDO2 on 2025-10-04."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/sigabi.rs|a1c5961831ff7d9f"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/sigabi.rs"
+    ]
+   },
+   "version": "0.5.18"
+  },
+  "0.9.5": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/sigabi.rs|755a846552f11527"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 24,
+    "links": "",
+    "manifest": "2baa987e13bde8b5059dd4561056af3449cdcb8b8d1e73d7179f433b5b55a3b3",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "580c875845b41ecb1564ad1ae4703044cef774145e3d7a94dc2b3fa7c97868fd",
+    "vcs": {
+     "git": {
+      "sha1": "716a8f83f452054b8adc8bf568f7bd35d46a5f31"
+     },
+     "path_in_vcs": "syscall"
+    }
+   },
+   "crates_io": {
+    "checksum": "580c875845b41ecb1564ad1ae4703044cef774145e3d7a94dc2b3fa7c97868fd",
+    "crate_size": 29079,
+    "created_at": "2026-10-17T19:01:02.018979Z",
+    "description": "A Rust library to access raw Redox system calls",
+    "license": "MIT",
+    "published_by": "4lDO2",
+    "repository": "https://gitlab.redox-os.org/redox-os/kernel"
+   },
+   "name": "redox_syscall",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by 4lDO2 on 2026-10-17."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/sigabi.rs|755a846552f11527"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/sigabi.rs"
+    ]
+   },
+   "version": "0.9.5"
+  }
+ }
+}

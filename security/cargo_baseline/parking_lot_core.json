@@ -1,0 +1,55 @@
+{
+ "name": "parking_lot_core",
+ "versions": {
+  "0.9.12": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/parking_lot.rs|ead11d575a1930c2"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "3698c936b75f8332d9b6b30a8a6838ea116c1ff0a819a025c9ea9696e4d8ce72"
+    },
+    "files": 24,
+    "links": "",
+    "manifest": "70c71eb5be5aa35c05f709ff02eafb504b6847934e8eb7506db730d02d526ca3",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "2621685985a2ebf1c516881c026032ac7deafcda1a2c9b7850dc81e3dfcb64c1",
+    "vcs": {
+     "git": {
+      "sha1": "d7828fff7b5d6327ae608e82db45f888b344449a"
+     },
+     "path_in_vcs": "core"
+    }
+   },
+   "crates_io": {
+    "checksum": "2621685985a2ebf1c516881c026032ac7deafcda1a2c9b7850dc81e3dfcb64c1",
+    "crate_size": 34110,
+    "created_at": "2025-10-03T23:33:43.164426Z",
+    "description": "An advanced API for creating custom synchronization primitives.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "Amanieu",
+    "repository": "https://github.com/Amanieu/parking_lot",
+    "rust_version": "1.71.0"
+   },
+   "name": "parking_lot_core",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by Amanieu on 2025-10-03."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/parking_lot.rs|ead11d575a1930c2"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/parking_lot.rs"
+    ]
+   },
+   "version": "0.9.12"
+  }
+ }
+}

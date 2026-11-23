@@ -1,0 +1,47 @@
+{
+ "name": "profiling",
+ "versions": {
+  "1.0.18": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "3f804dfd8ddda2f5b22ff16f0925e4f746e9ff853e77ea1b2458aa5133c07411",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "3d595e54a326bc53c1c197b32d295e14b169e3cfeaa8dc82b529f947fba6bcf5",
+    "vcs": {
+     "git": {
+      "sha1": "8271551172eb6fa4cba47369aedd93790c623df9"
+     },
+     "path_in_vcs": "profiling"
+    }
+   },
+   "crates_io": {
+    "checksum": "3d595e54a326bc53c1c197b32d295e14b169e3cfeaa8dc82b529f947fba6bcf5",
+    "crate_size": 11931,
+    "created_at": "2026-05-04T03:33:15.842050Z",
+    "description": "This crate provides a very thin abstraction over other profiler crates.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "aclysma",
+    "repository": "https://github.com/aclysma/profiling",
+    "rust_version": "1.60"
+   },
+   "name": "profiling",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by aclysma on 2026-05-04."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.0.18"
+  }
+ }
+}

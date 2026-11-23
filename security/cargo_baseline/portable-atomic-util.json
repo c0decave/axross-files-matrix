@@ -1,0 +1,67 @@
+{
+ "name": "portable-atomic-util",
+ "versions": {
+  "0.2.8": {
+   "accepted_findings": [
+    "rs-command|build.rs|10b299cc2295e108",
+    "yara|capability_process_spawn|build.rs|f17a8f6b7c93fa6b",
+    "yara|capability_process_spawn|src/arc.rs|e23f18ca0592f694",
+    "yara|capability_process_spawn|tests/arc.rs|19963c36b6781078"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "f17a8f6b7c93fa6bcefc325a7b75e9e03fc9c97f23ded051f31d6dc8b8e0d478"
+    },
+    "files": 14,
+    "links": "",
+    "manifest": "918d7b72b46f383c8dae81913973970bd110b1fdde40581418dc79d9828ab58c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "10ab3eb7f3becc3a1cbc4f2c6f20267996cfc1a6467a873763411b136a122715",
+    "vcs": {
+     "git": {
+      "sha1": "6fb276aeaee508914ef33918f2e3f003d6808ada"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "10ab3eb7f3becc3a1cbc4f2c6f20267996cfc1a6467a873763411b136a122715",
+    "crate_size": 53874,
+    "created_at": "2026-09-04T14:36:47.702530Z",
+    "description": "Synchronization primitives built with portable-atomic.\n",
+    "license": "Apache-2.0 OR MIT",
+    "repository": "https://github.com/taiki-e/portable-atomic-util",
+    "rust_version": "1.36",
+    "trustpub": {
+     "provider": "github",
+     "repository": "taiki-e/portable-atomic-util",
+     "run_id": "33883892662",
+     "sha": "f0b9e652063a2cc6548e95ba1f9d58bfffea5297"
+    }
+   },
+   "name": "portable-atomic-util",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: runs rustc to probe its version; no network. No binary; checksum = crates.io's; published by trusted publishing on 2026-09-04."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|build.rs|f17a8f6b7c93fa6b",
+     "yara|capability_process_spawn|src/arc.rs|e23f18ca0592f694",
+     "yara|capability_process_spawn|tests/arc.rs|19963c36b6781078"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn build.rs",
+     "capability_process_spawn:capability_process_spawn src/arc.rs",
+     "capability_process_spawn:capability_process_spawn tests/arc.rs"
+    ]
+   },
+   "version": "0.2.8"
+  }
+ }
+}

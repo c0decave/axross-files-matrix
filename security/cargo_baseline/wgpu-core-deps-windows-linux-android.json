@@ -1,0 +1,47 @@
+{
+ "name": "wgpu-core-deps-windows-linux-android",
+ "versions": {
+  "30.0.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 8,
+    "links": "",
+    "manifest": "d3b94f6dbd81fc5a262c98f41734a2f004d17d86f73f3e032b124ce7d52cb01d",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "7586165fd5f6d881cb9ce4bb71f40d6caab2c0f1837e3fc1d9788a197fb6004f",
+    "vcs": {
+     "git": {
+      "sha1": "40f4a34ebaf56f9a046231f54125ad046239d3f3"
+     },
+     "path_in_vcs": "wgpu-core/platform-deps/windows-linux-android"
+    }
+   },
+   "crates_io": {
+    "checksum": "7586165fd5f6d881cb9ce4bb71f40d6caab2c0f1837e3fc1d9788a197fb6004f",
+    "crate_size": 13070,
+    "created_at": "2026-08-22T02:53:34.072065Z",
+    "description": "Feature unification helper crate for the Windows/Linux/Android platforms",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "cwfitzgerald",
+    "repository": "https://github.com/gfx-rs/wgpu",
+    "rust_version": "1.76"
+   },
+   "name": "wgpu-core-deps-windows-linux-android",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by cwfitzgerald on 2026-08-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "30.0.1"
+  }
+ }
+}

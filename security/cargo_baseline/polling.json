@@ -1,0 +1,74 @@
+{
+ "name": "polling",
+ "versions": {
+  "3.11.0": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|tests/concurrent_modification.rs|bf1700178b6203c1",
+    "yara|capability_network_outbound|tests/io.rs|51748fc1384ff73d",
+    "yara|capability_network_outbound|tests/many_connections.rs|080980d2b6a74e19",
+    "yara|capability_network_outbound|tests/multiple_pollers.rs|426ce09c471f4e8a",
+    "yara|capability_network_outbound|tests/other_modes.rs|a1bf8b8d983ea41e",
+    "yara|capability_process_spawn|src/os/iocp.rs|937c654557fd6568",
+    "yara|capability_process_spawn|tests/windows_post.rs|454095d0c631a25a",
+    "yara|lolbas_net|examples/two-listeners.rs|de5589e16d7581e7"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 33,
+    "links": "",
+    "manifest": "ed23c0efcc8b8ccaaf727101c44744e5508ddebffd6c708a88c584f8e3655dcb",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "5d0e4f59085d47d8241c88ead0f274e8a0cb551f3625263c05eb8dd897c34218",
+    "vcs": {
+     "git": {
+      "sha1": "f404d08dd2a61994ac5fe0ed663bc051bd94c053"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "5d0e4f59085d47d8241c88ead0f274e8a0cb551f3625263c05eb8dd897c34218",
+    "crate_size": 59387,
+    "created_at": "2025-09-14T14:00:51.946852Z",
+    "description": "Portable interface to epoll, kqueue, event ports, and IOCP",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "taiki-e",
+    "repository": "https://github.com/smol-rs/polling",
+    "rust_version": "1.71"
+   },
+   "name": "polling",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by taiki-e on 2025-09-14."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|tests/concurrent_modification.rs|bf1700178b6203c1",
+     "yara|capability_network_outbound|tests/io.rs|51748fc1384ff73d",
+     "yara|capability_network_outbound|tests/many_connections.rs|080980d2b6a74e19",
+     "yara|capability_network_outbound|tests/multiple_pollers.rs|426ce09c471f4e8a",
+     "yara|capability_network_outbound|tests/other_modes.rs|a1bf8b8d983ea41e",
+     "yara|capability_process_spawn|src/os/iocp.rs|937c654557fd6568",
+     "yara|capability_process_spawn|tests/windows_post.rs|454095d0c631a25a",
+     "yara|lolbas_net|examples/two-listeners.rs|de5589e16d7581e7"
+    ],
+    "yara": [
+     "capability_network_lolbas:lolbas_net examples/two-listeners.rs",
+     "capability_network_outbound:capability_network_outbound tests/concurrent_modification.rs",
+     "capability_network_outbound:capability_network_outbound tests/io.rs",
+     "capability_network_outbound:capability_network_outbound tests/many_connections.rs",
+     "capability_network_outbound:capability_network_outbound tests/multiple_pollers.rs",
+     "capability_network_outbound:capability_network_outbound tests/other_modes.rs",
+     "capability_process_spawn:capability_process_spawn src/os/iocp.rs",
+     "capability_process_spawn:capability_process_spawn tests/windows_post.rs"
+    ]
+   },
+   "version": "3.11.0"
+  }
+ }
+}

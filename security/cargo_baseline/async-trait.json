@@ -1,0 +1,56 @@
+{
+ "name": "async-trait",
+ "versions": {
+  "0.1.92": {
+   "accepted_findings": [
+    "rs-url|src/lib.rs|2bb4d478e8333e45",
+    "rs-url|src/lib.rs|af4dcdc60b15341c",
+    "rs-url|tests/test.rs|113810ddbb3a2321",
+    "yara|capability_process_spawn|tests/test.rs|cfcb41173c013290"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 53,
+    "links": "",
+    "manifest": "9e3c376dfd74aac3b304ae792befb8da1055fbffc06b83209bbcf8059feda332",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "82f6aeea286b8eb4dd3431a1be1b59d290ace00f5bfd8e2a159bc2a05e2c1667",
+    "vcs": {
+     "git": {
+      "sha1": "82e7e9edd60f622294373a23c0ce9c0077ad0263"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "82f6aeea286b8eb4dd3431a1be1b59d290ace00f5bfd8e2a159bc2a05e2c1667",
+    "crate_size": 32039,
+    "created_at": "2026-08-08T07:10:35.376083Z",
+    "description": "Type erasure for async trait methods",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "dtolnay",
+    "repository": "https://github.com/dtolnay/async-trait",
+    "rust_version": "1.71"
+   },
+   "name": "async-trait",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by dtolnay on 2026-08-08."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|tests/test.rs|cfcb41173c013290"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn tests/test.rs"
+    ]
+   },
+   "version": "0.1.92"
+  }
+ }
+}

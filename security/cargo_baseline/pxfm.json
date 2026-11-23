@@ -1,0 +1,80 @@
+{
+ "name": "pxfm",
+ "versions": {
+  "0.1.30": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/bessel/j0_coeffs_remez.rs|6204dad4ddf69ff1",
+    "yara|capability_process_spawn|src/bessel/j0f_coeffs.rs|d40202a746b9e623",
+    "yara|capability_process_spawn|src/bessel/j1_coeffs.rs|34f531655ef7b144",
+    "yara|capability_process_spawn|src/bessel/j1f_coeffs.rs|f3ef1140498e55ab",
+    "yara|capability_process_spawn|src/bessel/y0_coeffs.rs|f08da0d88e76c1ab",
+    "yara|capability_process_spawn|src/bessel/y0f_coeffs.rs|30b363de4190f99e",
+    "yara|capability_process_spawn|src/bessel/y1_coeffs.rs|458cb875f62a2b43",
+    "yara|capability_process_spawn|src/bessel/y1f_coeffs.rs|1ad75d7452cdecb4",
+    "yara|capability_process_spawn|src/err/rerf_poly.rs|3454eb7f0ab412ac",
+    "yara|capability_process_spawn|src/err/rerff.rs|53fd2cc62f0077fb"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 266,
+    "links": "",
+    "manifest": "058fd669352b7b7075815a181ef1356d5141bc976c64c5975bb44ef1f5594004",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d55d956fa96f5ec02be2e13af0e20391a5aa83d6a074e3ad368959d0fab299ea",
+    "vcs": {
+     "git": {
+      "sha1": "acf7acd00cfc845307eda7b7b2de19e42303de82"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "d55d956fa96f5ec02be2e13af0e20391a5aa83d6a074e3ad368959d0fab299ea",
+    "crate_size": 879463,
+    "created_at": "2026-07-06T06:43:55.517978Z",
+    "description": "Fast and accurate math",
+    "license": "BSD-3-Clause OR Apache-2.0",
+    "published_by": "awxkee",
+    "repository": "https://github.com/awxkee/pxfm",
+    "rust_version": "1.85"
+   },
+   "name": "pxfm",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by awxkee on 2026-07-06."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/bessel/j0_coeffs_remez.rs|6204dad4ddf69ff1",
+     "yara|capability_process_spawn|src/bessel/j0f_coeffs.rs|d40202a746b9e623",
+     "yara|capability_process_spawn|src/bessel/j1_coeffs.rs|34f531655ef7b144",
+     "yara|capability_process_spawn|src/bessel/j1f_coeffs.rs|f3ef1140498e55ab",
+     "yara|capability_process_spawn|src/bessel/y0_coeffs.rs|f08da0d88e76c1ab",
+     "yara|capability_process_spawn|src/bessel/y0f_coeffs.rs|30b363de4190f99e",
+     "yara|capability_process_spawn|src/bessel/y1_coeffs.rs|458cb875f62a2b43",
+     "yara|capability_process_spawn|src/bessel/y1f_coeffs.rs|1ad75d7452cdecb4",
+     "yara|capability_process_spawn|src/err/rerf_poly.rs|3454eb7f0ab412ac",
+     "yara|capability_process_spawn|src/err/rerff.rs|53fd2cc62f0077fb"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/bessel/j0_coeffs_remez.rs",
+     "capability_process_spawn:capability_process_spawn src/bessel/j0f_coeffs.rs",
+     "capability_process_spawn:capability_process_spawn src/bessel/j1_coeffs.rs",
+     "capability_process_spawn:capability_process_spawn src/bessel/j1f_coeffs.rs",
+     "capability_process_spawn:capability_process_spawn src/bessel/y0_coeffs.rs",
+     "capability_process_spawn:capability_process_spawn src/bessel/y0f_coeffs.rs",
+     "capability_process_spawn:capability_process_spawn src/bessel/y1_coeffs.rs",
+     "capability_process_spawn:capability_process_spawn src/bessel/y1f_coeffs.rs",
+     "capability_process_spawn:capability_process_spawn src/err/rerf_poly.rs",
+     "capability_process_spawn:capability_process_spawn src/err/rerff.rs"
+    ]
+   },
+   "version": "0.1.30"
+  }
+ }
+}

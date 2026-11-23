@@ -1,0 +1,103 @@
+{
+ "name": "rustls-webpki",
+ "versions": {
+  "0.103.16": {
+   "accepted_findings": [
+    "rs-include-bytes|src/alg_tests.rs|09e91f849bbdd8bf",
+    "rs-include-bytes|src/alg_tests.rs|16de28ee14b5a6b4",
+    "rs-include-bytes|src/alg_tests.rs|1d1b94f2e9d589c4",
+    "rs-include-bytes|src/alg_tests.rs|4c922a7e7f30be12",
+    "rs-include-bytes|src/alg_tests.rs|5dc2c37caf0dcabb",
+    "rs-include-bytes|src/alg_tests.rs|803974a199f63603",
+    "rs-include-bytes|src/alg_tests.rs|8e4663e1e8bf56cf",
+    "rs-include-bytes|src/alg_tests.rs|95e0997c0b23b216",
+    "rs-include-bytes|src/alg_tests.rs|c4d937bf39f13795",
+    "rs-include-bytes|src/alg_tests.rs|ff00e1c1514a6c37",
+    "rs-include-bytes|src/aws_lc_rs_algs.rs|095e0283877a0108",
+    "rs-include-bytes|src/cert.rs|011186b312a4237f",
+    "rs-include-bytes|src/cert.rs|1d64dc887593f0ce",
+    "rs-include-bytes|src/cert.rs|2d395c05bc0b9318",
+    "rs-include-bytes|src/cert.rs|5c87a7e01a0c73b3",
+    "rs-include-bytes|src/cert.rs|5e4c5dc9b4a0245a",
+    "rs-include-bytes|src/cert.rs|6f11c774f825adde",
+    "rs-include-bytes|src/cert.rs|740c6272fef741f5",
+    "rs-include-bytes|src/cert.rs|78899efbc395b3d8",
+    "rs-include-bytes|src/cert.rs|b6eacef85afb3325",
+    "rs-include-bytes|src/cert.rs|c39bc6b90f9ffdbe",
+    "rs-include-bytes|src/cert.rs|f6329b3c8a6853de",
+    "rs-include-bytes|src/cert.rs|fe71d1d773501b19",
+    "rs-include-bytes|src/crl/mod.rs|a84b94f6effa6186",
+    "rs-include-bytes|src/crl/types.rs|1677991aa5409b45",
+    "rs-include-bytes|src/crl/types.rs|17bb37ec38f66711",
+    "rs-include-bytes|src/crl/types.rs|23cab6bfe955c7e5",
+    "rs-include-bytes|src/crl/types.rs|2da4c836571d8e7d",
+    "rs-include-bytes|src/crl/types.rs|41b1e0fbbc9970a5",
+    "rs-include-bytes|src/crl/types.rs|4a3369ebc59868b3",
+    "rs-include-bytes|src/crl/types.rs|638614f1dfa54bd9",
+    "rs-include-bytes|src/crl/types.rs|65c3987c5e3dfdc2",
+    "rs-include-bytes|src/crl/types.rs|6ee730ab492d8f3b",
+    "rs-include-bytes|src/crl/types.rs|6f5dde2542e8514f",
+    "rs-include-bytes|src/crl/types.rs|80f42f9900cc0245",
+    "rs-include-bytes|src/crl/types.rs|8af0c41b36a10f18",
+    "rs-include-bytes|src/crl/types.rs|96b4aa895b883674",
+    "rs-include-bytes|src/crl/types.rs|a84b94f6effa6186",
+    "rs-include-bytes|src/crl/types.rs|accc6b625133b500",
+    "rs-include-bytes|src/crl/types.rs|bda867a1be6523e0",
+    "rs-include-bytes|src/crl/types.rs|d406ca301c52febe",
+    "rs-include-bytes|src/crl/types.rs|f02029c753ea05a5",
+    "rs-include-bytes|src/crl/types.rs|fb9954ab8c002df9",
+    "rs-include-bytes|src/end_entity.rs|2823723d10ee3eae",
+    "rs-include-bytes|src/ring_algs.rs|095e0283877a0108",
+    "rs-include-bytes|src/rpk_entity.rs|1fe959750c099c91",
+    "rs-include-bytes|src/rpk_entity.rs|2d395c05bc0b9318",
+    "rs-include-bytes|src/verify_cert.rs|39c2068cf74b5023",
+    "rs-include-bytes|src/verify_cert.rs|45f98615cc2df85a",
+    "rs-include-bytes|src/verify_cert.rs|67431de49a249948",
+    "rs-include-bytes|src/verify_cert.rs|74f6eb3945a2f9da",
+    "rs-include-bytes|src/verify_cert.rs|d4496de695912972",
+    "rs-include-bytes|src/verify_cert.rs|e5eac4a55afd172d",
+    "rs-include-bytes|src/verify_cert.rs|e8da640128ff49a1",
+    "rs-include-bytes|src/verify_cert.rs|f80d8e0d535e77fe"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 36,
+    "links": "",
+    "manifest": "dffca1cd6a63286c73e6b9d1a07414a36b7a9779cee7e0ad39180a8a175bbd3e",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "4443b1b6d39d7c663139942cc4558262562d2c84123bb6282ef177009ca8b281",
+    "vcs": {
+     "git": {
+      "sha1": "8ecdcc76f56b68fda67a6adf7976f5eed5006a4c"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "4443b1b6d39d7c663139942cc4558262562d2c84123bb6282ef177009ca8b281",
+    "crate_size": 89984,
+    "created_at": "2026-10-20T08:58:28.008618Z",
+    "description": "Web PKI X.509 Certificate Verification.",
+    "license": "ISC",
+    "published_by": "ctz",
+    "repository": "https://github.com/rustls/webpki",
+    "rust_version": "1.71"
+   },
+   "name": "rustls-webpki",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by ctz on 2026-10-20."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.103.16"
+  }
+ }
+}

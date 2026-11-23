@@ -1,0 +1,47 @@
+{
+ "name": "half",
+ "versions": {
+  "2.7.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 24,
+    "links": "",
+    "manifest": "4b3866d0d7b6b374da81e2dea509e3bdbe40e7b8a6ec1179d8333fda6e049f49",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "6ea2d84b969582b4b1864a92dc5d27cd2b77b622a8d79306834f1be5ba20d84b",
+    "vcs": {
+     "git": {
+      "sha1": "8cc891f3e4aad956eca7fa79b1f42f87ecd141ae"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "6ea2d84b969582b4b1864a92dc5d27cd2b77b622a8d79306834f1be5ba20d84b",
+    "crate_size": 61040,
+    "created_at": "2025-10-14T03:59:26.575229Z",
+    "description": "Half-precision floating point f16 and bf16 types for Rust implementing the IEEE 754-2008 standard binary16 and bfloat16 types.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "VoidStarKat",
+    "repository": "https://github.com/VoidStarKat/half-rs",
+    "rust_version": "1.81"
+   },
+   "name": "half",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by VoidStarKat on 2025-10-14."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "2.7.1"
+  }
+ }
+}

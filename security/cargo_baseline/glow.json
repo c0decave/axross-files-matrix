@@ -1,0 +1,55 @@
+{
+ "name": "glow",
+ "versions": {
+  "0.17.0": {
+   "accepted_findings": [
+    "yara|lolbas_net|generate-native.sh|d961bbaa3b0e058f",
+    "yara|suspicious_network_tools|generate-native.sh|d961bbaa3b0e058f"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 20,
+    "links": "",
+    "manifest": "d69261d04b56d1b8493e371865c2bef3f28faf3dbf124f70511556cc5dfb31ee",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "29038e1c483364cc6bb3cf78feee1816002e127c331a1eec55a4d202b9e1adb5",
+    "vcs": {
+     "git": {
+      "sha1": "0983efbc97fa4815f18990ef2a59540ede94f6f6"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "29038e1c483364cc6bb3cf78feee1816002e127c331a1eec55a4d202b9e1adb5",
+    "crate_size": 165357,
+    "created_at": "2026-03-07T04:35:01.036126Z",
+    "description": "GL on Whatever: a set of bindings to run GL (Open GL, OpenGL ES, and WebGL) anywhere, and avoid target-specific code.",
+    "license": "MIT OR Apache-2.0 OR Zlib",
+    "published_by": "grovesNL",
+    "repository": "https://github.com/grovesNL/glow"
+   },
+   "name": "glow",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "generate-native.sh (a binding generator script with curl) ships in the crate but is never run by the build. Nothing else flagged. No binary; checksum = crates.io's; published by grovesNL on 2026-03-07."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|lolbas_net|generate-native.sh|d961bbaa3b0e058f",
+     "yara|suspicious_network_tools|generate-native.sh|d961bbaa3b0e058f"
+    ],
+    "yara": [
+     "axross_backdoor_rules:suspicious_network_tools generate-native.sh",
+     "capability_network_lolbas:lolbas_net generate-native.sh"
+    ]
+   },
+   "version": "0.17.0"
+  }
+ }
+}

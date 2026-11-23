@@ -1,0 +1,47 @@
+{
+ "name": "egui-wgpu",
+ "versions": {
+  "0.37.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 12,
+    "links": "",
+    "manifest": "e1db1c656b29b7d9ec5be68b2811ccb32b33f5593d85958a06100de8ac066f6d",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "0309cbe1febed48af5b974e4bcc424b35e9664863a4d402697147b57a488c864",
+    "vcs": {
+     "git": {
+      "sha1": "7c0b40402271e8d40cda69f87cf3c2617c2e4382"
+     },
+     "path_in_vcs": "crates/egui-wgpu"
+    }
+   },
+   "crates_io": {
+    "checksum": "0309cbe1febed48af5b974e4bcc424b35e9664863a4d402697147b57a488c864",
+    "crate_size": 55568,
+    "created_at": "2026-10-15T14:49:55.127617Z",
+    "description": "Bindings for using egui natively using the wgpu library",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rerunio",
+    "repository": "https://github.com/emilk/egui/tree/main/crates/egui-wgpu",
+    "rust_version": "1.95"
+   },
+   "name": "egui-wgpu",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rerunio on 2026-10-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.37.0"
+  }
+ }
+}

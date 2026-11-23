@@ -1,0 +1,47 @@
+{
+ "name": "litemap",
+ "versions": {
+  "0.8.3": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 23,
+    "links": "",
+    "manifest": "63d8ee3ae9dcc3dda1b67590bd2c148f17f95d5e3e9415de0c4c910ad8047911",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "47d9d19d1d6efa0109d2f65ff4c85cddd50bd572e5a00127ab10987290bcefae",
+    "vcs": {
+     "git": {
+      "sha1": "a14f2dad852be26bad277ae704abf27a15cbfed1"
+     },
+     "path_in_vcs": "utils/litemap"
+    }
+   },
+   "crates_io": {
+    "checksum": "47d9d19d1d6efa0109d2f65ff4c85cddd50bd572e5a00127ab10987290bcefae",
+    "crate_size": 35045,
+    "created_at": "2026-08-13T23:27:57.524692Z",
+    "description": "A key-value Map implementation based on a flat, sorted Vec.",
+    "license": "Unicode-3.0",
+    "published_by": "sffc",
+    "repository": "https://github.com/unicode-org/icu4x",
+    "rust_version": "1.82"
+   },
+   "name": "litemap",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by sffc on 2026-08-13."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.8.3"
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "name": "litrs",
+ "versions": {
+  "1.0.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 33,
+    "links": "",
+    "manifest": "d208f20fb1723fda583638bf53ac6d2fbd8d3ff1a6c725796dc69a287b89cac6",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "4744e383959f0db86ede514b809b1c53251889093803c05267acc7d4e7030d70",
+    "vcs": {
+     "git": {
+      "sha1": "510d5d778413d51da7d11f8e498d27bba86739e1"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "4744e383959f0db86ede514b809b1c53251889093803c05267acc7d4e7030d70",
+    "crate_size": 47449,
+    "created_at": "2026-10-12T11:59:37.244600Z",
+    "description": "Parse and inspect Rust literals (i.e. tokens in the Rust programming language\nrepresenting fixed values). Particularly useful for proc macros, but can also\nbe used outside of a proc-macro context.\n",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "LukasKalbertodt",
+    "repository": "https://github.com/LukasKalbertodt/litrs",
+    "rust_version": "1.56"
+   },
+   "name": "litrs",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by LukasKalbertodt on 2026-10-12."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.0.1"
+  }
+ }
+}

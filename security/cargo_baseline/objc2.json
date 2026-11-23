@@ -1,0 +1,121 @@
+{
+ "name": "objc2",
+ "versions": {
+  "0.5.3": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/__macro_helpers/cache.rs|3edb5a4ac7aed6a1",
+    "yara|capability_process_spawn|src/macros/mod.rs|84bc594f87103ff0"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 79,
+    "links": "",
+    "manifest": "a4a1048310485c3462d10945dbcc745a2b5e818c550f2ea34ec6198c4d9ab567",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "19d5490aaf8f1d7cf7688dfa9b0ce07900e168852c45cd2c03f534dfd27cfd0b",
+    "vcs": {
+     "git": {
+      "sha1": "5237cbf081d04ef75a1f6a207b4018e7c1ae7438"
+     },
+     "path_in_vcs": "crates/objc2"
+    }
+   },
+   "crates_io": {
+    "checksum": "19d5490aaf8f1d7cf7688dfa9b0ce07900e168852c45cd2c03f534dfd27cfd0b",
+    "crate_size": 201184,
+    "created_at": "2026-10-05T18:23:20.927317Z",
+    "description": "Objective-C interface and runtime bindings",
+    "license": "MIT",
+    "published_by": "madsmtm",
+    "repository": "https://github.com/madsmtm/objc2",
+    "rust_version": "1.60"
+   },
+   "name": "objc2",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by madsmtm on 2026-10-05."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/__macro_helpers/cache.rs|3edb5a4ac7aed6a1",
+     "yara|capability_process_spawn|src/macros/mod.rs|84bc594f87103ff0"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/__macro_helpers/cache.rs",
+     "capability_process_spawn:capability_process_spawn src/macros/mod.rs"
+    ]
+   },
+   "version": "0.5.3"
+  },
+  "0.6.5": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/__macro_helpers/cache.rs|c6ca0617b800e62d",
+    "yara|capability_network_outbound|tests/backtrace.rs|327cb9bcf097cd4f",
+    "yara|capability_process_spawn|src/__macro_helpers/image_info.rs|60b5184a019f9c22",
+    "yara|capability_process_spawn|src/__macro_helpers/os_version/apple.rs|e08dcc685ff32f82",
+    "yara|capability_process_spawn|src/macros/mod.rs|0385ab935ec5b30f",
+    "yara|capability_process_spawn|src/main_thread_marker.rs|66676a96c255c1b5"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "f13d2effabc1cfa07fa5018c78eadc645914d676c034adf78acb24b8b419ce7a"
+    },
+    "files": 120,
+    "links": "",
+    "manifest": "ef9a82dab2c1574c448febc10e9da81cddc7401687a9b2ea2dcfe67ab74c84ea",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "08849bbd4767dfae9457696856ae1c84fe4e0281bbe4a7abff2d0e06fb7981f8",
+    "vcs": {
+     "git": {
+      "sha1": "d7d2fa23ceaa5e6096c923b081040e5d81b3b9df"
+     },
+     "path_in_vcs": "crates/objc2"
+    }
+   },
+   "crates_io": {
+    "checksum": "08849bbd4767dfae9457696856ae1c84fe4e0281bbe4a7abff2d0e06fb7981f8",
+    "crate_size": 276781,
+    "created_at": "2026-10-05T18:26:53.790244Z",
+    "description": "Objective-C interface and runtime bindings",
+    "license": "MIT",
+    "published_by": "madsmtm",
+    "repository": "https://github.com/madsmtm/objc2",
+    "rust_version": "1.71"
+   },
+   "name": "objc2",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by madsmtm on 2026-10-05."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/__macro_helpers/cache.rs|c6ca0617b800e62d",
+     "yara|capability_network_outbound|tests/backtrace.rs|327cb9bcf097cd4f",
+     "yara|capability_process_spawn|src/__macro_helpers/image_info.rs|60b5184a019f9c22",
+     "yara|capability_process_spawn|src/__macro_helpers/os_version/apple.rs|e08dcc685ff32f82",
+     "yara|capability_process_spawn|src/macros/mod.rs|0385ab935ec5b30f",
+     "yara|capability_process_spawn|src/main_thread_marker.rs|66676a96c255c1b5"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/__macro_helpers/cache.rs",
+     "capability_network_outbound:capability_network_outbound tests/backtrace.rs",
+     "capability_process_spawn:capability_process_spawn src/__macro_helpers/image_info.rs",
+     "capability_process_spawn:capability_process_spawn src/__macro_helpers/os_version/apple.rs",
+     "capability_process_spawn:capability_process_spawn src/macros/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/main_thread_marker.rs"
+    ]
+   },
+   "version": "0.6.5"
+  }
+ }
+}

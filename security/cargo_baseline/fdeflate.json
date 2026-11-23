@@ -1,0 +1,50 @@
+{
+ "name": "fdeflate",
+ "versions": {
+  "0.3.7": {
+   "accepted_findings": [
+    "rs-include-bytes|src/decompress.rs|74a01f49c32dd9d8",
+    "rs-include-bytes|src/decompress.rs|9cb35b9fb5c8bf9c"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 16,
+    "links": "",
+    "manifest": "4700a1d3ebaad7029daf24e82eedb1b287b8a8a28c2f90b71b3cc16bbf9ebc11",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "1e6853b52649d4ac5c0bd02320cddc5ba956bdb407c4b75a2c6b75bf51500f8c",
+    "vcs": {
+     "git": {
+      "sha1": "c365c7e6ffa81feb2e1fb762eed7299f05c9b0ca"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "1e6853b52649d4ac5c0bd02320cddc5ba956bdb407c4b75a2c6b75bf51500f8c",
+    "crate_size": 27188,
+    "created_at": "2024-12-06T03:16:12.038530Z",
+    "description": "Fast specialized deflate implementation",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "fintelia",
+    "repository": "https://github.com/image-rs/fdeflate",
+    "rust_version": "1.67.0"
+   },
+   "name": "fdeflate",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by fintelia on 2024-12-06."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.3.7"
+  }
+ }
+}

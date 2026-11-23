@@ -1,0 +1,47 @@
+{
+ "name": "windows-strings",
+ "versions": {
+  "0.5.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 21,
+    "links": "",
+    "manifest": "79ac62d363c4ed0dc8c435444c28af4ac93ca79512e925fee03f20a3b13ff489",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "7837d08f69c77cf6b07689544538e017c1bfcf57e34b4c0ff58e6c2cd3b37091",
+    "vcs": {
+     "git": {
+      "sha1": "32c3144490c016fe496a0aed769bce60987a2e9d"
+     },
+     "path_in_vcs": "crates/libs/strings"
+    }
+   },
+   "crates_io": {
+    "checksum": "7837d08f69c77cf6b07689544538e017c1bfcf57e34b4c0ff58e6c2cd3b37091",
+    "crate_size": 13966,
+    "created_at": "2025-10-06T19:15:01.410695Z",
+    "description": "Windows string types",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "kennykerr",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "rust_version": "1.82"
+   },
+   "name": "windows-strings",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by kennykerr on 2025-10-06."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.5.1"
+  }
+ }
+}

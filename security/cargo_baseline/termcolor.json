@@ -1,0 +1,46 @@
+{
+ "name": "termcolor",
+ "versions": {
+  "1.4.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 11,
+    "links": "",
+    "manifest": "248979f2f8cf9dc237c388a041cd0ab9075c35f32acb13bedcf069cacbb51af2",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755",
+    "vcs": {
+     "git": {
+      "sha1": "71f0921f1eeceda85487098588a1602979d52493"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755",
+    "crate_size": 18773,
+    "created_at": "2024-01-10T12:40:32.427230Z",
+    "description": "A simple cross platform library for writing colored text to a terminal.",
+    "license": "Unlicense OR MIT",
+    "published_by": "BurntSushi",
+    "repository": "https://github.com/BurntSushi/termcolor"
+   },
+   "name": "termcolor",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by BurntSushi on 2024-01-10."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.4.1"
+  }
+ }
+}

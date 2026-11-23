@@ -1,0 +1,45 @@
+{
+ "name": "cgl",
+ "versions": {
+  "0.3.2": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 11,
+    "links": "",
+    "manifest": "e09b94389acd997b88fa2e5d6394e1b8ab5e1cf5a3225e2c76c7d3b9d9cc142a",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "0ced0551234e87afee12411d535648dd89d2e7f34c78b753395567aff3d447ff",
+    "vcs": {
+     "git": {
+      "sha1": "46348b6c10543dd6465d47a7e14ee0f37516e08e"
+     }
+    }
+   },
+   "crates_io": {
+    "checksum": "0ced0551234e87afee12411d535648dd89d2e7f34c78b753395567aff3d447ff",
+    "crate_size": 7557,
+    "created_at": "2019-09-11T17:54:10.322944Z",
+    "description": "Rust bindings for CGL on Mac",
+    "license": "MIT / Apache-2.0",
+    "published_by": "pcwalton",
+    "repository": "https://github.com/servo/cgl-rs"
+   },
+   "name": "cgl",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by pcwalton on 2019-09-11."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.3.2"
+  }
+ }
+}

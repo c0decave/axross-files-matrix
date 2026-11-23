@@ -1,0 +1,48 @@
+{
+ "name": "zbus-lockstep-macros",
+ "versions": {
+  "0.5.2": {
+   "accepted_findings": [
+    "rs-url|src/lib.rs|ebb195012ce6d2c6"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 7,
+    "links": "",
+    "manifest": "d2e6bf78a9174d1b44a06185f299a91da699d21ed417db19b5ff5364d3c8cf5c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "10da05367f3a7b7553c8cdf8fa91aee6b64afebe32b51c95177957efc47ca3a0",
+    "vcs": {
+     "git": {
+      "sha1": "9bda5264dfe1dc7eaa7738f839ff977315c31b84"
+     },
+     "path_in_vcs": "zbus-lockstep-macros"
+    }
+   },
+   "crates_io": {
+    "checksum": "10da05367f3a7b7553c8cdf8fa91aee6b64afebe32b51c95177957efc47ca3a0",
+    "crate_size": 10131,
+    "created_at": "2025-11-29T16:54:54.749209Z",
+    "description": "Macros to keep types in lockstep with DBus XML definitions",
+    "license": "MIT",
+    "published_by": "luukvanderduim",
+    "repository": "https://github.com/luukvanderduim/zbus-lockstep"
+   },
+   "name": "zbus-lockstep-macros",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Proc macro: reads D-Bus XML files from the path given in the macro (used in tests of zbus users). No network, no process. No binary; checksum = crates.io's; published by luukvanderduim on 2025-11-29."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.5.2"
+  }
+ }
+}

@@ -1,0 +1,53 @@
+{
+ "name": "accesskit_macos",
+ "versions": {
+  "0.27.2": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/node.rs|cbed75a2f4ba8ddb"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 19,
+    "links": "",
+    "manifest": "914a0c7815a223534edd4195c532c9d2cbda1276a7170cd9f400f92327728750",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "123828ceeec755b05255e3976cb0852993202de98a0626c97dd8d34246991f84",
+    "vcs": {
+     "git": {
+      "sha1": "f3026222559c7f5f46d8f25cb7404de68eb149f0"
+     },
+     "path_in_vcs": "adapters/macos"
+    }
+   },
+   "crates_io": {
+    "checksum": "123828ceeec755b05255e3976cb0852993202de98a0626c97dd8d34246991f84",
+    "crate_size": 32529,
+    "created_at": "2026-10-25T21:06:45.313560Z",
+    "description": "AccessKit UI accessibility infrastructure: macOS adapter",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "DataTriny",
+    "repository": "https://github.com/AccessKit/accesskit",
+    "rust_version": "1.87"
+   },
+   "name": "accesskit_macos",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by DataTriny on 2026-10-25."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/node.rs|cbed75a2f4ba8ddb"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/node.rs"
+    ]
+   },
+   "version": "0.27.2"
+  }
+ }
+}

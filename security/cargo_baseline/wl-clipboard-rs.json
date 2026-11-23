@@ -1,0 +1,64 @@
+{
+ "name": "wl-clipboard-rs",
+ "versions": {
+  "0.9.5": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|examples/watch.rs|54051a97db37ceb5",
+    "yara|capability_process_spawn|src/copy.rs|492303250ca85b96",
+    "yara|capability_process_spawn|src/tests/copy.rs|95ad622186ffff5f",
+    "yara|capability_process_spawn|src/tests/mod.rs|9a72c51822572f4f",
+    "yara|capability_process_spawn|src/tests/watch.rs|68ec8efd172d923e"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 29,
+    "links": "",
+    "manifest": "8e72695dec67c4b1225f057643c0d450e0c382ea8935dc9ed15c81e7d4a69519",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "959c7ac3b8afde864f7a7448ac16f29b2b83350b7eccbf77fb781c3999aa6848",
+    "vcs": {
+     "git": {
+      "sha1": "16b63adcbd2191a8c29c2a467342fc24b4ea82dc"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "959c7ac3b8afde864f7a7448ac16f29b2b83350b7eccbf77fb781c3999aa6848",
+    "crate_size": 48862,
+    "created_at": "2026-10-26T11:26:51.298417Z",
+    "description": "Access to the Wayland clipboard for terminal and other window-less applications.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "YaLTeR",
+    "repository": "https://github.com/YaLTeR/wl-clipboard-rs"
+   },
+   "name": "wl-clipboard-rs",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by YaLTeR on 2026-10-26."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|examples/watch.rs|54051a97db37ceb5",
+     "yara|capability_process_spawn|src/copy.rs|492303250ca85b96",
+     "yara|capability_process_spawn|src/tests/copy.rs|95ad622186ffff5f",
+     "yara|capability_process_spawn|src/tests/mod.rs|9a72c51822572f4f",
+     "yara|capability_process_spawn|src/tests/watch.rs|68ec8efd172d923e"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn examples/watch.rs",
+     "capability_process_spawn:capability_process_spawn src/copy.rs",
+     "capability_process_spawn:capability_process_spawn src/tests/copy.rs",
+     "capability_process_spawn:capability_process_spawn src/tests/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/tests/watch.rs"
+    ]
+   },
+   "version": "0.9.5"
+  }
+ }
+}

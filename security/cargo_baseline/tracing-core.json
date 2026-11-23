@@ -1,0 +1,53 @@
+{
+ "name": "tracing-core",
+ "versions": {
+  "0.1.36": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|tests/missed_register_callsite.rs|c8af23ec5ac08a2c"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 28,
+    "links": "",
+    "manifest": "49524ab94b3544b946a8c3519d4a50a0eaffe68553d74e4a1ae9ab47f0b6a025",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "db97caf9d906fbde555dd62fa95ddba9eecfd14cb388e4f491a66d74cd5fb79a",
+    "vcs": {
+     "git": {
+      "sha1": "10a9e838a35e6ded79d66af246be2ee05417136d"
+     },
+     "path_in_vcs": "tracing-core"
+    }
+   },
+   "crates_io": {
+    "checksum": "db97caf9d906fbde555dd62fa95ddba9eecfd14cb388e4f491a66d74cd5fb79a",
+    "crate_size": 63967,
+    "created_at": "2025-12-18T14:13:04.171045Z",
+    "description": "Core primitives for application-level tracing.\n",
+    "license": "MIT",
+    "published_by": "hds",
+    "repository": "https://github.com/tokio-rs/tracing",
+    "rust_version": "1.65.0"
+   },
+   "name": "tracing-core",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by hds on 2025-12-18."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|tests/missed_register_callsite.rs|c8af23ec5ac08a2c"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn tests/missed_register_callsite.rs"
+    ]
+   },
+   "version": "0.1.36"
+  }
+ }
+}

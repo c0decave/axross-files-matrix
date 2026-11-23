@@ -1,0 +1,47 @@
+{
+ "name": "font-types",
+ "versions": {
+  "0.12.7": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 24,
+    "links": "",
+    "manifest": "aaab30f892f84b9cb2f15e49fd67dde6a24c40b91009523a456b7a33a64eed25",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "835ae9d781464a79026cde387f9cbc650c9a4909d7cf7e658b127e3c35d2f35d",
+    "vcs": {
+     "git": {
+      "sha1": "ef666662f5985965bbbb726c4f77d15481831a1b"
+     },
+     "path_in_vcs": "font-types"
+    }
+   },
+   "crates_io": {
+    "checksum": "835ae9d781464a79026cde387f9cbc650c9a4909d7cf7e658b127e3c35d2f35d",
+    "crate_size": 33312,
+    "created_at": "2026-10-15T14:22:07.032780Z",
+    "description": "Scalar types used in fonts.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "dfrg",
+    "repository": "https://github.com/googlefonts/fontations",
+    "rust_version": "1.85"
+   },
+   "name": "font-types",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by dfrg on 2026-10-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.12.7"
+  }
+ }
+}

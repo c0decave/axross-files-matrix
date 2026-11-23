@@ -1,0 +1,47 @@
+{
+ "name": "num_enum_derive",
+ "versions": {
+  "0.7.6": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "7b4976672d62bb8c1647076d842294f6a5bc1acd1fcdc05bcd992ed2dae5d582",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "680998035259dcfcafe653688bf2aa6d3e2dc05e98be6ab46afb089dc84f1df8",
+    "vcs": {
+     "git": {
+      "sha1": "f11d81c6cb644489f8a0fc24f9eea9a53d66f92e"
+     },
+     "path_in_vcs": "num_enum_derive"
+    }
+   },
+   "crates_io": {
+    "checksum": "680998035259dcfcafe653688bf2aa6d3e2dc05e98be6ab46afb089dc84f1df8",
+    "crate_size": 18789,
+    "created_at": "2026-03-15T21:29:38.220565Z",
+    "description": "Internal implementation details for ::num_enum (Procedural macros to make inter-operation between primitives and enums easier)",
+    "license": "BSD-3-Clause OR MIT OR Apache-2.0",
+    "published_by": "illicitonion",
+    "repository": "https://github.com/illicitonion/num_enum",
+    "rust_version": "1.70.0"
+   },
+   "name": "num_enum_derive",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by illicitonion on 2026-03-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.7.6"
+  }
+ }
+}

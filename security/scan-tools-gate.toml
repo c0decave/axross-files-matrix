@@ -1,0 +1,8 @@
+# axross's PyPI gate on the lock of the gate's own scanners (GuardDog's
+# rules, YARA, capa), with axross's reviewed baseline: the CI checks the
+# scanners before it installs them, as axross's dist build does.
+root = ".."
+locks = [".axross/build/requirements-scan-tools.txt"]
+index_config = []
+baseline_dir = "../.axross/security/supply_chain_baseline"
+cache_dir = "../target/supply-chain-cache"

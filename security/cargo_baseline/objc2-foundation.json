@@ -1,0 +1,116 @@
+{
+ "name": "objc2-foundation",
+ "versions": {
+  "0.2.2": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/generated/NSNetServices.rs|6e809326e52d0b64",
+    "yara|capability_process_spawn|src/generics.rs|d330a39ab5471b1e",
+    "yara|capability_process_spawn|src/tests/mutable_array.rs|1244505722bb62fc",
+    "yara|capability_process_spawn|src/tests/thread.rs|89da83e8ff3eedb0"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 233,
+    "links": "",
+    "manifest": "e887d10f6b1de0b9f5d229faefd3c054170c165c67c969be6146e1586aa9c81c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "0ee638a5da3799329310ad4cfa62fbf045d5f56e3ef5ba4149e7452dcf89d5a8",
+    "vcs": {
+     "git": {
+      "sha1": "e282618be4c3a3b9542957e0c8540e9588472ce8"
+     },
+     "path_in_vcs": "framework-crates/objc2-foundation"
+    }
+   },
+   "crates_io": {
+    "checksum": "0ee638a5da3799329310ad4cfa62fbf045d5f56e3ef5ba4149e7452dcf89d5a8",
+    "crate_size": 249330,
+    "created_at": "2024-05-21T08:23:47.661422Z",
+    "description": "Bindings to the Foundation framework",
+    "license": "MIT",
+    "published_by": "madsmtm",
+    "repository": "https://github.com/madsmtm/objc2",
+    "rust_version": "1.60"
+   },
+   "name": "objc2-foundation",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by madsmtm on 2024-05-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/generated/NSNetServices.rs|6e809326e52d0b64",
+     "yara|capability_process_spawn|src/generics.rs|d330a39ab5471b1e",
+     "yara|capability_process_spawn|src/tests/mutable_array.rs|1244505722bb62fc",
+     "yara|capability_process_spawn|src/tests/thread.rs|89da83e8ff3eedb0"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/generated/NSNetServices.rs",
+     "capability_process_spawn:capability_process_spawn src/generics.rs",
+     "capability_process_spawn:capability_process_spawn src/tests/mutable_array.rs",
+     "capability_process_spawn:capability_process_spawn src/tests/thread.rs"
+    ]
+   },
+   "version": "0.2.2"
+  },
+  "0.3.2": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/generated/NSNetServices.rs|e636664a342028d3",
+    "yara|capability_process_spawn|src/tests/mutable_array.rs|908fc4e0eb409953",
+    "yara|capability_process_spawn|src/tests/thread.rs|288b43436d35e127"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 239,
+    "links": "",
+    "manifest": "884d3668f4c540a49d791af30115776994b4d9f048557ae7a5a37e1cd9ace00a",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "e3e0adef53c21f888deb4fa59fc59f7eb17404926ee8a6f59f5df0fd7f9f3272",
+    "vcs": {
+     "git": {
+      "sha1": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b"
+     },
+     "path_in_vcs": "framework-crates/objc2-foundation"
+    }
+   },
+   "crates_io": {
+    "checksum": "e3e0adef53c21f888deb4fa59fc59f7eb17404926ee8a6f59f5df0fd7f9f3272",
+    "crate_size": 345384,
+    "created_at": "2025-10-04T15:47:21.149969Z",
+    "description": "Bindings to the Foundation framework",
+    "license": "MIT",
+    "published_by": "madsmtm",
+    "repository": "https://github.com/madsmtm/objc2",
+    "rust_version": "1.71"
+   },
+   "name": "objc2-foundation",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by madsmtm on 2025-10-04."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/generated/NSNetServices.rs|e636664a342028d3",
+     "yara|capability_process_spawn|src/tests/mutable_array.rs|908fc4e0eb409953",
+     "yara|capability_process_spawn|src/tests/thread.rs|288b43436d35e127"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/generated/NSNetServices.rs",
+     "capability_process_spawn:capability_process_spawn src/tests/mutable_array.rs",
+     "capability_process_spawn:capability_process_spawn src/tests/thread.rs"
+    ]
+   },
+   "version": "0.3.2"
+  }
+ }
+}

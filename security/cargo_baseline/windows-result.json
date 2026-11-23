@@ -1,0 +1,47 @@
+{
+ "name": "windows-result",
+ "versions": {
+  "0.4.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 16,
+    "links": "",
+    "manifest": "6a476608690b6fe32debd57f4edacf36d9e5fdf2d6ec634dd630f8a535ec4ca0",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "7781fa89eaf60850ac3d2da7af8e5242a5ea78d1a11c49bf2910bb5a73853eb5",
+    "vcs": {
+     "git": {
+      "sha1": "32c3144490c016fe496a0aed769bce60987a2e9d"
+     },
+     "path_in_vcs": "crates/libs/result"
+    }
+   },
+   "crates_io": {
+    "checksum": "7781fa89eaf60850ac3d2da7af8e5242a5ea78d1a11c49bf2910bb5a73853eb5",
+    "crate_size": 13381,
+    "created_at": "2025-10-06T19:14:39.441465Z",
+    "description": "Windows error handling",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "kennykerr",
+    "repository": "https://github.com/microsoft/windows-rs",
+    "rust_version": "1.82"
+   },
+   "name": "windows-result",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by kennykerr on 2025-10-06."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.4.1"
+  }
+ }
+}

@@ -1,0 +1,56 @@
+{
+ "name": "quote",
+ "versions": {
+  "1.0.47": {
+   "accepted_findings": [
+    "rs-command|build.rs|a6a61c5c15299c38",
+    "yara|capability_process_spawn|build.rs|cd6808c02e476b09"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "cd6808c02e476b09a520105e2c6f6d325cccb1ecd542cbbcc836a0ae6f6fb0f1"
+    },
+    "files": 35,
+    "links": "",
+    "manifest": "074ace7cc75b3be672988ea76ddf385dcecf221fb5075d0721518bed3514d42f",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "1fbf4db142a473a8d80c26bbf18454ed458bf8d26c8219c331daecfdbd079001",
+    "vcs": {
+     "git": {
+      "sha1": "723dcb47d3f0ddc896e17287c8a8d3f2ea2317d5"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "1fbf4db142a473a8d80c26bbf18454ed458bf8d26c8219c331daecfdbd079001",
+    "crate_size": 31622,
+    "created_at": "2026-07-19T00:16:57.083778Z",
+    "description": "Quasi-quoting macro quote!(...)",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "dtolnay",
+    "repository": "https://github.com/dtolnay/quote",
+    "rust_version": "1.71"
+   },
+   "name": "quote",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: runs rustc to probe its version; no network. No binary; checksum = crates.io's; published by dtolnay on 2026-07-19."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|build.rs|cd6808c02e476b09"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn build.rs"
+    ]
+   },
+   "version": "1.0.47"
+  }
+ }
+}

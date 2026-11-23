@@ -1,0 +1,45 @@
+{
+ "name": "quick-error",
+ "versions": {
+  "2.0.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "91a07254e951e19bc64e28d49dc665e162938a18982803170e16bf5a733ea4ff",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "a993555f31e5a609f617c12db6250dedcac1b0a85076912c436e6fc9b2c8e6a3",
+    "vcs": {
+     "git": {
+      "sha1": "25ab982bb0c43130ae48485151f4a232eeab7d0c"
+     }
+    }
+   },
+   "crates_io": {
+    "checksum": "a993555f31e5a609f617c12db6250dedcac1b0a85076912c436e6fc9b2c8e6a3",
+    "crate_size": 14265,
+    "created_at": "2021-05-07T12:10:10.154641Z",
+    "description": "A macro which makes error types pleasant to write.",
+    "license": "MIT/Apache-2.0",
+    "published_by": "tailhook",
+    "repository": "http://github.com/tailhook/quick-error"
+   },
+   "name": "quick-error",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by tailhook on 2021-05-07."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "2.0.1"
+  }
+ }
+}

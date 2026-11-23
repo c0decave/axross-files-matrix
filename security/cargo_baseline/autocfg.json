@@ -1,0 +1,56 @@
+{
+ "name": "autocfg",
+ "versions": {
+  "1.5.1": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/lib.rs|772630d0e09d06f3",
+    "yara|capability_process_spawn|src/rustc.rs|a8a213ddb64a05c1"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 23,
+    "links": "",
+    "manifest": "8c06563911e878999be3c9ee22733ba9884e56e662cafc582138345e9fabff40",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53",
+    "vcs": {
+     "git": {
+      "sha1": "2799b09c24e6632f8e653c5cd8fc303e85a906ba"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53",
+    "crate_size": 18911,
+    "created_at": "2026-05-22T11:03:04.576867Z",
+    "description": "Automatic cfg for Rust compiler features",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "cuviper",
+    "repository": "https://github.com/cuviper/autocfg",
+    "rust_version": "1.0"
+   },
+   "name": "autocfg",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by cuviper on 2026-05-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/lib.rs|772630d0e09d06f3",
+     "yara|capability_process_spawn|src/rustc.rs|a8a213ddb64a05c1"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/lib.rs",
+     "capability_process_spawn:capability_process_spawn src/rustc.rs"
+    ]
+   },
+   "version": "1.5.1"
+  }
+ }
+}

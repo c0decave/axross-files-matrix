@@ -1,0 +1,49 @@
+{
+ "name": "wayland-client",
+ "versions": {
+  "0.31.15": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "410d744cfb89f086db6c5b955e8f5c09fe3dc578acb1aeae9ad0260f105f5ea9"
+    },
+    "files": 16,
+    "links": "",
+    "manifest": "21b05a2f04a1a9b0e7dfc99e28cf7ff02391ce9f529ed8d2ffb0be65fc07107b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "e3c36a0f861ad76d0901f2800b46321410d9f73f2ea88aac0650d86c32688073",
+    "vcs": {
+     "git": {
+      "sha1": "05196740da57e41b60a9e9f8e35079e9bd29b89a"
+     },
+     "path_in_vcs": "wayland-client"
+    }
+   },
+   "crates_io": {
+    "checksum": "e3c36a0f861ad76d0901f2800b46321410d9f73f2ea88aac0650d86c32688073",
+    "crate_size": 67091,
+    "created_at": "2026-07-22T20:35:54.669482Z",
+    "description": "Bindings to the standard C implementation of the wayland protocol, client side.",
+    "license": "MIT",
+    "published_by": "ids1024",
+    "repository": "https://github.com/smithay/wayland-rs",
+    "rust_version": "1.71"
+   },
+   "name": "wayland-client",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by ids1024 on 2026-07-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.31.15"
+  }
+ }
+}

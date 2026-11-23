@@ -1,0 +1,53 @@
+{
+ "name": "gethostname",
+ "versions": {
+  "1.1.0": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/lib.rs|64d50ba4ead6e4c9"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 11,
+    "links": "",
+    "manifest": "2fb610aa48626db18a74b32d98ae560ef159d04fce166ae506d3cbcded86c4c8",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "1bd49230192a3797a9a4d6abe9b3eed6f7fa4c8a8a4947977c6f80025f92cbd8",
+    "vcs": {
+     "git": {
+      "sha1": "7cffc339711704f29f72d51ebc483b3f28f10099"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "1bd49230192a3797a9a4d6abe9b3eed6f7fa4c8a8a4947977c6f80025f92cbd8",
+    "crate_size": 9865,
+    "created_at": "2025-10-14T21:50:44.962698Z",
+    "description": "gethostname for all platforms",
+    "license": "Apache-2.0",
+    "published_by": "swsnr",
+    "repository": "https://codeberg.org/swsnr/gethostname.rs.git",
+    "rust_version": "1.71"
+   },
+   "name": "gethostname",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by swsnr on 2025-10-14."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/lib.rs|64d50ba4ead6e4c9"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/lib.rs"
+    ]
+   },
+   "version": "1.1.0"
+  }
+ }
+}

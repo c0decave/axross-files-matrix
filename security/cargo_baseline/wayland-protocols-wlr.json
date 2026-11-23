@@ -1,0 +1,47 @@
+{
+ "name": "wayland-protocols-wlr",
+ "versions": {
+  "0.3.12": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 26,
+    "links": "",
+    "manifest": "be559f2b842dc6c55fc1bf63b2691a069f28b95cdeafcbe09e6b24cf778a1137",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "eb04e52f7836d7c7976c78ca0250d61e33873c34156a2a1fc9474828ec268234",
+    "vcs": {
+     "git": {
+      "sha1": "a3d7927d87799b2955bf491b51c7c2a3a82da661"
+     },
+     "path_in_vcs": "wayland-protocols-wlr"
+    }
+   },
+   "crates_io": {
+    "checksum": "eb04e52f7836d7c7976c78ca0250d61e33873c34156a2a1fc9474828ec268234",
+    "crate_size": 28366,
+    "created_at": "2026-03-31T02:22:47.529355Z",
+    "description": "Generated API for the WLR wayland protocol extensions",
+    "license": "MIT",
+    "published_by": "elinorbgr",
+    "repository": "https://github.com/smithay/wayland-rs",
+    "rust_version": "1.71"
+   },
+   "name": "wayland-protocols-wlr",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by elinorbgr on 2026-03-31."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.3.12"
+  }
+ }
+}

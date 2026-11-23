@@ -1,0 +1,56 @@
+{
+ "name": "dispatch2",
+ "versions": {
+  "0.3.1": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/once.rs|b68e07ded1178df2",
+    "yara|capability_process_spawn|src/queue.rs|7bcbdb54cd2c3122"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 26,
+    "links": "",
+    "manifest": "b088dec9727f9015b0986f1ae8e02d421ef35cb7889ca5fc8856104e6449d8a8",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "1e0e367e4e7da84520dedcac1901e4da967309406d1e51017ae1abfb97adbd38",
+    "vcs": {
+     "git": {
+      "sha1": "8852b424193ca41602281b3d7540d7c8ed51e49a"
+     },
+     "path_in_vcs": "crates/dispatch2"
+    }
+   },
+   "crates_io": {
+    "checksum": "1e0e367e4e7da84520dedcac1901e4da967309406d1e51017ae1abfb97adbd38",
+    "crate_size": 55299,
+    "created_at": "2026-02-26T15:35:48.969374Z",
+    "description": "Bindings and wrappers for Apple's Grand Central Dispatch (GCD)",
+    "license": "Zlib OR Apache-2.0 OR MIT",
+    "published_by": "madsmtm",
+    "repository": "https://github.com/madsmtm/objc2",
+    "rust_version": "1.71"
+   },
+   "name": "dispatch2",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by madsmtm on 2026-02-26."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/once.rs|b68e07ded1178df2",
+     "yara|capability_process_spawn|src/queue.rs|7bcbdb54cd2c3122"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/once.rs",
+     "capability_process_spawn:capability_process_spawn src/queue.rs"
+    ]
+   },
+   "version": "0.3.1"
+  }
+ }
+}

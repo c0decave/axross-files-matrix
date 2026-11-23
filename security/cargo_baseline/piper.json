@@ -1,0 +1,53 @@
+{
+ "name": "piper",
+ "versions": {
+  "0.2.5": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/lib.rs|e624013c9e062d4c"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 15,
+    "links": "",
+    "manifest": "08f9e5d135ee3d9bcbdf42dbba49a6d2d6420789de3b187432a173dab8e62695",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "c835479a4443ded371d6c535cbfd8d31ad92c5d23ae9770a61bc155e4992a3c1",
+    "vcs": {
+     "git": {
+      "sha1": "85da45edce0b9262f00d79d9a42ce0372fb42a10"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "c835479a4443ded371d6c535cbfd8d31ad92c5d23ae9770a61bc155e4992a3c1",
+    "crate_size": 23908,
+    "created_at": "2026-02-28T06:00:20.764458Z",
+    "description": "An asynchronous single-consumer single-producer pipe for bytes.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "notgull",
+    "repository": "https://github.com/smol-rs/piper",
+    "rust_version": "1.36"
+   },
+   "name": "piper",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by notgull on 2026-02-28."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/lib.rs|e624013c9e062d4c"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/lib.rs"
+    ]
+   },
+   "version": "0.2.5"
+  }
+ }
+}

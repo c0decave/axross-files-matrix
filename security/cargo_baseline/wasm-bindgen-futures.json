@@ -1,0 +1,52 @@
+{
+ "name": "wasm-bindgen-futures",
+ "versions": {
+  "0.4.80": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 9,
+    "links": "",
+    "manifest": "b7836a7a7bece35f2e15b10638e5dad843429a1c93e7dacc4a3730b47d168ade",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "5e14e0327cb5368ad60ccb22d04a9827a693c95a926d8d125e9fa39e0baec501",
+    "vcs": {
+     "git": {
+      "sha1": "c93b8ae848d4d9e6beaeaf9516e18a7cadd818a2"
+     },
+     "path_in_vcs": "crates/futures"
+    }
+   },
+   "crates_io": {
+    "checksum": "5e14e0327cb5368ad60ccb22d04a9827a693c95a926d8d125e9fa39e0baec501",
+    "crate_size": 11266,
+    "created_at": "2026-10-30T06:15:11.833866Z",
+    "description": "Bridging the gap between Rust Futures and JavaScript Promises",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/futures",
+    "rust_version": "1.81",
+    "trustpub": {
+     "provider": "github",
+     "repository": "wasm-bindgen/wasm-bindgen",
+     "run_id": "41011884567",
+     "sha": "c93b8ae848d4d9e6beaeaf9516e18a7cadd818a2"
+    }
+   },
+   "name": "wasm-bindgen-futures",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by trusted publishing on 2026-10-30."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.4.80"
+  }
+ }
+}

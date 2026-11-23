@@ -1,0 +1,53 @@
+{
+ "name": "accesskit_atspi_common",
+ "versions": {
+  "0.21.1": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/node.rs|8fafcc4f13a061cc"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 19,
+    "links": "",
+    "manifest": "fbb0bb2283ae032db78668492d6440a49bd03f3a5cdc015b6703c00503b1d8db",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "24f5baf62e34a4a6c30e3d697e4782f821a7337049c44c3b40576a27dfbb580d",
+    "vcs": {
+     "git": {
+      "sha1": "f3026222559c7f5f46d8f25cb7404de68eb149f0"
+     },
+     "path_in_vcs": "adapters/atspi-common"
+    }
+   },
+   "crates_io": {
+    "checksum": "24f5baf62e34a4a6c30e3d697e4782f821a7337049c44c3b40576a27dfbb580d",
+    "crate_size": 34199,
+    "created_at": "2026-10-25T21:06:44.095541Z",
+    "description": "AccessKit UI accessibility infrastructure: core AT-SPI translation layer",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "DataTriny",
+    "repository": "https://github.com/AccessKit/accesskit",
+    "rust_version": "1.87"
+   },
+   "name": "accesskit_atspi_common",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by DataTriny on 2026-10-25."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/node.rs|8fafcc4f13a061cc"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/node.rs"
+    ]
+   },
+   "version": "0.21.1"
+  }
+ }
+}

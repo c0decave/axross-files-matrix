@@ -1,0 +1,59 @@
+{
+ "name": "bytes",
+ "versions": {
+  "1.12.1": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/bytes.rs|eee15c0210502283",
+    "yara|capability_process_spawn|src/bytes_mut.rs|48bf55ffb1e30620",
+    "yara|capability_process_spawn|tests/test_bytes.rs|2b102b8c04cd4507"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 40,
+    "links": "",
+    "manifest": "b8942b65f442446573f55982c60c5a5c18ab33c933dad5607c2f76d79ea20218",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04",
+    "vcs": {
+     "git": {
+      "sha1": "76c0fbb54ed4336caf9d2311658a2f4a5627c21d"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04",
+    "crate_size": 75667,
+    "created_at": "2026-07-08T10:01:28.616466Z",
+    "description": "Types and traits for working with bytes",
+    "license": "MIT",
+    "published_by": "Darksonn",
+    "repository": "https://github.com/tokio-rs/bytes",
+    "rust_version": "1.57"
+   },
+   "name": "bytes",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by Darksonn on 2026-07-08."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/bytes.rs|eee15c0210502283",
+     "yara|capability_process_spawn|src/bytes_mut.rs|48bf55ffb1e30620",
+     "yara|capability_process_spawn|tests/test_bytes.rs|2b102b8c04cd4507"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/bytes.rs",
+     "capability_process_spawn:capability_process_spawn src/bytes_mut.rs",
+     "capability_process_spawn:capability_process_spawn tests/test_bytes.rs"
+    ]
+   },
+   "version": "1.12.1"
+  }
+ }
+}

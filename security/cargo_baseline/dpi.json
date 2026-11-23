@@ -1,0 +1,47 @@
+{
+ "name": "dpi",
+ "versions": {
+  "0.1.2": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 10,
+    "links": "",
+    "manifest": "873a4fd6a59f0c499922bc00d011a754d37a7be5cf706861ff9787efc7158be2",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d8b14ccef22fc6f5a8f4d7d768562a182c04ce9a3b3157b91390b52ddfdf1a76",
+    "vcs": {
+     "git": {
+      "sha1": "587ade844dfb0eada3696ba1cb263c66eea80581"
+     },
+     "path_in_vcs": "dpi"
+    }
+   },
+   "crates_io": {
+    "checksum": "d8b14ccef22fc6f5a8f4d7d768562a182c04ce9a3b3157b91390b52ddfdf1a76",
+    "crate_size": 14812,
+    "created_at": "2025-05-02T07:19:18.829952Z",
+    "description": "Types for handling UI scaling",
+    "license": "Apache-2.0 AND MIT",
+    "published_by": "kchibisov",
+    "repository": "https://github.com/rust-windowing/winit",
+    "rust_version": "1.73"
+   },
+   "name": "dpi",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by kchibisov on 2025-05-02."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.1.2"
+  }
+ }
+}

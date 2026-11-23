@@ -1,0 +1,77 @@
+{
+ "name": "once_cell",
+ "versions": {
+  "1.21.4": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|examples/bench.rs|1597a52529f75d6c",
+    "yara|capability_process_spawn|examples/bench_acquire.rs|9f4912ca262194cb",
+    "yara|capability_process_spawn|examples/test_synchronization.rs|88abd5c16275bb2f",
+    "yara|capability_process_spawn|src/imp_std.rs|1c130f83be5c1360",
+    "yara|capability_process_spawn|src/lib.rs|9868277311543bf4",
+    "yara|capability_process_spawn|tests/it/race.rs|5e299887123a852c",
+    "yara|capability_process_spawn|tests/it/race_once_box.rs|0cb5b3852f920024",
+    "yara|capability_process_spawn|tests/it/sync_lazy.rs|a36c5d66340b3d6d",
+    "yara|capability_process_spawn|tests/it/sync_once_cell.rs|e6e539ce06966f65"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 29,
+    "links": "",
+    "manifest": "65f1011af78418a8888f43c1a7954163887211624b8f30c8e747843be5f6e4b6",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50",
+    "vcs": {
+     "git": {
+      "sha1": "80fe900b21f6d76c1a2ed74d3343e8a3a88c46d0"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50",
+    "crate_size": 35010,
+    "created_at": "2026-03-12T10:59:52.512992Z",
+    "description": "Single assignment cells and lazy values.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "matklad",
+    "repository": "https://github.com/matklad/once_cell",
+    "rust_version": "1.65"
+   },
+   "name": "once_cell",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by matklad on 2026-03-12."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|examples/bench.rs|1597a52529f75d6c",
+     "yara|capability_process_spawn|examples/bench_acquire.rs|9f4912ca262194cb",
+     "yara|capability_process_spawn|examples/test_synchronization.rs|88abd5c16275bb2f",
+     "yara|capability_process_spawn|src/imp_std.rs|1c130f83be5c1360",
+     "yara|capability_process_spawn|src/lib.rs|9868277311543bf4",
+     "yara|capability_process_spawn|tests/it/race.rs|5e299887123a852c",
+     "yara|capability_process_spawn|tests/it/race_once_box.rs|0cb5b3852f920024",
+     "yara|capability_process_spawn|tests/it/sync_lazy.rs|a36c5d66340b3d6d",
+     "yara|capability_process_spawn|tests/it/sync_once_cell.rs|e6e539ce06966f65"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn examples/bench.rs",
+     "capability_process_spawn:capability_process_spawn examples/bench_acquire.rs",
+     "capability_process_spawn:capability_process_spawn examples/test_synchronization.rs",
+     "capability_process_spawn:capability_process_spawn src/imp_std.rs",
+     "capability_process_spawn:capability_process_spawn src/lib.rs",
+     "capability_process_spawn:capability_process_spawn tests/it/race.rs",
+     "capability_process_spawn:capability_process_spawn tests/it/race_once_box.rs",
+     "capability_process_spawn:capability_process_spawn tests/it/sync_lazy.rs",
+     "capability_process_spawn:capability_process_spawn tests/it/sync_once_cell.rs"
+    ]
+   },
+   "version": "1.21.4"
+  }
+ }
+}

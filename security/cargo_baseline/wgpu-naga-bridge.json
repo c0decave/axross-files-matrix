@@ -1,0 +1,47 @@
+{
+ "name": "wgpu-naga-bridge",
+ "versions": {
+  "30.0.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 7,
+    "links": "",
+    "manifest": "47c0c89c904e8faf2249968f525ea82853ca99bac743dcc55905a00f4e77cf11",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d2f62e73117bb7a62bfd9c5a5841438a823f6566c6442a808ee269d2d055c081",
+    "vcs": {
+     "git": {
+      "sha1": "40f4a34ebaf56f9a046231f54125ad046239d3f3"
+     },
+     "path_in_vcs": "wgpu-naga-bridge"
+    }
+   },
+   "crates_io": {
+    "checksum": "d2f62e73117bb7a62bfd9c5a5841438a823f6566c6442a808ee269d2d055c081",
+    "crate_size": 9624,
+    "created_at": "2026-08-22T02:53:29.601377Z",
+    "description": "Conversions between naga and wgpu-types. Part of the wgpu project",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "cwfitzgerald",
+    "repository": "https://github.com/gfx-rs/wgpu",
+    "rust_version": "1.87"
+   },
+   "name": "wgpu-naga-bridge",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by cwfitzgerald on 2026-08-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "30.0.1"
+  }
+ }
+}

@@ -1,0 +1,49 @@
+{
+ "name": "glutin-winit",
+ "versions": {
+  "0.5.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "547cf1280e61a7bf6ff14a2466e0bda75cf8f2af11d69c7cff191d65bf430e7f"
+    },
+    "files": 10,
+    "links": "",
+    "manifest": "c459034040ba4947b2f6b0aa3035568343e5d748b8ca1026e92e46086bf128ba",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "85edca7075f8fc728f28cb8fbb111a96c3b89e930574369e3e9c27eb75d3788f",
+    "vcs": {
+     "git": {
+      "sha1": "0811b6c753334f1681c7db8a48e407596cfa9366"
+     },
+     "path_in_vcs": "glutin-winit"
+    }
+   },
+   "crates_io": {
+    "checksum": "85edca7075f8fc728f28cb8fbb111a96c3b89e930574369e3e9c27eb75d3788f",
+    "crate_size": 6076,
+    "created_at": "2024-06-08T10:31:13.194529Z",
+    "description": "Glutin bootstrapping helpers with winit",
+    "license": "MIT",
+    "published_by": "kchibisov",
+    "repository": "https://github.com/rust-windowing/glutin",
+    "rust_version": "1.70.0"
+   },
+   "name": "glutin-winit",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by kchibisov on 2024-06-08."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.5.0"
+  }
+ }
+}

@@ -1,0 +1,53 @@
+{
+ "name": "concurrent-queue",
+ "versions": {
+  "2.5.0": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|tests/loom.rs|63e40d2598f80c97"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 17,
+    "links": "",
+    "manifest": "7ce6ff256772dde14aa2a22f4b5742e4127a6d12f363e800a2c191d292ec2c40",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "4ca0197aee26d1ae37445ee532fefce43251d24cc7c166799f4d46817f1d3973",
+    "vcs": {
+     "git": {
+      "sha1": "e874f701f8413de01948c4903f894e5c845d8950"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "4ca0197aee26d1ae37445ee532fefce43251d24cc7c166799f4d46817f1d3973",
+    "crate_size": 22654,
+    "created_at": "2024-04-26T14:26:18.816602Z",
+    "description": "Concurrent multi-producer multi-consumer queue",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "notgull",
+    "repository": "https://github.com/smol-rs/concurrent-queue",
+    "rust_version": "1.60"
+   },
+   "name": "concurrent-queue",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by notgull on 2024-04-26."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|tests/loom.rs|63e40d2598f80c97"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn tests/loom.rs"
+    ]
+   },
+   "version": "2.5.0"
+  }
+ }
+}

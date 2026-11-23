@@ -1,0 +1,45 @@
+{
+ "name": "gl_generator",
+ "versions": {
+  "0.14.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 17,
+    "links": "",
+    "manifest": "1c62b2811673425f7a1ad60c57318c15af078b689e9391b4f1feacb00fef8414",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "1a95dfc23a2b4a9a2f5ab41d194f8bfda3cabec42af4e39f08c339eb2a0c124d",
+    "vcs": {
+     "git": {
+      "sha1": "ea503e8d5fb6d73c6030e6191ce738cd3bf3433e"
+     }
+    }
+   },
+   "crates_io": {
+    "checksum": "1a95dfc23a2b4a9a2f5ab41d194f8bfda3cabec42af4e39f08c339eb2a0c124d",
+    "crate_size": 22330,
+    "created_at": "2019-10-03T10:44:28.795911Z",
+    "description": "Code generators for creating bindings to the Khronos OpenGL APIs.",
+    "license": "Apache-2.0",
+    "published_by": "brendanzab",
+    "repository": "https://github.com/brendanzab/gl-rs/"
+   },
+   "name": "gl_generator",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by brendanzab on 2019-10-03."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.14.0"
+  }
+ }
+}

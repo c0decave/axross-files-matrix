@@ -1,0 +1,47 @@
+{
+ "name": "emath",
+ "versions": {
+  "0.37.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 22,
+    "links": "",
+    "manifest": "a652cdf6b29fbfea26112cdf8f64c70eb207e5885cbd615fd8e8199b3980bddf",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "e73ce90f54750be8672c02be0743fe47530e6f251e066f0ee2869b59eb297af5",
+    "vcs": {
+     "git": {
+      "sha1": "7c0b40402271e8d40cda69f87cf3c2617c2e4382"
+     },
+     "path_in_vcs": "crates/emath"
+    }
+   },
+   "crates_io": {
+    "checksum": "e73ce90f54750be8672c02be0743fe47530e6f251e066f0ee2869b59eb297af5",
+    "crate_size": 34285,
+    "created_at": "2026-10-15T14:48:48.114881Z",
+    "description": "Minimal 2D math library for GUI work",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rerunio",
+    "repository": "https://github.com/emilk/egui/tree/main/crates/emath",
+    "rust_version": "1.95"
+   },
+   "name": "emath",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rerunio on 2026-10-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.37.0"
+  }
+ }
+}

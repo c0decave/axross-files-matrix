@@ -1,0 +1,52 @@
+{
+ "name": "tiny-skia-path",
+ "versions": {
+  "0.11.4": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/path_geometry.rs|a4efda6dbc421d44"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 18,
+    "links": "",
+    "manifest": "cb28eb42af6431c7a3e368a681d4d1a6456cc4dc43f5810a4982fcf4290ee57c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "9c9e7fc0c2e86a30b117d0462aa261b72b7a99b7ebd7deb3a14ceda95c5bdc93",
+    "vcs": {
+     "git": {
+      "sha1": "ce3fe9bab0659fb928d6c22c03b74e009a8a2b77"
+     },
+     "path_in_vcs": "path"
+    }
+   },
+   "crates_io": {
+    "checksum": "9c9e7fc0c2e86a30b117d0462aa261b72b7a99b7ebd7deb3a14ceda95c5bdc93",
+    "crate_size": 47764,
+    "created_at": "2024-02-04T15:18:01.588399Z",
+    "description": "A tiny-skia Bezier path implementation",
+    "license": "BSD-3-Clause",
+    "published_by": "RazrFalcon",
+    "repository": "https://github.com/RazrFalcon/tiny-skia/tree/master/path"
+   },
+   "name": "tiny-skia-path",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by RazrFalcon on 2024-02-04."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/path_geometry.rs|a4efda6dbc421d44"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/path_geometry.rs"
+    ]
+   },
+   "version": "0.11.4"
+  }
+ }
+}

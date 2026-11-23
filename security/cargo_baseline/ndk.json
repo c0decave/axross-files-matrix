@@ -1,0 +1,53 @@
+{
+ "name": "ndk",
+ "versions": {
+  "0.9.0": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/shared_memory.rs|59bd11f04b18e8e5"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 30,
+    "links": "",
+    "manifest": "e08c853604442d3f6b9e39074f156c1654e15b3f6de8b388ff122d1121398445",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "c3f42e7bbe13d351b6bead8286a43aac9534b82bd3cc43e47037f012ebfd62d4",
+    "vcs": {
+     "git": {
+      "sha1": "49bbbba16c58ff63cb8a0ad0eca5a9fb7ecaec25"
+     },
+     "path_in_vcs": "ndk"
+    }
+   },
+   "crates_io": {
+    "checksum": "c3f42e7bbe13d351b6bead8286a43aac9534b82bd3cc43e47037f012ebfd62d4",
+    "crate_size": 84865,
+    "created_at": "2024-04-26T15:15:21.991128Z",
+    "description": "Safe Rust bindings to the Android NDK",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "MarijnS95",
+    "repository": "https://github.com/rust-mobile/ndk",
+    "rust_version": "1.66"
+   },
+   "name": "ndk",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by MarijnS95 on 2024-04-26."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/shared_memory.rs|59bd11f04b18e8e5"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/shared_memory.rs"
+    ]
+   },
+   "version": "0.9.0"
+  }
+ }
+}

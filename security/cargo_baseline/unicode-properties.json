@@ -1,0 +1,46 @@
+{
+ "name": "unicode-properties",
+ "versions": {
+  "0.1.5": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 15,
+    "links": "",
+    "manifest": "3d58b789f02d872828a7f5df0db7f551900256845ba2245c655ee37b0e2af5a7",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "993ad287eb20e8ba755312801cfe1413e0f25d604075863acaddca10b04c1833",
+    "vcs": {
+     "git": {
+      "sha1": "b5594806088d6492327228a74d05c881b9b3c042"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "993ad287eb20e8ba755312801cfe1413e0f25d604075863acaddca10b04c1833",
+    "crate_size": 40636,
+    "created_at": "2026-10-31T18:12:10.001920Z",
+    "description": "Query character Unicode properties according to\nUAX #44 and UTR #51.\n",
+    "license": "(MIT OR Apache-2.0) AND Unicode-3.0",
+    "published_by": "Manishearth",
+    "repository": "https://github.com/unicode-rs/unicode-properties"
+   },
+   "name": "unicode-properties",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by Manishearth on 2026-10-31."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.1.5"
+  }
+ }
+}

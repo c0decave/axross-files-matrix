@@ -1,0 +1,71 @@
+{
+ "name": "futures-util",
+ "versions": {
+  "0.3.34": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|benches/flatten_unordered.rs|79330465a5d8f2d6",
+    "yara|capability_process_spawn|benches/futures_unordered.rs|5eb8280be8d8fb7b",
+    "yara|capability_process_spawn|src/compat/executor.rs|86711bfe07ffc3a6",
+    "yara|capability_process_spawn|src/future/future/mod.rs|93b6177d1b8f0187",
+    "yara|capability_process_spawn|src/stream/stream/mod.rs|a4cbcb0c7cac1c1f",
+    "yara|capability_process_spawn|src/stream/try_stream/mod.rs|a60aee167a14fd5c",
+    "yara|capability_process_spawn|src/task/spawn.rs|24e1a45d37072ecb"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 193,
+    "links": "",
+    "manifest": "2a849057c21a731f2164a1abd753e9164e6d68826e267d4c19846c18d1cc4a28",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "0d50a92467f8ba5dd6e3ee5d4bd04d73ab2e4e1c44474a0674821dfce14b79bc",
+    "vcs": {
+     "git": {
+      "sha1": "705e6b5c0f06535b1aac1cb1989a172b3d45be8c"
+     },
+     "path_in_vcs": "futures-util"
+    }
+   },
+   "crates_io": {
+    "checksum": "0d50a92467f8ba5dd6e3ee5d4bd04d73ab2e4e1c44474a0674821dfce14b79bc",
+    "crate_size": 169782,
+    "created_at": "2026-08-11T12:13:19.272525Z",
+    "description": "Common utilities and extension traits for the futures-rs library.\n",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "taiki-e",
+    "repository": "https://github.com/rust-lang/futures-rs",
+    "rust_version": "1.71"
+   },
+   "name": "futures-util",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by taiki-e on 2026-08-11."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|benches/flatten_unordered.rs|79330465a5d8f2d6",
+     "yara|capability_process_spawn|benches/futures_unordered.rs|5eb8280be8d8fb7b",
+     "yara|capability_process_spawn|src/compat/executor.rs|86711bfe07ffc3a6",
+     "yara|capability_process_spawn|src/future/future/mod.rs|93b6177d1b8f0187",
+     "yara|capability_process_spawn|src/stream/stream/mod.rs|a4cbcb0c7cac1c1f",
+     "yara|capability_process_spawn|src/stream/try_stream/mod.rs|a60aee167a14fd5c",
+     "yara|capability_process_spawn|src/task/spawn.rs|24e1a45d37072ecb"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn benches/flatten_unordered.rs",
+     "capability_process_spawn:capability_process_spawn benches/futures_unordered.rs",
+     "capability_process_spawn:capability_process_spawn src/compat/executor.rs",
+     "capability_process_spawn:capability_process_spawn src/future/future/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/stream/stream/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/stream/try_stream/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/task/spawn.rs"
+    ]
+   },
+   "version": "0.3.34"
+  }
+ }
+}

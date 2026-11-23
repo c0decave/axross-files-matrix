@@ -1,0 +1,47 @@
+{
+ "name": "nom",
+ "versions": {
+  "8.0.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 53,
+    "links": "",
+    "manifest": "932f896d6b1f0fc99f2df17c303a959b2ab7fda83c99d1c53cc86a49e8e205fd",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "df9761775871bdef83bee530e60050f7e54b1105350d6884eb0fb4f46c2f9405",
+    "vcs": {
+     "git": {
+      "sha1": "2cec1b3e4c9ccac62c902d60c00de6d1549ccbe1"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "df9761775871bdef83bee530e60050f7e54b1105350d6884eb0fb4f46c2f9405",
+    "crate_size": 135590,
+    "created_at": "2025-01-26T16:03:28.068915Z",
+    "description": "A byte-oriented, zero-copy, parser combinators library",
+    "license": "MIT",
+    "published_by": "Geal",
+    "repository": "https://github.com/rust-bakery/nom",
+    "rust_version": "1.65.0"
+   },
+   "name": "nom",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by Geal on 2025-01-26."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "8.0.0"
+  }
+ }
+}

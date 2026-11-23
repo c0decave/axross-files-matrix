@@ -1,0 +1,53 @@
+{
+ "name": "semver",
+ "versions": {
+  "1.0.28": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|tests/node/mod.rs|73d6103aa122bf32"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 25,
+    "links": "",
+    "manifest": "edbc0ba137bc24d3dabd9878f783ba1890b39eaa74bd51c134b08fd8bb3c0918",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "8a7852d02fc848982e0c167ef163aaff9cd91dc640ba85e263cb1ce46fae51cd",
+    "vcs": {
+     "git": {
+      "sha1": "7625c7aa3f0e8ba21e099d1765bcebcb72aa8816"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "8a7852d02fc848982e0c167ef163aaff9cd91dc640ba85e263cb1ce46fae51cd",
+    "crate_size": 33064,
+    "created_at": "2026-04-04T00:25:14.379075Z",
+    "description": "Parser and evaluator for Cargo's flavor of Semantic Versioning",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "dtolnay",
+    "repository": "https://github.com/dtolnay/semver",
+    "rust_version": "1.68"
+   },
+   "name": "semver",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by dtolnay on 2026-04-04."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|tests/node/mod.rs|73d6103aa122bf32"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn tests/node/mod.rs"
+    ]
+   },
+   "version": "1.0.28"
+  }
+ }
+}

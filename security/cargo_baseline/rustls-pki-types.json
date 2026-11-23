@@ -1,0 +1,67 @@
+{
+ "name": "rustls-pki-types",
+ "versions": {
+  "1.15.1": {
+   "accepted_findings": [
+    "rs-include-bytes|src/alg_id.rs|0b2b343502637a8c",
+    "rs-include-bytes|src/alg_id.rs|13705ca851a91de4",
+    "rs-include-bytes|src/alg_id.rs|37b98f8001fb737d",
+    "rs-include-bytes|src/alg_id.rs|380ef34a56349543",
+    "rs-include-bytes|src/alg_id.rs|4a2c81978b1d3b4d",
+    "rs-include-bytes|src/alg_id.rs|55653b51f0c1b288",
+    "rs-include-bytes|src/alg_id.rs|62a05958e9b460c4",
+    "rs-include-bytes|src/alg_id.rs|694a2183bdea7503",
+    "rs-include-bytes|src/alg_id.rs|6c286f726ab6de30",
+    "rs-include-bytes|src/alg_id.rs|6e277a9c300a163a",
+    "rs-include-bytes|src/alg_id.rs|886869cfedb190fd",
+    "rs-include-bytes|src/alg_id.rs|89899efbce901f96",
+    "rs-include-bytes|src/alg_id.rs|9de9a37b9596f81a",
+    "rs-include-bytes|src/alg_id.rs|a207211278cb9520",
+    "rs-include-bytes|src/alg_id.rs|b002fefbb0390064",
+    "rs-include-bytes|src/alg_id.rs|c23b3fca06238e3a",
+    "rs-include-bytes|src/alg_id.rs|ccca2a11ef3175b1",
+    "rs-include-bytes|src/alg_id.rs|f6fcb3efb689bfd0",
+    "rs-include-bytes|src/alg_id.rs|f7e8b2a725094816"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 32,
+    "links": "",
+    "manifest": "5e8a07a4281d08ebd12364c6cb849e640af5bb462d6cb7a609f2b7486d86e03b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "2f4925028c7eb5d1fcdaf196971378ed9d2c1c4efc7dc5d011256f76c99c0a96",
+    "vcs": {
+     "git": {
+      "sha1": "e29ad15465126acc089b39611bcec85e27ce0817"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "2f4925028c7eb5d1fcdaf196971378ed9d2c1c4efc7dc5d011256f76c99c0a96",
+    "crate_size": 39322,
+    "created_at": "2026-07-23T09:56:11.191923Z",
+    "description": "Shared types for the rustls PKI ecosystem",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "djc",
+    "repository": "https://github.com/rustls/pki-types",
+    "rust_version": "1.60"
+   },
+   "name": "rustls-pki-types",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by djc on 2026-07-23."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.15.1"
+  }
+ }
+}

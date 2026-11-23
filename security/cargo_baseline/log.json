@@ -1,0 +1,52 @@
+{
+ "name": "log",
+ "versions": {
+  "0.4.35": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 25,
+    "links": "",
+    "manifest": "09cc0784517822ceef1bfd36a810b1bcf55ec3d07104b11e41c1cbed6e0a884d",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "5d15f86d12da44cd8d4ec3c73984537eb7f4cadcb9776a575a0a8a05ca11005c",
+    "vcs": {
+     "git": {
+      "sha1": "a46450ba763280c29d35b53aa8ad0ff1fc1d78d0"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "5d15f86d12da44cd8d4ec3c73984537eb7f4cadcb9776a575a0a8a05ca11005c",
+    "crate_size": 54093,
+    "created_at": "2026-10-30T21:36:19.748360Z",
+    "description": "A lightweight logging facade for Rust\n",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/rust-lang/log",
+    "rust_version": "1.71.0",
+    "trustpub": {
+     "provider": "github",
+     "repository": "rust-lang/log",
+     "run_id": "41132243978",
+     "sha": "75fcb86da1cce3b9476c58c911482ec43ec235f4"
+    }
+   },
+   "name": "log",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by trusted publishing on 2026-10-30."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.4.35"
+  }
+ }
+}

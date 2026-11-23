@@ -1,0 +1,46 @@
+{
+ "name": "foreign-types-macros",
+ "versions": {
+  "0.2.4": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 9,
+    "links": "",
+    "manifest": "92c0d73bc4b9817e74657bb6f7273e305cf08126100cbaf89db8f30686d121c1",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": true,
+    "sha256": "ea5190182e6915eb873ddbc16e23b711b6eb1f9c00a0d0a3a91b5f6228475225",
+    "vcs": {
+     "git": {
+      "sha1": "2d5077646c441fb089662e9ac439bec45c0d84b5"
+     },
+     "path_in_vcs": "foreign-types-macros"
+    }
+   },
+   "crates_io": {
+    "checksum": "ea5190182e6915eb873ddbc16e23b711b6eb1f9c00a0d0a3a91b5f6228475225",
+    "crate_size": 8161,
+    "created_at": "2026-07-22T20:33:59.720421Z",
+    "description": "An internal crate used by foreign-types",
+    "license": "MIT/Apache-2.0",
+    "published_by": "sfackler",
+    "repository": "https://github.com/sfackler/foreign-types"
+   },
+   "name": "foreign-types-macros",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "proc macro: generates code from its input only (no file, network, process or environment access in src/). No binary; checksum = crates.io's; published by sfackler on 2026-07-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.4"
+  }
+ }
+}

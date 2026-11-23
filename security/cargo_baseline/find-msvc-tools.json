@@ -1,0 +1,61 @@
+{
+ "name": "find-msvc-tools",
+ "versions": {
+  "0.1.15": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/find_tools.rs|62862c642802e521",
+    "yara|capability_process_spawn|src/tool.rs|83e805a835427883"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 19,
+    "links": "",
+    "manifest": "ca817718300d8ca4acdc4d10db4e06bdc094e08a8cfec7b848f8109fcec24f55",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "1c66915cc5391097de7a2b0b972e8505aa33c0df401fd3a6811dbdb32881ba48",
+    "vcs": {
+     "git": {
+      "sha1": "ffbb10da608f715ed69a4561c4cbdca7c6fbbba6"
+     },
+     "path_in_vcs": "find-msvc-tools"
+    }
+   },
+   "crates_io": {
+    "checksum": "1c66915cc5391097de7a2b0b972e8505aa33c0df401fd3a6811dbdb32881ba48",
+    "crate_size": 31634,
+    "created_at": "2026-10-19T07:39:37.580908Z",
+    "description": "Find windows-specific tools, read MSVC versions from the registry and from COM interfaces",
+    "license": "MIT OR Apache-2.0",
+    "repository": "https://github.com/rust-lang/cc-rs",
+    "rust_version": "1.65.0",
+    "trustpub": {
+     "provider": "github",
+     "repository": "rust-lang/cc-rs",
+     "run_id": "39217366179",
+     "sha": "ffbb10da608f715ed69a4561c4cbdca7c6fbbba6"
+    }
+   },
+   "name": "find-msvc-tools",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by trusted publishing on 2026-10-19."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/find_tools.rs|62862c642802e521",
+     "yara|capability_process_spawn|src/tool.rs|83e805a835427883"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/find_tools.rs",
+     "capability_process_spawn:capability_process_spawn src/tool.rs"
+    ]
+   },
+   "version": "0.1.15"
+  }
+ }
+}

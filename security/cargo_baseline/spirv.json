@@ -1,0 +1,51 @@
+{
+ "name": "spirv",
+ "versions": {
+  "0.4.0+sdk-1.4.341.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 8,
+    "links": "",
+    "manifest": "0da1fb4f9d21ea4ed9c85485380498be587bad736aa21e0aa3b947e79bd400f6",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d9571ea910ebd84c86af4b3ed27f9dbdc6ad06f17c5f96146b2b671e2976744f",
+    "vcs": {
+     "git": {
+      "sha1": "8afc3d0ac8e158128cd1410bb2e4b4c26ab11bb4"
+     },
+     "path_in_vcs": "spirv"
+    }
+   },
+   "crates_io": {
+    "checksum": "d9571ea910ebd84c86af4b3ed27f9dbdc6ad06f17c5f96146b2b671e2976744f",
+    "crate_size": 41285,
+    "created_at": "2026-03-13T15:38:20.118579Z",
+    "description": "Rust definition of SPIR-V structs and enums",
+    "license": "Apache-2.0",
+    "repository": "https://github.com/gfx-rs/rspirv",
+    "trustpub": {
+     "provider": "github",
+     "repository": "gfx-rs/rspirv",
+     "run_id": "23058311848",
+     "sha": "8afc3d0ac8e158128cd1410bb2e4b4c26ab11bb4"
+    }
+   },
+   "name": "spirv",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by trusted publishing on 2026-03-13."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.4.0+sdk-1.4.341.0"
+  }
+ }
+}

@@ -1,0 +1,46 @@
+{
+ "name": "is-wsl",
+ "versions": {
+  "0.4.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 10,
+    "links": "",
+    "manifest": "eed7e33de2ebcbdc6f9b20e821e77c3ad85858568c5603a9bbc889d6425d2f62",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "173609498df190136aa7dea1a91db051746d339e18476eed5ca40521f02d7aa5",
+    "vcs": {
+     "git": {
+      "sha1": "ebb07834cdbf27328046a88fbd673c17618024e8"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "173609498df190136aa7dea1a91db051746d339e18476eed5ca40521f02d7aa5",
+    "crate_size": 3264,
+    "created_at": "2023-01-27T19:50:09.059226Z",
+    "description": "Checks if the process is running inside Windows Subsystem for Linux.",
+    "license": "MIT",
+    "published_by": "TheLarkInn",
+    "repository": "https://github.com/TheLarkInn/is-wsl"
+   },
+   "name": "is-wsl",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by TheLarkInn on 2023-01-27."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.4.0"
+  }
+ }
+}

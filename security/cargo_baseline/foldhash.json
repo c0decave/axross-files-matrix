@@ -1,0 +1,89 @@
+{
+ "name": "foldhash",
+ "versions": {
+  "0.1.5": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 12,
+    "links": "",
+    "manifest": "47bd9303ec1c675b850b90f86fb1ef8aaa09a9bb48797c6db330cf253226d633",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2",
+    "vcs": {
+     "git": {
+      "sha1": "42461756c3760f9165c90d9626a49e36980a1e47"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2",
+    "crate_size": 21901,
+    "created_at": "2025-03-15T20:10:19.156505Z",
+    "description": "A fast, non-cryptographic, minimally DoS-resistant hashing algorithm.",
+    "license": "Zlib",
+    "published_by": "orlp",
+    "repository": "https://github.com/orlp/foldhash",
+    "rust_version": "1.60"
+   },
+   "name": "foldhash",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by orlp on 2025-03-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.1.5"
+  },
+  "0.2.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 12,
+    "links": "",
+    "manifest": "cb4f8935c03fef66acedbc0b021bc5a3a69878ae45561b732de76e36ad768043",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb",
+    "vcs": {
+     "git": {
+      "sha1": "8f878c636fda9c9e93384824ea45e06d03f009f5"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb",
+    "crate_size": 23329,
+    "created_at": "2025-08-23T19:14:01.103482Z",
+    "description": "A fast, non-cryptographic, minimally DoS-resistant hashing algorithm.",
+    "license": "Zlib",
+    "published_by": "orlp",
+    "repository": "https://github.com/orlp/foldhash",
+    "rust_version": "1.60"
+   },
+   "name": "foldhash",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by orlp on 2025-08-23."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.0"
+  }
+ }
+}

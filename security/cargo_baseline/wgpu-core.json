@@ -1,0 +1,64 @@
+{
+ "name": "wgpu-core",
+ "versions": {
+  "30.0.1": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/command/render.rs|c8bf51592f841c0d",
+    "yara|capability_process_spawn|src/pipeline_cache.rs|2e15a195b1e7a25f",
+    "yara|capability_process_spawn|src/pool.rs|e11bfdc73a66321d",
+    "yara|capability_process_spawn|src/registry.rs|02980feeb366f26e"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "f3d39c06752630257f6bf5efe76a61e54b32b354704f7c16c76c8e2128fa6b34"
+    },
+    "files": 86,
+    "links": "",
+    "manifest": "d44e5d217948a4e25fb61227116e251f560372d5fe49ffb6cae693b51668b60a",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "14c018fce9b6270aa203c2fdd56f3cce996713534bd757e4ea58c8560b121f14",
+    "vcs": {
+     "git": {
+      "sha1": "40f4a34ebaf56f9a046231f54125ad046239d3f3"
+     },
+     "path_in_vcs": "wgpu-core"
+    }
+   },
+   "crates_io": {
+    "checksum": "14c018fce9b6270aa203c2fdd56f3cce996713534bd757e4ea58c8560b121f14",
+    "crate_size": 386299,
+    "created_at": "2026-08-22T02:53:36.028396Z",
+    "description": "Core implementation logic of wgpu, the cross-platform, safe, pure-rust graphics API",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "cwfitzgerald",
+    "repository": "https://github.com/gfx-rs/wgpu",
+    "rust_version": "1.87"
+   },
+   "name": "wgpu-core",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by cwfitzgerald on 2026-08-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/command/render.rs|c8bf51592f841c0d",
+     "yara|capability_process_spawn|src/pipeline_cache.rs|2e15a195b1e7a25f",
+     "yara|capability_process_spawn|src/pool.rs|e11bfdc73a66321d",
+     "yara|capability_process_spawn|src/registry.rs|02980feeb366f26e"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/command/render.rs",
+     "capability_process_spawn:capability_process_spawn src/pipeline_cache.rs",
+     "capability_process_spawn:capability_process_spawn src/pool.rs",
+     "capability_process_spawn:capability_process_spawn src/registry.rs"
+    ]
+   },
+   "version": "30.0.1"
+  }
+ }
+}

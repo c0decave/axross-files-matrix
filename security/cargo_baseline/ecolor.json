@@ -1,0 +1,47 @@
+{
+ "name": "ecolor",
+ "versions": {
+  "0.37.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "f9cfefca5f83a868f1440ab1a946defcd34fc8e5a9b33605f0a88cbc09ae3518",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "31bcbef0d4263a63eb32c4834e5d711613035ce1333468e107d928923e21e6e2",
+    "vcs": {
+     "git": {
+      "sha1": "7c0b40402271e8d40cda69f87cf3c2617c2e4382"
+     },
+     "path_in_vcs": "crates/ecolor"
+    }
+   },
+   "crates_io": {
+    "checksum": "31bcbef0d4263a63eb32c4834e5d711613035ce1333468e107d928923e21e6e2",
+    "crate_size": 16234,
+    "created_at": "2026-10-15T14:48:52.938614Z",
+    "description": "Color structs and color conversion utilities",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rerunio",
+    "repository": "https://github.com/emilk/egui",
+    "rust_version": "1.95"
+   },
+   "name": "ecolor",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rerunio on 2026-10-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.37.0"
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "name": "egui_system_font_provider",
+ "versions": {
+  "0.37.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 6,
+    "links": "",
+    "manifest": "c44d4336eeeb93bf7aebb2891ed9920cc42e7668336911cbc3753944d0f1c31c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "6f2a2fdfe3c05dd9f691d2b1388b2312d6dce1af502f217c22136d22d9bd76f6",
+    "vcs": {
+     "git": {
+      "sha1": "3c6eb8261c3293ad9c7ea1ed58487e038860ebef"
+     },
+     "path_in_vcs": "crates/egui_system_font_provider"
+    }
+   },
+   "crates_io": {
+    "checksum": "6f2a2fdfe3c05dd9f691d2b1388b2312d6dce1af502f217c22136d22d9bd76f6",
+    "crate_size": 13980,
+    "created_at": "2026-10-15T15:28:35.379344Z",
+    "description": "Load system fonts on demand for characters the egui fonts lack",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rerunio",
+    "repository": "https://github.com/emilk/egui/tree/main/crates/egui_system_font_provider",
+    "rust_version": "1.95"
+   },
+   "name": "egui_system_font_provider",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rerunio on 2026-10-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.37.0"
+  }
+ }
+}

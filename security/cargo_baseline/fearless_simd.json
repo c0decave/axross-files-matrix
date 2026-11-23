@@ -1,0 +1,47 @@
+{
+ "name": "fearless_simd",
+ "versions": {
+  "0.4.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 38,
+    "links": "",
+    "manifest": "aa01e2c7b956ac10cfb40952d1f9d978b6f217bfadb4ea04a2c1163805111bfd",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "b97b65636e5b9ef369943878ac74335ba1c55c1cb6adbf1e2c293c624248d693",
+    "vcs": {
+     "git": {
+      "sha1": "0e8e242aaa8031cdc9708f99334e8998d4725916"
+     },
+     "path_in_vcs": "fearless_simd"
+    }
+   },
+   "crates_io": {
+    "checksum": "b97b65636e5b9ef369943878ac74335ba1c55c1cb6adbf1e2c293c624248d693",
+    "crate_size": 224254,
+    "created_at": "2026-05-16T09:49:57.602219Z",
+    "description": "Safer and easier SIMD",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "LaurenzV",
+    "repository": "https://github.com/linebender/fearless_simd",
+    "rust_version": "1.88"
+   },
+   "name": "fearless_simd",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by LaurenzV on 2026-05-16."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.4.1"
+  }
+ }
+}

@@ -1,0 +1,52 @@
+{
+ "name": "hermit-abi",
+ "versions": {
+  "0.5.3": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/lib.rs|a99267f23f048b18"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 9,
+    "links": "",
+    "manifest": "3da5499fe41044703d12f04e2a0ef44ebac9fc4ba30d46e06131b1386464c012",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "e17592d60ebacc7d5e169f4663c5f84f9161cc90328abcfe8456f41e4dfcb284",
+    "vcs": {
+     "git": {
+      "sha1": "c0b97d12a2f1f65610ba84e6f23fbb69fc70c0f7"
+     },
+     "path_in_vcs": "hermit-abi"
+    }
+   },
+   "crates_io": {
+    "checksum": "e17592d60ebacc7d5e169f4663c5f84f9161cc90328abcfe8456f41e4dfcb284",
+    "crate_size": 17458,
+    "created_at": "2026-08-31T11:45:18.991301Z",
+    "description": "Hermit system calls definitions.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "mkroening",
+    "repository": "https://github.com/hermit-os/hermit-rs"
+   },
+   "name": "hermit-abi",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by mkroening on 2026-08-31."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/lib.rs|a99267f23f048b18"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/lib.rs"
+    ]
+   },
+   "version": "0.5.3"
+  }
+ }
+}

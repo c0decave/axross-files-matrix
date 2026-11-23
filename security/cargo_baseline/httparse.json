@@ -1,0 +1,55 @@
+{
+ "name": "httparse",
+ "versions": {
+  "1.10.1": {
+   "accepted_findings": [
+    "rs-command|build.rs|fc1205e383a345f3",
+    "yara|capability_process_spawn|build.rs|eba8e341d746a6cf"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "eba8e341d746a6cf54249c62afe9eb237e7c21fcf9937223e894549e3a34d489"
+    },
+    "files": 25,
+    "links": "",
+    "manifest": "39ff26c8b87d821212b412cb55bfcc49630dc490c1b2f77e7fb7cc4ac52e4263",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "6dbf3de79e51f3d586ab4cb9d5c3e2c14aa28ed23d180cf89b4df0454a69cc87",
+    "vcs": {
+     "git": {
+      "sha1": "9f29e79f9832dbd0ae5220acb17c1866745bdecd"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "6dbf3de79e51f3d586ab4cb9d5c3e2c14aa28ed23d180cf89b4df0454a69cc87",
+    "crate_size": 45190,
+    "created_at": "2025-03-03T14:44:09.975762Z",
+    "description": "A tiny, safe, speedy, zero-copy HTTP/1.x parser.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "seanmonstar",
+    "repository": "https://github.com/seanmonstar/httparse"
+   },
+   "name": "httparse",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: runs rustc to probe its version; no network. No binary; checksum = crates.io's; published by seanmonstar on 2025-03-03."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|build.rs|eba8e341d746a6cf"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn build.rs"
+    ]
+   },
+   "version": "1.10.1"
+  }
+ }
+}

@@ -1,0 +1,52 @@
+{
+ "name": "glutin_glx_sys",
+ "versions": {
+  "0.6.1": {
+   "accepted_findings": [
+    "rs-fs-write|build.rs|9b15128b0b1aec3b",
+    "rs-fs-write|build.rs|c1ac0631027d0e25"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "54cc95e5610e0da504c08db1d418ae724cec23327559f928c73edb3baa44079a"
+    },
+    "files": 7,
+    "links": "",
+    "manifest": "ef05e370a745e4e0a1c201342cf706f886e241e2d040aebebf81f854c5d12e4e",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "8a7bb2938045a88b612499fbcba375a77198e01306f52272e692f8c1f3751185",
+    "vcs": {
+     "git": {
+      "sha1": "d9b4fd7036386c5f23b0a1015a31a986805d4db3"
+     },
+     "path_in_vcs": "glutin_glx_sys"
+    }
+   },
+   "crates_io": {
+    "checksum": "8a7bb2938045a88b612499fbcba375a77198e01306f52272e692f8c1f3751185",
+    "crate_size": 5946,
+    "created_at": "2025-01-12T09:52:34.221453Z",
+    "description": "The glx bindings for glutin",
+    "license": "Apache-2.0",
+    "published_by": "kchibisov",
+    "repository": "https://github.com/rust-windowing/glutin",
+    "rust_version": "1.70.0"
+   },
+   "name": "glutin_glx_sys",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: writes only into OUT_DIR; no network. No binary; checksum = crates.io's; published by kchibisov on 2025-01-12."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.6.1"
+  }
+ }
+}

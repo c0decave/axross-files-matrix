@@ -1,0 +1,46 @@
+{
+ "name": "winapi-util",
+ "versions": {
+  "0.1.11": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 17,
+    "links": "",
+    "manifest": "2d9d75532b863e856d24618f9540e1ea71f4a1793c28972fc6b0ef6133a7e64a",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22",
+    "vcs": {
+     "git": {
+      "sha1": "803874c57dc1f10ecd42f7c86d9de72f53818432"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22",
+    "crate_size": 13368,
+    "created_at": "2025-09-07T12:24:31.232695Z",
+    "description": "A dumping ground for high level safe wrappers over windows-sys.",
+    "license": "Unlicense OR MIT",
+    "published_by": "BurntSushi",
+    "repository": "https://github.com/BurntSushi/winapi-util"
+   },
+   "name": "winapi-util",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by BurntSushi on 2025-09-07."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.1.11"
+  }
+ }
+}

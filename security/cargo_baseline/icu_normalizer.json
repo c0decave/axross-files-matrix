@@ -1,0 +1,49 @@
+{
+ "name": "icu_normalizer",
+ "versions": {
+  "2.4.0": {
+   "accepted_findings": [
+    "rs-include-bytes|tests/tests.rs|f5709ff379ee50dd"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 38,
+    "links": "",
+    "manifest": "6aae40b248448e5dc466ecab8f935367aea8d823c666cd2ccdc577cb976c3a35",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "404a3b8c486f205c87fe7f23ab6894d84a4ad76d6e4671ae1981ba7def87c599",
+    "vcs": {
+     "git": {
+      "sha1": "031d9e89f6a3fd26a14491e090729d46094328fd"
+     },
+     "path_in_vcs": "components/normalizer"
+    }
+   },
+   "crates_io": {
+    "checksum": "404a3b8c486f205c87fe7f23ab6894d84a4ad76d6e4671ae1981ba7def87c599",
+    "crate_size": 536741,
+    "created_at": "2026-10-22T08:56:44.926074Z",
+    "description": "API for normalizing text into Unicode Normalization Forms",
+    "license": "Unicode-3.0",
+    "published_by": "robertbastian",
+    "repository": "https://github.com/unicode-org/icu4x",
+    "rust_version": "1.88"
+   },
+   "name": "icu_normalizer",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by robertbastian on 2026-10-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "2.4.0"
+  }
+ }
+}

@@ -1,0 +1,48 @@
+{
+ "name": "form_urlencoded",
+ "versions": {
+  "1.2.3": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 7,
+    "links": "",
+    "manifest": "cd1585eb3faf5537c8cfd43c238ddd224f230ed543af291133bf3803ede55ac9",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "afa489199eaffb1211795df1c6236ce1ad0d41a6fa45250add73e3b02420f06e",
+    "vcs": {
+     "git": {
+      "sha1": "ad1c66cbff6e318393d872641e30589ff9687b9c"
+     },
+     "path_in_vcs": "form_urlencoded"
+    }
+   },
+   "crates_io": {
+    "checksum": "afa489199eaffb1211795df1c6236ce1ad0d41a6fa45250add73e3b02420f06e",
+    "crate_size": 9323,
+    "created_at": "2026-11-20T23:02:49.484853Z",
+    "description": "Parser and serializer for the application/x-www-form-urlencoded syntax, as used by HTML forms.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "Manishearth",
+    "repository": "https://github.com/servo/rust-url",
+    "rust_version": "1.51"
+   },
+   "name": "form_urlencoded",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-22",
+    "note": "Both .crate files from static.crates.io diffed against 1.2.2 (checksums = Cargo.lock's; published by Manishearth 2026-11-20 with url 2.5.9, vcs ad1c66cb): Serializer::for_suffix clamps a start position past the target's length instead of panicking; percent-encoding >= 2.3.2 (2.3.2 already locked); version and vcs info. No build.rs, no new dependency, the same three unsafe blocks, no network or process code. Required by url 2.5.9."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.2.3",
+   "young_release": "Released with url 2.5.9, which requires it: the fix for RUSTSEC-2026-0592; the whole diff against the reviewed 1.2.2 read."
+  }
+ }
+}

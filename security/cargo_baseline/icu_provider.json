@@ -1,0 +1,47 @@
+{
+ "name": "icu_provider",
+ "versions": {
+  "2.4.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 25,
+    "links": "",
+    "manifest": "8a381ad4f56fb8dfb697b2dbef0119a11b2cb9ebb96ebf48bd95d26ebac5c8e6",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "413099315636c588ee8f011190b329b971a09a8fae9d157e01dcae8379468514",
+    "vcs": {
+     "git": {
+      "sha1": "031d9e89f6a3fd26a14491e090729d46094328fd"
+     },
+     "path_in_vcs": "provider/core"
+    }
+   },
+   "crates_io": {
+    "checksum": "413099315636c588ee8f011190b329b971a09a8fae9d157e01dcae8379468514",
+    "crate_size": 52461,
+    "created_at": "2026-10-22T08:52:08.277979Z",
+    "description": "Trait and struct definitions for the ICU data provider",
+    "license": "Unicode-3.0",
+    "published_by": "robertbastian",
+    "repository": "https://github.com/unicode-org/icu4x",
+    "rust_version": "1.88"
+   },
+   "name": "icu_provider",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by robertbastian on 2026-10-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "2.4.0"
+  }
+ }
+}

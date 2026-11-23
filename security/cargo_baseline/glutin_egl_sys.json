@@ -1,0 +1,51 @@
+{
+ "name": "glutin_egl_sys",
+ "versions": {
+  "0.7.1": {
+   "accepted_findings": [
+    "rs-fs-write|build.rs|825fc9f8196c8047"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "04a7b908bf38a5fa63603b00f3f4816cb3fc6eeb9f09aba58c930412333e0b90"
+    },
+    "files": 8,
+    "links": "",
+    "manifest": "25e9516ebfc98d40b4a02b8249c5ff23476e56d28b499bc06a06dd27b2f9355b",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "4c4680ba6195f424febdc3ba46e7a42a0e58743f2edb115297b86d7f8ecc02d2",
+    "vcs": {
+     "git": {
+      "sha1": "d9b4fd7036386c5f23b0a1015a31a986805d4db3"
+     },
+     "path_in_vcs": "glutin_egl_sys"
+    }
+   },
+   "crates_io": {
+    "checksum": "4c4680ba6195f424febdc3ba46e7a42a0e58743f2edb115297b86d7f8ecc02d2",
+    "crate_size": 7530,
+    "created_at": "2025-01-12T09:53:13.771937Z",
+    "description": "The egl bindings for glutin",
+    "license": "Apache-2.0",
+    "published_by": "kchibisov",
+    "repository": "https://github.com/rust-windowing/glutin",
+    "rust_version": "1.70.0"
+   },
+   "name": "glutin_egl_sys",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: writes only into OUT_DIR; no network. No binary; checksum = crates.io's; published by kchibisov on 2025-01-12."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.7.1"
+  }
+ }
+}

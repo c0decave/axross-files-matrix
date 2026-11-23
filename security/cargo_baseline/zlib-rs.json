@@ -1,0 +1,47 @@
+{
+ "name": "zlib-rs",
+ "versions": {
+  "0.6.8": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 53,
+    "links": "",
+    "manifest": "006d19ecf25b675015e2a682ddfb27d9cc8a83ef3e016fcda13e61c9249c2900",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "b268e58e7c693d7c271f93ffc4ba3b380412554231c85bf61ca7af91042a4112",
+    "vcs": {
+     "git": {
+      "sha1": "0254e07204884bfc902d6ebb68c8b703d0ea49cf"
+     },
+     "path_in_vcs": "zlib-rs"
+    }
+   },
+   "crates_io": {
+    "checksum": "b268e58e7c693d7c271f93ffc4ba3b380412554231c85bf61ca7af91042a4112",
+    "crate_size": 215857,
+    "created_at": "2026-09-15T13:10:00.283903Z",
+    "description": "A memory-safe zlib implementation written in rust",
+    "license": "Zlib",
+    "published_by": "folkertdev",
+    "repository": "https://github.com/trifectatechfoundation/zlib-rs",
+    "rust_version": "1.75"
+   },
+   "name": "zlib-rs",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by folkertdev on 2026-09-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.6.8"
+  }
+ }
+}

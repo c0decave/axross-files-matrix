@@ -1,0 +1,62 @@
+{
+ "name": "tempfile",
+ "versions": {
+  "3.27.0": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/file/mod.rs|b6752b11a575021e",
+    "yara|capability_process_spawn|src/lib.rs|d182721b62c12691",
+    "yara|capability_process_spawn|tests/tempdir.rs|b52cbe9937525075",
+    "yara|capability_process_spawn|tests/tempfile.rs|f3c3db1e577c3100"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 27,
+    "links": "",
+    "manifest": "a027f61af4331d79bbe1aaa852329b3b684c26553b9073c2337cfe9c419cbce6",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd",
+    "vcs": {
+     "git": {
+      "sha1": "5c8fa12eb584931b4f1bccfde87eb72fbfa7dc61"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd",
+    "crate_size": 44780,
+    "created_at": "2026-03-11T00:20:04.812840Z",
+    "description": "A library for managing temporary files and directories.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "Stebalien",
+    "repository": "https://github.com/Stebalien/tempfile",
+    "rust_version": "1.63"
+   },
+   "name": "tempfile",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by Stebalien on 2026-03-11."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/file/mod.rs|b6752b11a575021e",
+     "yara|capability_process_spawn|src/lib.rs|d182721b62c12691",
+     "yara|capability_process_spawn|tests/tempdir.rs|b52cbe9937525075",
+     "yara|capability_process_spawn|tests/tempfile.rs|f3c3db1e577c3100"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/file/mod.rs",
+     "capability_process_spawn:capability_process_spawn src/lib.rs",
+     "capability_process_spawn:capability_process_spawn tests/tempdir.rs",
+     "capability_process_spawn:capability_process_spawn tests/tempfile.rs"
+    ]
+   },
+   "version": "3.27.0"
+  }
+ }
+}

@@ -1,0 +1,49 @@
+{
+ "name": "glutin",
+ "versions": {
+  "0.32.3": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "1114988bfab63f59e4049bdba1678fbb9bb2fda60d9acc22797f7d2abbfe4cad"
+    },
+    "files": 40,
+    "links": "",
+    "manifest": "c5c6cb539e6c6addbc11a0925cfe0346fe6b416cd6109df82cad3a0bae152bba",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "12124de845cacfebedff80e877bb37b5b75c34c5a4c89e47e1cdd67fb6041325",
+    "vcs": {
+     "git": {
+      "sha1": "20d1c103172aa4025f02cc94ca16a3169bea789c"
+     },
+     "path_in_vcs": "glutin"
+    }
+   },
+   "crates_io": {
+    "checksum": "12124de845cacfebedff80e877bb37b5b75c34c5a4c89e47e1cdd67fb6041325",
+    "crate_size": 73773,
+    "created_at": "2025-04-30T11:33:39.726207Z",
+    "description": "Cross-platform OpenGL context provider.",
+    "license": "Apache-2.0",
+    "published_by": "kchibisov",
+    "repository": "https://github.com/rust-windowing/glutin",
+    "rust_version": "1.71.0"
+   },
+   "name": "glutin",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by kchibisov on 2025-04-30."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.32.3"
+  }
+ }
+}

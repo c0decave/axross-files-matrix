@@ -1,0 +1,47 @@
+{
+ "name": "flate2",
+ "versions": {
+  "1.1.10": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 63,
+    "links": "",
+    "manifest": "10c11a218fb7e383798dfe98cc2038816e4649bd62f253af1697f843c38818b8",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "6e634e2e0ebac1ee034020da1ca582e17ffe4e0f5e985823721e168928136dcb",
+    "vcs": {
+     "git": {
+      "sha1": "ed93d4fc60eaf876c6aded741bf992d524551930"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "6e634e2e0ebac1ee034020da1ca582e17ffe4e0f5e985823721e168928136dcb",
+    "crate_size": 80244,
+    "created_at": "2026-08-28T04:35:22.192325Z",
+    "description": "DEFLATE compression and decompression exposed as Read/BufRead/Write streams.\nSupports miniz_oxide and multiple zlib implementations. Supports zlib, gzip,\nand raw deflate streams.\n",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "Byron",
+    "repository": "https://github.com/rust-lang/flate2-rs",
+    "rust_version": "1.67.0"
+   },
+   "name": "flate2",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by Byron on 2026-08-28."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.1.10"
+  }
+ }
+}

@@ -1,0 +1,56 @@
+{
+ "name": "fixedbitset",
+ "versions": {
+  "0.5.7": {
+   "accepted_findings": [
+    "yara|lolbas_net|.github/workflows/rust.yml|0d1a23217c4e4b0e",
+    "yara|suspicious_network_tools|.github/workflows/rust.yml|0d1a23217c4e4b0e"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 19,
+    "links": "",
+    "manifest": "896a652a65c79135f40270f95f1abbb8c03a14a7a01befaa92580cdb54c0a023",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "1d674e81391d1e1ab681a28d99df07927c6d4aa5b027d7da16ba32d1d21ecd99",
+    "vcs": {
+     "git": {
+      "sha1": "f1db5d17dabc4b8f3ba68c1228a3ee7601c7f33c"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "1d674e81391d1e1ab681a28d99df07927c6d4aa5b027d7da16ba32d1d21ecd99",
+    "crate_size": 26537,
+    "created_at": "2024-04-14T23:53:05.918820Z",
+    "description": "FixedBitSet is a simple bitset collection",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "james7132",
+    "repository": "https://github.com/petgraph/fixedbitset",
+    "rust_version": "1.56"
+   },
+   "name": "fixedbitset",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "YARA: a CI workflow under .github/ with curl/wget (shipped in the crate, never built). No binary; checksum = crates.io's; published by james7132 on 2024-04-14."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|lolbas_net|.github/workflows/rust.yml|0d1a23217c4e4b0e",
+     "yara|suspicious_network_tools|.github/workflows/rust.yml|0d1a23217c4e4b0e"
+    ],
+    "yara": [
+     "axross_backdoor_rules:suspicious_network_tools .github/workflows/rust.yml",
+     "capability_network_lolbas:lolbas_net .github/workflows/rust.yml"
+    ]
+   },
+   "version": "0.5.7"
+  }
+ }
+}

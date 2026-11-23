@@ -1,0 +1,45 @@
+{
+ "name": "static_assertions",
+ "versions": {
+  "1.1.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 17,
+    "links": "",
+    "manifest": "b0339e27b1fa214122d941dbf59719f26036db6bb1c634bed4c13f53b5c71d2d",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f",
+    "vcs": {
+     "git": {
+      "sha1": "18bc65a094d890fe1faa5d3ccb70f12b89eabf56"
+     }
+    }
+   },
+   "crates_io": {
+    "checksum": "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f",
+    "crate_size": 18480,
+    "created_at": "2019-11-03T17:02:11.618786Z",
+    "description": "Compile-time assertions to ensure that invariants are met.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "nvzqz",
+    "repository": "https://github.com/nvzqz/static-assertions-rs"
+   },
+   "name": "static_assertions",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by nvzqz on 2019-11-03."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.1.0"
+  }
+ }
+}

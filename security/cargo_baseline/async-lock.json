@@ -1,0 +1,71 @@
+{
+ "name": "async-lock",
+ "versions": {
+  "3.5.0": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/barrier.rs|4a7d44fa6c7df993",
+    "yara|capability_process_spawn|src/once_cell.rs|39e0ced0e177c850",
+    "yara|capability_process_spawn|tests/barrier.rs|46d479150e207179",
+    "yara|capability_process_spawn|tests/loom.rs|ec53be1b04bc93ba",
+    "yara|capability_process_spawn|tests/mutex.rs|1d6d3ed23065603f",
+    "yara|capability_process_spawn|tests/rwlock.rs|d76339a43defe14a",
+    "yara|capability_process_spawn|tests/semaphore.rs|691ae0f3322dfeaa"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 22,
+    "links": "",
+    "manifest": "e2345f77d80f1d7e695a3314cf61d98720bec052d68be888ace3dfbfcfe8b7bf",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "0876700b0d007ad25d5508865a4259c3af9af6d296bf663a0d586d0bc3369f6f",
+    "vcs": {
+     "git": {
+      "sha1": "1bcc46a9a5bae1ff60013af6e5e67aca3e06d93c"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "0876700b0d007ad25d5508865a4259c3af9af6d296bf663a0d586d0bc3369f6f",
+    "crate_size": 40455,
+    "created_at": "2026-11-02T17:09:41.933032Z",
+    "description": "Async synchronization primitives",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "taiki-e",
+    "repository": "https://github.com/smol-rs/async-lock",
+    "rust_version": "1.85"
+   },
+   "name": "async-lock",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by taiki-e on 2026-11-02."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/barrier.rs|4a7d44fa6c7df993",
+     "yara|capability_process_spawn|src/once_cell.rs|39e0ced0e177c850",
+     "yara|capability_process_spawn|tests/barrier.rs|46d479150e207179",
+     "yara|capability_process_spawn|tests/loom.rs|ec53be1b04bc93ba",
+     "yara|capability_process_spawn|tests/mutex.rs|1d6d3ed23065603f",
+     "yara|capability_process_spawn|tests/rwlock.rs|d76339a43defe14a",
+     "yara|capability_process_spawn|tests/semaphore.rs|691ae0f3322dfeaa"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/barrier.rs",
+     "capability_process_spawn:capability_process_spawn src/once_cell.rs",
+     "capability_process_spawn:capability_process_spawn tests/barrier.rs",
+     "capability_process_spawn:capability_process_spawn tests/loom.rs",
+     "capability_process_spawn:capability_process_spawn tests/mutex.rs",
+     "capability_process_spawn:capability_process_spawn tests/rwlock.rs",
+     "capability_process_spawn:capability_process_spawn tests/semaphore.rs"
+    ]
+   },
+   "version": "3.5.0"
+  }
+ }
+}

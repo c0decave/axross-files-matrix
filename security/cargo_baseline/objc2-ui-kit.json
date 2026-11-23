@@ -1,0 +1,101 @@
+{
+ "name": "objc2-ui-kit",
+ "versions": {
+  "0.2.2": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/generated/UIMenuBuilder.rs|995ce6a493c3240e"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 398,
+    "links": "",
+    "manifest": "87970adac966e8e1ac7816f96e67e9d17f2d4bb8aa6720d20b133761c918d577",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "b8bb46798b20cd6b91cbd113524c490f1686f4c4e8f49502431415f3512e2b6f",
+    "vcs": {
+     "git": {
+      "sha1": "e282618be4c3a3b9542957e0c8540e9588472ce8"
+     },
+     "path_in_vcs": "framework-crates/objc2-ui-kit"
+    }
+   },
+   "crates_io": {
+    "checksum": "b8bb46798b20cd6b91cbd113524c490f1686f4c4e8f49502431415f3512e2b6f",
+    "crate_size": 303111,
+    "created_at": "2024-05-21T20:00:46.262148Z",
+    "description": "Bindings to the UIKit framework",
+    "license": "MIT",
+    "published_by": "madsmtm",
+    "repository": "https://github.com/madsmtm/objc2",
+    "rust_version": "1.60"
+   },
+   "name": "objc2-ui-kit",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by madsmtm on 2024-05-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/generated/UIMenuBuilder.rs|995ce6a493c3240e"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/generated/UIMenuBuilder.rs"
+    ]
+   },
+   "version": "0.2.2"
+  },
+  "0.3.2": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/generated/UIMenuBuilder.rs|ed60dd1ba8387f64"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 459,
+    "links": "",
+    "manifest": "0304c5b0917cb89abe8137a5d5ee369e11e6387e950497438ece84b081fd744c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d87d638e33c06f577498cbcc50491496a3ed4246998a7fbba7ccb98b1e7eab22",
+    "vcs": {
+     "git": {
+      "sha1": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b"
+     },
+     "path_in_vcs": "framework-crates/objc2-ui-kit"
+    }
+   },
+   "crates_io": {
+    "checksum": "d87d638e33c06f577498cbcc50491496a3ed4246998a7fbba7ccb98b1e7eab22",
+    "crate_size": 551453,
+    "created_at": "2025-10-04T16:16:02.465579Z",
+    "description": "Bindings to the UIKit framework",
+    "license": "Zlib OR Apache-2.0 OR MIT",
+    "published_by": "madsmtm",
+    "repository": "https://github.com/madsmtm/objc2",
+    "rust_version": "1.71"
+   },
+   "name": "objc2-ui-kit",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by madsmtm on 2025-10-04."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/generated/UIMenuBuilder.rs|ed60dd1ba8387f64"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/generated/UIMenuBuilder.rs"
+    ]
+   },
+   "version": "0.3.2"
+  }
+ }
+}

@@ -1,0 +1,46 @@
+{
+ "name": "foreign-types-shared",
+ "versions": {
+  "0.3.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 6,
+    "links": "",
+    "manifest": "9bac812d9e87e2635cb518947bfae89992749bb0263542093c94ad2a1189da40",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "aa9a19cbb55df58761df49b23516a86d432839add4af60fc256da840f66ed35b",
+    "vcs": {
+     "git": {
+      "sha1": "bdce800c23ce73b33a337833611e0e5fdf83ce9f"
+     },
+     "path_in_vcs": "foreign-types-shared"
+    }
+   },
+   "crates_io": {
+    "checksum": "aa9a19cbb55df58761df49b23516a86d432839add4af60fc256da840f66ed35b",
+    "crate_size": 6006,
+    "created_at": "2022-03-21T22:06:37.413498Z",
+    "description": "An internal crate used by foreign-types",
+    "license": "MIT/Apache-2.0",
+    "published_by": "sfackler",
+    "repository": "https://github.com/sfackler/foreign-types"
+   },
+   "name": "foreign-types-shared",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by sfackler on 2022-03-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.3.1"
+  }
+ }
+}

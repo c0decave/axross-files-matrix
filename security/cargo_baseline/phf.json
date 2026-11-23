@@ -1,0 +1,47 @@
+{
+ "name": "phf",
+ "versions": {
+  "0.14.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 12,
+    "links": "",
+    "manifest": "d4d1f084b583905dc5564ccec078ef1232430d343d0fec044f31115761caa0c7",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "010378780309880b08997fae13be7834dba947d36393bd372f2b1556deb2a2f6",
+    "vcs": {
+     "git": {
+      "sha1": "1620d169aad09b02ef02a97b272470152e100bd6"
+     },
+     "path_in_vcs": "phf"
+    }
+   },
+   "crates_io": {
+    "checksum": "010378780309880b08997fae13be7834dba947d36393bd372f2b1556deb2a2f6",
+    "crate_size": 27393,
+    "created_at": "2026-06-21T00:37:50.027327Z",
+    "description": "Runtime support for perfect hash function data structures",
+    "license": "MIT",
+    "published_by": "JohnTitor",
+    "repository": "https://github.com/rust-phf/rust-phf",
+    "rust_version": "1.85"
+   },
+   "name": "phf",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by JohnTitor on 2026-06-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.14.0"
+  }
+ }
+}

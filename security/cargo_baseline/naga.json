@@ -1,0 +1,109 @@
+{
+ "name": "naga",
+ "versions": {
+  "30.0.1": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/back/glsl/writer.rs|4ef871b6739a52f1",
+    "yara|capability_network_outbound|src/back/hlsl/conv.rs|002b3222bcebc6a4",
+    "yara|capability_network_outbound|src/back/hlsl/writer.rs|01bab63d8a91a6c9",
+    "yara|capability_network_outbound|src/back/msl/writer.rs|e7c9c2aafb3f0175",
+    "yara|capability_network_outbound|src/back/spv/writer.rs|c2a57b7902c1e97e",
+    "yara|capability_network_outbound|src/front/glsl/variables.rs|cbef8fc6ba6619c6",
+    "yara|capability_network_outbound|src/front/mod.rs|3f42bb2e98b574c2",
+    "yara|capability_network_outbound|src/front/spv/function.rs|3c98c637fa3613a0",
+    "yara|capability_network_outbound|src/front/spv/image.rs|c39ffdb19a19861c",
+    "yara|capability_network_outbound|src/front/spv/mod.rs|413257e82c3f89a0",
+    "yara|capability_network_outbound|src/front/spv/next_block.rs|a11c3559669bbd72",
+    "yara|capability_network_outbound|src/front/wgsl/parse/mod.rs|d3832da6ab648cf5",
+    "yara|capability_network_outbound|src/proc/index.rs|a356017af3513287",
+    "yara|capability_network_outbound|src/proc/mod.rs|a847710aa8727ba9",
+    "yara|capability_network_outbound|src/proc/type_methods.rs|e967f9933c6fea66",
+    "yara|capability_network_outbound|src/proc/typifier.rs|4f075ed5d342debc",
+    "yara|capability_network_outbound|src/valid/analyzer.rs|6debdb45287048b7",
+    "yara|capability_network_outbound|src/valid/expression.rs|cd8159f9e171c46d",
+    "yara|capability_network_outbound|src/valid/type.rs|a85b02b49fe3f38a"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "b1aa8cfbdb081700515ff506517bba2720705db90c7c8e767100a95df998e705"
+    },
+    "files": 163,
+    "links": "",
+    "manifest": "8530871066c51c0a379caf71c743d950dcd2254a799421235ea511062f731115",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "a616d2fb8c89516ac2723a581f69d6c18576046bed761bd6b305e5618e6ae130",
+    "vcs": {
+     "git": {
+      "sha1": "40f4a34ebaf56f9a046231f54125ad046239d3f3"
+     },
+     "path_in_vcs": "naga"
+    }
+   },
+   "crates_io": {
+    "checksum": "a616d2fb8c89516ac2723a581f69d6c18576046bed761bd6b305e5618e6ae130",
+    "crate_size": 871520,
+    "created_at": "2026-08-22T02:53:26.446935Z",
+    "description": "Shader translator and validator. Part of the wgpu project",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "cwfitzgerald",
+    "repository": "https://github.com/gfx-rs/wgpu",
+    "rust_version": "1.87"
+   },
+   "name": "naga",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by cwfitzgerald on 2026-08-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/back/glsl/writer.rs|4ef871b6739a52f1",
+     "yara|capability_network_outbound|src/back/hlsl/conv.rs|002b3222bcebc6a4",
+     "yara|capability_network_outbound|src/back/hlsl/writer.rs|01bab63d8a91a6c9",
+     "yara|capability_network_outbound|src/back/msl/writer.rs|e7c9c2aafb3f0175",
+     "yara|capability_network_outbound|src/back/spv/writer.rs|c2a57b7902c1e97e",
+     "yara|capability_network_outbound|src/front/glsl/variables.rs|cbef8fc6ba6619c6",
+     "yara|capability_network_outbound|src/front/mod.rs|3f42bb2e98b574c2",
+     "yara|capability_network_outbound|src/front/spv/function.rs|3c98c637fa3613a0",
+     "yara|capability_network_outbound|src/front/spv/image.rs|c39ffdb19a19861c",
+     "yara|capability_network_outbound|src/front/spv/mod.rs|413257e82c3f89a0",
+     "yara|capability_network_outbound|src/front/spv/next_block.rs|a11c3559669bbd72",
+     "yara|capability_network_outbound|src/front/wgsl/parse/mod.rs|d3832da6ab648cf5",
+     "yara|capability_network_outbound|src/proc/index.rs|a356017af3513287",
+     "yara|capability_network_outbound|src/proc/mod.rs|a847710aa8727ba9",
+     "yara|capability_network_outbound|src/proc/type_methods.rs|e967f9933c6fea66",
+     "yara|capability_network_outbound|src/proc/typifier.rs|4f075ed5d342debc",
+     "yara|capability_network_outbound|src/valid/analyzer.rs|6debdb45287048b7",
+     "yara|capability_network_outbound|src/valid/expression.rs|cd8159f9e171c46d",
+     "yara|capability_network_outbound|src/valid/type.rs|a85b02b49fe3f38a"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/back/glsl/writer.rs",
+     "capability_network_outbound:capability_network_outbound src/back/hlsl/conv.rs",
+     "capability_network_outbound:capability_network_outbound src/back/hlsl/writer.rs",
+     "capability_network_outbound:capability_network_outbound src/back/msl/writer.rs",
+     "capability_network_outbound:capability_network_outbound src/back/spv/writer.rs",
+     "capability_network_outbound:capability_network_outbound src/front/glsl/variables.rs",
+     "capability_network_outbound:capability_network_outbound src/front/mod.rs",
+     "capability_network_outbound:capability_network_outbound src/front/spv/function.rs",
+     "capability_network_outbound:capability_network_outbound src/front/spv/image.rs",
+     "capability_network_outbound:capability_network_outbound src/front/spv/mod.rs",
+     "capability_network_outbound:capability_network_outbound src/front/spv/next_block.rs",
+     "capability_network_outbound:capability_network_outbound src/front/wgsl/parse/mod.rs",
+     "capability_network_outbound:capability_network_outbound src/proc/index.rs",
+     "capability_network_outbound:capability_network_outbound src/proc/mod.rs",
+     "capability_network_outbound:capability_network_outbound src/proc/type_methods.rs",
+     "capability_network_outbound:capability_network_outbound src/proc/typifier.rs",
+     "capability_network_outbound:capability_network_outbound src/valid/analyzer.rs",
+     "capability_network_outbound:capability_network_outbound src/valid/expression.rs",
+     "capability_network_outbound:capability_network_outbound src/valid/type.rs"
+    ]
+   },
+   "version": "30.0.1"
+  }
+ }
+}

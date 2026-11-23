@@ -1,0 +1,47 @@
+{
+ "name": "web-time",
+ "versions": {
+  "1.1.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 15,
+    "links": "",
+    "manifest": "eff8969a8137bcfa686cac77b683c6795fbb52e87cfe85771dac88d783e40ffd",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "5a6580f308b1fad9207618087a65c04e7a10bc77e02c8e84e9b00dd4b12fa0bb",
+    "vcs": {
+     "git": {
+      "sha1": "2d200ded30bbcab66f6a4bfa277ac546685728db"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "5a6580f308b1fad9207618087a65c04e7a10bc77e02c8e84e9b00dd4b12fa0bb",
+    "crate_size": 18026,
+    "created_at": "2024-03-01T10:51:46.373917Z",
+    "description": "Drop-in replacement for std::time for Wasm in browsers",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "daxpedda",
+    "repository": "https://github.com/daxpedda/web-time",
+    "rust_version": "1.60"
+   },
+   "name": "web-time",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by daxpedda on 2024-03-01."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.1.0"
+  }
+ }
+}

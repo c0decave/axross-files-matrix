@@ -1,0 +1,58 @@
+{
+ "name": "wgpu-hal",
+ "versions": {
+  "30.0.1": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/gles/egl.rs|25ef4629921f6b87",
+    "yara|capability_process_spawn|src/gles/wgl.rs|2a02d9370c69a121"
+   ],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "001414f5b7dcdbebb18939ef47ab03a36aaf98d92deb4b40af61ab8c9e440bf6"
+    },
+    "files": 86,
+    "links": "",
+    "manifest": "5cfa5cf64d5c16cc42a19a278173aef37883c3d34a67260400e6c828f5bef0d4",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "b6b7fb58561a792bc237628ba0792e332de418fefe145f13b5ed8201e6d52f58",
+    "vcs": {
+     "git": {
+      "sha1": "40f4a34ebaf56f9a046231f54125ad046239d3f3"
+     },
+     "path_in_vcs": "wgpu-hal"
+    }
+   },
+   "crates_io": {
+    "checksum": "b6b7fb58561a792bc237628ba0792e332de418fefe145f13b5ed8201e6d52f58",
+    "crate_size": 466434,
+    "created_at": "2026-08-22T02:53:30.722944Z",
+    "description": "Hardware abstraction layer for wgpu, the cross-platform, safe, pure-rust graphics API",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "cwfitzgerald",
+    "repository": "https://github.com/gfx-rs/wgpu",
+    "rust_version": "1.87"
+   },
+   "name": "wgpu-hal",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by cwfitzgerald on 2026-08-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/gles/egl.rs|25ef4629921f6b87",
+     "yara|capability_process_spawn|src/gles/wgl.rs|2a02d9370c69a121"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/gles/egl.rs",
+     "capability_process_spawn:capability_process_spawn src/gles/wgl.rs"
+    ]
+   },
+   "version": "30.0.1"
+  }
+ }
+}

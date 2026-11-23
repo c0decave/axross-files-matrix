@@ -1,0 +1,59 @@
+{
+ "name": "objc2-core-foundation",
+ "versions": {
+  "0.3.2": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/generated/CFLocale.rs|d72a7963c0719e82",
+    "yara|capability_process_spawn|src/generated/CFTimeZone.rs|62afa951f50bdf40",
+    "yara|capability_process_spawn|src/timezone.rs|f6772895e338189a"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 76,
+    "links": "",
+    "manifest": "9d191be8a461c20e0378236335fbf722de2dd5666d1efe4235db7907065ea973",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "2a180dd8642fa45cdb7dd721cd4c11b1cadd4929ce112ebd8b9f5803cc79d536",
+    "vcs": {
+     "git": {
+      "sha1": "7b1abfd750a2cacaea71d6a56ecfb83cb7de560b"
+     },
+     "path_in_vcs": "framework-crates/objc2-core-foundation"
+    }
+   },
+   "crates_io": {
+    "checksum": "2a180dd8642fa45cdb7dd721cd4c11b1cadd4929ce112ebd8b9f5803cc79d536",
+    "crate_size": 180804,
+    "created_at": "2025-10-04T15:46:51.264986Z",
+    "description": "Bindings to the CoreFoundation framework",
+    "license": "Zlib OR Apache-2.0 OR MIT",
+    "published_by": "madsmtm",
+    "repository": "https://github.com/madsmtm/objc2",
+    "rust_version": "1.71"
+   },
+   "name": "objc2-core-foundation",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by madsmtm on 2025-10-04."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/generated/CFLocale.rs|d72a7963c0719e82",
+     "yara|capability_process_spawn|src/generated/CFTimeZone.rs|62afa951f50bdf40",
+     "yara|capability_process_spawn|src/timezone.rs|f6772895e338189a"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/generated/CFLocale.rs",
+     "capability_process_spawn:capability_process_spawn src/generated/CFTimeZone.rs",
+     "capability_process_spawn:capability_process_spawn src/timezone.rs"
+    ]
+   },
+   "version": "0.3.2"
+  }
+ }
+}

@@ -1,0 +1,59 @@
+{
+ "name": "quick-xml",
+ "versions": {
+  "0.41.0": {
+   "accepted_findings": [
+    "yara|capability_network_outbound|src/de/mod.rs|9981b75769e2d3e7",
+    "yara|capability_network_outbound|src/de/resolver.rs|fdd461ce59efad5b",
+    "yara|capability_network_outbound|src/name.rs|f2ac828a48ca16d6"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 43,
+    "links": "",
+    "manifest": "9fb5425ad49f1247e66a10b0f981a782cf5df703ecfe269f50c73e69ae8f98a1",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "e660451e55124f798a69a5af3f49ccfbefbd41910eefd25caf2393e1f3473ec1",
+    "vcs": {
+     "git": {
+      "sha1": "4deda08abeffdc188c269360229cf47e12a77a9f"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "e660451e55124f798a69a5af3f49ccfbefbd41910eefd25caf2393e1f3473ec1",
+    "crate_size": 231661,
+    "created_at": "2026-06-29T18:04:43.720155Z",
+    "description": "High performance xml reader and writer",
+    "license": "MIT",
+    "published_by": "Mingun",
+    "repository": "https://github.com/tafia/quick-xml",
+    "rust_version": "1.79"
+   },
+   "name": "quick-xml",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by Mingun on 2026-06-29."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/de/mod.rs|9981b75769e2d3e7",
+     "yara|capability_network_outbound|src/de/resolver.rs|fdd461ce59efad5b",
+     "yara|capability_network_outbound|src/name.rs|f2ac828a48ca16d6"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/de/mod.rs",
+     "capability_network_outbound:capability_network_outbound src/de/resolver.rs",
+     "capability_network_outbound:capability_network_outbound src/name.rs"
+    ]
+   },
+   "version": "0.41.0"
+  }
+ }
+}

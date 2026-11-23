@@ -1,0 +1,46 @@
+{
+ "name": "core-foundation-sys",
+ "versions": {
+  "0.8.7": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 45,
+    "links": "",
+    "manifest": "035a90ada9af6af9e2553a17d848225b8994edb49ec585c1dcca57e522f2158c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b",
+    "vcs": {
+     "git": {
+      "sha1": "652bab0a62d87df8a974ffad2ad9f7be218a8b56"
+     },
+     "path_in_vcs": "core-foundation-sys"
+    }
+   },
+   "crates_io": {
+    "checksum": "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b",
+    "crate_size": 37712,
+    "created_at": "2024-08-11T00:48:27.870880Z",
+    "description": "Bindings to Core Foundation for macOS",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "wusyong",
+    "repository": "https://github.com/servo/core-foundation-rs"
+   },
+   "name": "core-foundation-sys",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by wusyong on 2024-08-11."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.8.7"
+  }
+ }
+}

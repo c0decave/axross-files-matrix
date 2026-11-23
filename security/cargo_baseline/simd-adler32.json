@@ -1,0 +1,55 @@
+{
+ "name": "simd-adler32",
+ "versions": {
+  "0.3.10": {
+   "accepted_findings": [
+    "yara|lolbas_net|.github/workflows/fuzz.yaml|9e23a99373a2dd29",
+    "yara|suspicious_network_tools|.github/workflows/fuzz.yaml|9e23a99373a2dd29"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 22,
+    "links": "",
+    "manifest": "493d7e841952fc11f65dd6b95279f5c78b468f5ff72c764bc28e5ee5d6270d5e",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "3a219298ac11a56ea9a6d2120044824d6f01aeb034955e7af7bc16858527deea",
+    "vcs": {
+     "git": {
+      "sha1": "d93164f98d7fe2daf883f2e1bec82778dd26199a"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "3a219298ac11a56ea9a6d2120044824d6f01aeb034955e7af7bc16858527deea",
+    "crate_size": 18760,
+    "created_at": "2026-07-14T17:42:45.047242Z",
+    "description": "A SIMD-accelerated Adler-32 hash algorithm implementation.",
+    "license": "MIT",
+    "published_by": "mcountryman",
+    "repository": "https://github.com/mcountryman/simd-adler32"
+   },
+   "name": "simd-adler32",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "YARA: a CI workflow under .github/ with curl/wget (shipped in the crate, never built). No binary; checksum = crates.io's; published by mcountryman on 2026-07-14."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|lolbas_net|.github/workflows/fuzz.yaml|9e23a99373a2dd29",
+     "yara|suspicious_network_tools|.github/workflows/fuzz.yaml|9e23a99373a2dd29"
+    ],
+    "yara": [
+     "axross_backdoor_rules:suspicious_network_tools .github/workflows/fuzz.yaml",
+     "capability_network_lolbas:lolbas_net .github/workflows/fuzz.yaml"
+    ]
+   },
+   "version": "0.3.10"
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "name": "wayland-protocols-experimental",
+ "versions": {
+  "20250721.0.1": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 16,
+    "links": "",
+    "manifest": "7aded290a2ecaffac64351e656d966f1bdacc0419fe76e1e7d1253ae7e14c55e",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "40a1f863128dcaaec790d7b4b396cc9b9a7a079e878e18c47e6c2d2c5a8dcbb1",
+    "vcs": {
+     "git": {
+      "sha1": "3a45d67679d763cb813062530d50d0538f4312ae"
+     },
+     "path_in_vcs": "wayland-protocols-experimental"
+    }
+   },
+   "crates_io": {
+    "checksum": "40a1f863128dcaaec790d7b4b396cc9b9a7a079e878e18c47e6c2d2c5a8dcbb1",
+    "crate_size": 30502,
+    "created_at": "2025-07-29T14:45:13.294296Z",
+    "description": "Generated API for experimental wayland protocol extensions",
+    "license": "MIT",
+    "published_by": "ids1024",
+    "repository": "https://github.com/smithay/wayland-rs",
+    "rust_version": "1.65"
+   },
+   "name": "wayland-protocols-experimental",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by ids1024 on 2025-07-29."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "20250721.0.1"
+  }
+ }
+}

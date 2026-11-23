@@ -1,0 +1,65 @@
+{
+ "name": "tracing",
+ "versions": {
+  "0.1.44": {
+   "accepted_findings": [
+    "yara|capability_process_spawn|src/instrument.rs|9266d792bd9b6678",
+    "yara|capability_process_spawn|src/span.rs|b87686c0ff6b5519",
+    "yara|capability_process_spawn|tests/missed_register_callsite.rs|3211f0f030c9baf6",
+    "yara|capability_process_spawn|tests/register_callsite_deadlock.rs|c0b3142543e7a100",
+    "yara|capability_process_spawn|tests/span.rs|9a0acd71aadd697f"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 93,
+    "links": "",
+    "manifest": "7d90be88a29f65999127e9addad4c05db6ac6124f1efe0b3aef5c3816a316933",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "63e71662fa4b2a2c3a26f570f037eb95bb1f85397f3cd8076caed2f026a6d100",
+    "vcs": {
+     "git": {
+      "sha1": "2d55f6faf9be83e7e4634129fb96813241aac2b8"
+     },
+     "path_in_vcs": "tracing"
+    }
+   },
+   "crates_io": {
+    "checksum": "63e71662fa4b2a2c3a26f570f037eb95bb1f85397f3cd8076caed2f026a6d100",
+    "crate_size": 463135,
+    "created_at": "2025-12-18T14:26:12.360139Z",
+    "description": "Application-level tracing for Rust.\n",
+    "license": "MIT",
+    "published_by": "hds",
+    "repository": "https://github.com/tokio-rs/tracing",
+    "rust_version": "1.65.0"
+   },
+   "name": "tracing",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by hds on 2025-12-18."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_process_spawn|src/instrument.rs|9266d792bd9b6678",
+     "yara|capability_process_spawn|src/span.rs|b87686c0ff6b5519",
+     "yara|capability_process_spawn|tests/missed_register_callsite.rs|3211f0f030c9baf6",
+     "yara|capability_process_spawn|tests/register_callsite_deadlock.rs|c0b3142543e7a100",
+     "yara|capability_process_spawn|tests/span.rs|9a0acd71aadd697f"
+    ],
+    "yara": [
+     "capability_process_spawn:capability_process_spawn src/instrument.rs",
+     "capability_process_spawn:capability_process_spawn src/span.rs",
+     "capability_process_spawn:capability_process_spawn tests/missed_register_callsite.rs",
+     "capability_process_spawn:capability_process_spawn tests/register_callsite_deadlock.rs",
+     "capability_process_spawn:capability_process_spawn tests/span.rs"
+    ]
+   },
+   "version": "0.1.44"
+  }
+ }
+}

@@ -1,0 +1,45 @@
+{
+ "name": "hex",
+ "versions": {
+  "0.4.3": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 16,
+    "links": "",
+    "manifest": "47bc223e1c0ee112051164e379468d168c02f4823bbacaefd30949cb531383b6",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70",
+    "vcs": {
+     "git": {
+      "sha1": "b2b4370b5bf021b98ee7adc92233e8de3f2de792"
+     }
+    }
+   },
+   "crates_io": {
+    "checksum": "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70",
+    "crate_size": 13299,
+    "created_at": "2021-03-03T10:48:58.682837Z",
+    "description": "Encoding and decoding data into/from hexadecimal representation.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "KokaKiwi",
+    "repository": "https://github.com/KokaKiwi/rust-hex"
+   },
+   "name": "hex",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by KokaKiwi on 2021-03-03."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.4.3"
+  }
+ }
+}

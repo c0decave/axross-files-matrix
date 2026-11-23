@@ -1,0 +1,47 @@
+{
+ "name": "zerovec",
+ "versions": {
+  "0.11.9": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 67,
+    "links": "",
+    "manifest": "811a462ac4da96fc8605fbc909b4a7874d43faacf0ef044ab5a6da9c9da53b9d",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "f58a2799cfe9a1670c7ea8edbd52ef8edb93cb37a7f83bf31ba9e35d9dae6a40",
+    "vcs": {
+     "git": {
+      "sha1": "031d9e89f6a3fd26a14491e090729d46094328fd"
+     },
+     "path_in_vcs": "utils/zerovec"
+    }
+   },
+   "crates_io": {
+    "checksum": "f58a2799cfe9a1670c7ea8edbd52ef8edb93cb37a7f83bf31ba9e35d9dae6a40",
+    "crate_size": 132005,
+    "created_at": "2026-10-22T08:51:43.982490Z",
+    "description": "Zero-copy vector backed by a byte array",
+    "license": "Unicode-3.0",
+    "published_by": "robertbastian",
+    "repository": "https://github.com/unicode-org/icu4x",
+    "rust_version": "1.83"
+   },
+   "name": "zerovec",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by robertbastian on 2026-10-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.11.9"
+  }
+ }
+}

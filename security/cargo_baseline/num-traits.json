@@ -1,0 +1,49 @@
+{
+ "name": "num-traits",
+ "versions": {
+  "0.2.19": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "d3969209fc1c9d201c66ed11820d0b328600d75b3971f8ceebeab04900bc0587"
+    },
+    "files": 29,
+    "links": "",
+    "manifest": "77b29a3d957268bd996575f76bf94ed0276896067e3d5ae21ecfbb78b7299594",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841",
+    "vcs": {
+     "git": {
+      "sha1": "7ec3d41d39b28190ec1d42db38021107b3951f3a"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841",
+    "crate_size": 51631,
+    "created_at": "2024-05-03T21:27:39.856244Z",
+    "description": "Numeric traits for generic mathematics",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "cuviper",
+    "repository": "https://github.com/rust-num/num-traits",
+    "rust_version": "1.60"
+   },
+   "name": "num-traits",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by cuviper on 2024-05-03."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.2.19"
+  }
+ }
+}

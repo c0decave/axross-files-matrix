@@ -1,0 +1,49 @@
+{
+ "name": "wayland-sys",
+ "versions": {
+  "0.31.11": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "11473cb618b53e1fc980c9caf9d3ed8a969a3c33b6243a8e79b5da6fab03ce28"
+    },
+    "files": 14,
+    "links": "",
+    "manifest": "48ff37b8d547b2fd8e275348fe71dd847b8f3492612baf25c77d3a7453cf135f",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "d8eab23fefc9e41f8e841df4a9c707e8a8c4ed26e944ef69297184de2785e3be",
+    "vcs": {
+     "git": {
+      "sha1": "a3d7927d87799b2955bf491b51c7c2a3a82da661"
+     },
+     "path_in_vcs": "wayland-sys"
+    }
+   },
+   "crates_io": {
+    "checksum": "d8eab23fefc9e41f8e841df4a9c707e8a8c4ed26e944ef69297184de2785e3be",
+    "crate_size": 9727,
+    "created_at": "2026-03-31T02:20:48.724050Z",
+    "description": "FFI bindings to the various libwayland-*.so libraries. You should only need this crate if you are working on custom wayland protocol extensions. Look at the crate wayland-client for usable bindings.",
+    "license": "MIT",
+    "published_by": "ids1024",
+    "repository": "https://github.com/smithay/wayland-rs",
+    "rust_version": "1.71"
+   },
+   "name": "wayland-sys",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: uses pkg-config; no network. No binary; checksum = crates.io's; published by ids1024 on 2026-03-31."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "0.31.11"
+  }
+ }
+}

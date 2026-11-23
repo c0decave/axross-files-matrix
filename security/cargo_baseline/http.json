@@ -1,0 +1,60 @@
+{
+ "name": "http",
+ "versions": {
+  "1.5.0": {
+   "accepted_findings": [
+    "raw-ip-url|src/uri/tests.rs|53800595d91d2b45",
+    "raw-ip-url|src/uri/tests.rs|633c5fc23c39aacc",
+    "raw-ip-url|src/uri/tests.rs|750172cab270d000",
+    "raw-ip-url|src/uri/tests.rs|98801b5b5bc42e16",
+    "raw-ip-url|src/uri/tests.rs|d4f7213a385f3a76",
+    "raw-ip-url|src/uri/tests.rs|f3b6b5143bc3f020",
+    "yara|capability_network_outbound|src/header/map.rs|fff2c8490382c7e7"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 35,
+    "links": "",
+    "manifest": "9e72b930888b23aeb810c6ccadc04cc98a2196efcf685b0d7eb346ff4c4a19b4",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "918d3568bebf352712bc2ef3d46a8bcf1a75b373be6539de198e9105cbbf9ce0",
+    "vcs": {
+     "git": {
+      "dirty": true,
+      "sha1": "e559023f67e3fad6ecc3ee91307be178e0f13626"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "918d3568bebf352712bc2ef3d46a8bcf1a75b373be6539de198e9105cbbf9ce0",
+    "crate_size": 111161,
+    "created_at": "2026-07-29T14:57:21.755258Z",
+    "description": "A set of types for representing HTTP requests and responses.\n",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "seanmonstar",
+    "repository": "https://github.com/hyperium/http",
+    "rust_version": "1.57.0"
+   },
+   "name": "http",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "127.0.0.1 URLs in URI tests. Nothing else flagged. No binary; checksum = crates.io's; published by seanmonstar on 2026-07-29; other medium findings read: ['raw-ip-url']."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/header/map.rs|fff2c8490382c7e7"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/header/map.rs"
+    ]
+   },
+   "version": "1.5.0"
+  }
+ }
+}

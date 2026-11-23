@@ -1,0 +1,49 @@
+{
+ "name": "icu_normalizer_data",
+ "versions": {
+  "2.4.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {
+     "build.rs": "c2d446772e3d766a804963dbf36e51729f910920f91f4b68c0c199fe6ca0853e"
+    },
+    "files": 16,
+    "links": "",
+    "manifest": "5d0d838eac7bca74a1b0e2fb512ef795006bf3d594302e8233c24d021c2bac2c",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "20f0088bfb7441f7a37fa0c9e20cb1e9cba1cac6b9ce8cd2a6dc44294f8e8cbc",
+    "vcs": {
+     "git": {
+      "sha1": "031d9e89f6a3fd26a14491e090729d46094328fd"
+     },
+     "path_in_vcs": "provider/data/normalizer"
+    }
+   },
+   "crates_io": {
+    "checksum": "20f0088bfb7441f7a37fa0c9e20cb1e9cba1cac6b9ce8cd2a6dc44294f8e8cbc",
+    "crate_size": 68011,
+    "created_at": "2026-10-22T08:56:37.139212Z",
+    "description": "Data for the icu_normalizer crate",
+    "license": "Unicode-3.0",
+    "published_by": "robertbastian",
+    "repository": "https://github.com/unicode-org/icu4x",
+    "rust_version": "1.88"
+   },
+   "name": "icu_normalizer_data",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "build script (build.rs) reviewed: only prints cargo: cfg/link directives; no network. No binary; checksum = crates.io's; published by robertbastian on 2026-10-22."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "2.4.0"
+  }
+ }
+}

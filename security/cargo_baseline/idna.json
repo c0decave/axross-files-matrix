@@ -1,0 +1,48 @@
+{
+ "name": "idna",
+ "versions": {
+  "1.1.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 21,
+    "links": "",
+    "manifest": "74839decfdba3f6aea0c573c5daaca25438b7073b7105617ab43df84079cd088",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "3b0875f23caa03898994f6ddc501886a45c7d3d62d04d2d90788d47be1b1e4de",
+    "vcs": {
+     "git": {
+      "dirty": true,
+      "sha1": "91377f48bf35011d042aa5abef9e7f2a0a625aaa"
+     },
+     "path_in_vcs": "idna"
+    }
+   },
+   "crates_io": {
+    "checksum": "3b0875f23caa03898994f6ddc501886a45c7d3d62d04d2d90788d47be1b1e4de",
+    "crate_size": 148747,
+    "created_at": "2025-08-21T08:48:20.326736Z",
+    "description": "IDNA (Internationalizing Domain Names in Applications) and Punycode.",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "valenting",
+    "repository": "https://github.com/servo/rust-url/",
+    "rust_version": "1.57"
+   },
+   "name": "idna",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by valenting on 2025-08-21."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "1.1.0"
+  }
+ }
+}

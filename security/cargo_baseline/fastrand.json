@@ -1,0 +1,47 @@
+{
+ "name": "fastrand",
+ "versions": {
+  "2.5.0": {
+   "accepted_findings": [],
+   "archive": {
+    "build_scripts": {},
+    "files": 13,
+    "links": "",
+    "manifest": "9f30dc55a20544d089d2bf6e99cb89f58471832d836dfd3d40951d83928af416",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223",
+    "vcs": {
+     "git": {
+      "sha1": "7a1cc2c69ebde6cb3442809213db3fe19a2cb0ba"
+     },
+     "path_in_vcs": ""
+    }
+   },
+   "crates_io": {
+    "checksum": "da7c62ceae207dd37ea5b845da6a0696c799f85e97da1ab5b7910be3c1c80223",
+    "crate_size": 20782,
+    "created_at": "2026-07-19T12:40:53.683020Z",
+    "description": "A simple and fast random number generator",
+    "license": "Apache-2.0 OR MIT",
+    "published_by": "taiki-e",
+    "repository": "https://github.com/smol-rs/fastrand",
+    "rust_version": "1.63"
+   },
+   "name": "fastrand",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by taiki-e on 2026-07-19."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [],
+    "yara": []
+   },
+   "version": "2.5.0"
+  }
+ }
+}

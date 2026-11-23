@@ -1,0 +1,78 @@
+{
+ "name": "egui",
+ "versions": {
+  "0.37.0": {
+   "accepted_findings": [
+    "rs-include-bytes|src/lib.rs|87fe0111b967106f",
+    "yara|capability_network_outbound|src/atomics/atom_ext.rs|e6e925a30beb9d85",
+    "yara|capability_network_outbound|src/containers/window.rs|f5c6748f45b58ec7",
+    "yara|capability_network_outbound|src/context.rs|1ec304daf855c03b",
+    "yara|capability_network_outbound|src/style.rs|3dfe5844f32b84da",
+    "yara|capability_network_outbound|src/ui.rs|462f8e767c3313c5",
+    "yara|capability_network_outbound|src/widget_style/mod.rs|558348976725a017",
+    "yara|capability_network_outbound|src/widget_text.rs|c80b66c41bc15a03",
+    "yara|capability_network_outbound|src/widgets/image.rs|e680edcfbc83d3b2",
+    "yara|capability_network_outbound|src/widgets/text_edit/builder.rs|c5039f88d253af50"
+   ],
+   "archive": {
+    "build_scripts": {},
+    "files": 137,
+    "links": "",
+    "manifest": "e7b124581341aeeba08abbe589fd02534484e4f91024aaa8fa96526d579802e5",
+    "native": {},
+    "native_profiles": {},
+    "native_sources": {},
+    "proc_macro": false,
+    "sha256": "bec9144f49b7a28b5f395d3147e325b4fe3e77ba686eac11d1bdf0a7da3f375f",
+    "vcs": {
+     "git": {
+      "sha1": "7c0b40402271e8d40cda69f87cf3c2617c2e4382"
+     },
+     "path_in_vcs": "crates/egui"
+    }
+   },
+   "crates_io": {
+    "checksum": "bec9144f49b7a28b5f395d3147e325b4fe3e77ba686eac11d1bdf0a7da3f375f",
+    "crate_size": 508733,
+    "created_at": "2026-10-15T14:49:16.159284Z",
+    "description": "An easy-to-use immediate mode GUI that runs on both web and native",
+    "license": "MIT OR Apache-2.0",
+    "published_by": "rerunio",
+    "repository": "https://github.com/emilk/egui",
+    "rust_version": "1.95"
+   },
+   "name": "egui",
+   "reviewed": {
+    "by": "claude",
+    "date": "2026-11-17",
+    "note": "Nothing flagged: no build-time code. No binary; checksum = crates.io's; published by rerunio on 2026-10-15."
+   },
+   "scans": {
+    "capa": {},
+    "keys": [
+     "yara|capability_network_outbound|src/atomics/atom_ext.rs|e6e925a30beb9d85",
+     "yara|capability_network_outbound|src/containers/window.rs|f5c6748f45b58ec7",
+     "yara|capability_network_outbound|src/context.rs|1ec304daf855c03b",
+     "yara|capability_network_outbound|src/style.rs|3dfe5844f32b84da",
+     "yara|capability_network_outbound|src/ui.rs|462f8e767c3313c5",
+     "yara|capability_network_outbound|src/widget_style/mod.rs|558348976725a017",
+     "yara|capability_network_outbound|src/widget_text.rs|c80b66c41bc15a03",
+     "yara|capability_network_outbound|src/widgets/image.rs|e680edcfbc83d3b2",
+     "yara|capability_network_outbound|src/widgets/text_edit/builder.rs|c5039f88d253af50"
+    ],
+    "yara": [
+     "capability_network_outbound:capability_network_outbound src/atomics/atom_ext.rs",
+     "capability_network_outbound:capability_network_outbound src/containers/window.rs",
+     "capability_network_outbound:capability_network_outbound src/context.rs",
+     "capability_network_outbound:capability_network_outbound src/style.rs",
+     "capability_network_outbound:capability_network_outbound src/ui.rs",
+     "capability_network_outbound:capability_network_outbound src/widget_style/mod.rs",
+     "capability_network_outbound:capability_network_outbound src/widget_text.rs",
+     "capability_network_outbound:capability_network_outbound src/widgets/image.rs",
+     "capability_network_outbound:capability_network_outbound src/widgets/text_edit/builder.rs"
+    ]
+   },
+   "version": "0.37.0"
+  }
+ }
+}
