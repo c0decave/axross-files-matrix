@@ -559,16 +559,21 @@ impl App {
                 continue;
             };
             match got {
+                // (the walk still under way and the cache holds more: the
+                // cached city stands until the walk is done)
                 Some((saved, tree))
-                    if isl.fresh.is_some() && isl.status.entries < tree.len() as u64 =>
+                    if isl.fresh.is_some()
+                        && !isl.status.done
+                        && isl.fresh.as_ref().map_or(0, |f| f.len()) < tree.len() =>
                 {
                     isl.replace_tree(tree);
                     isl.from_cache = Some(saved);
                 }
                 _ => {
-                    // no cache: the walk's tree is shown as it grows
-                    if let Some(f) = isl.fresh.take()
-                        && isl.from_cache.is_none()
+                    // no cache (or the walk was quicker): the walk's tree
+                    // is shown as it grows
+                    if isl.from_cache.is_none()
+                        && let Some(f) = isl.fresh.take()
                     {
                         isl.replace_tree(f);
                     }
@@ -606,12 +611,15 @@ impl App {
                     let done = s.done;
                     isl.status = s;
                     if done && isl.fresh.is_some() {
-                        // the new walk is complete: it replaces the cached city
-                        let cached_waiting = isl.from_cache.is_none();
-                        if !cached_waiting
-                            || isl.status.entries > 0
-                            || isl.fresh.as_ref().is_some_and(|f| f.len() > 1)
-                        {
+                        if isl.status.error.is_some() && isl.from_cache.is_some() {
+                            // (the folder cannot be read now - unmounted,
+                            // say: the cached city stays, marked so)
+                            isl.fresh = None;
+                            isl.saved = true;
+                        } else {
+                            // the new walk is complete: it replaces the
+                            // cached city (a cache still on its way is
+                            // dropped when it comes)
                             if let Some(f) = isl.fresh.take() {
                                 isl.replace_tree(f);
                             }
@@ -1069,7 +1077,7 @@ impl App {
                 continue;
             };
             let c = b.center();
-            let w = ((b.max.x - b.min.x).min(b.max.z - b.min.z) * 0.35).clamp(0.3, 6.0);
+            let w = ((b.max.x - b.min.x).min(b.max.z - b.min.z) * 0.4).clamp(0.8, 8.0);
             out.push(Instance::new(
                 city::Shape::Pillar,
                 vec3(c.x - w * 0.5, b.max.y, c.z - w * 0.5),
@@ -1597,9 +1605,49 @@ impl App {
         let t = self.theme;
         let cities = self.cities();
         let eye = self.camera.pos;
+        // the chosen one first, whatever is in front of it
+        if let (Some((i, n)), Some(b)) = (self.selected, self.sel_box)
+            && let Some(isl) = self.islands.get(i)
+            && let Some(node) = isl.tree.get(n)
+        {
+            let top = vec3(
+                (b.min.x + b.max.x) * 0.5,
+                b.max.y + 0.5,
+                (b.min.z + b.max.z) * 0.5,
+            );
+            let p = vp.transform([top.x, top.y, top.z, 1.0]);
+            if p[3] > 0.1 {
+                let (x, y) = (p[0] / p[3], p[1] / p[3]);
+                let at = Pos2::new(
+                    rect.left() + (x * 0.5 + 0.5) * rect.width(),
+                    rect.top() + (0.5 - y * 0.5) * rect.height(),
+                );
+                let name = if n == 0 {
+                    isl.title.clone()
+                } else {
+                    display_name(&node.name, 48)
+                };
+                let galley = painter.layout_no_wrap(name, egui::FontId::monospace(13.0), t.strong);
+                let r = Rect::from_center_size(
+                    at - vec2(0.0, galley.size().y * 0.5 + 4.0),
+                    galley.size() + vec2(8.0, 4.0),
+                );
+                painter.rect_filled(r, 2.0, Color32::from_rgba_unmultiplied(0, 20, 8, 210));
+                painter.rect_stroke(r, 2.0, (1.0, t.accent), egui::StrokeKind::Outside);
+                painter.galley(r.min + vec2(4.0, 2.0), galley, t.strong);
+                taken.push(r);
+            }
+        }
+        let mut buildings = 0;
         for c in cands.iter().take(300) {
             if taken.len() >= 90 {
                 break;
+            }
+            if c.kind == LabelKind::Building {
+                if buildings >= 30 {
+                    continue;
+                }
+                buildings += 1;
             }
             // (behind a building: not shown - the islands' titles always are)
             if c.kind != LabelKind::Island && city::occluded(&cities, eye, c.at) {
@@ -1624,10 +1672,25 @@ impl App {
             if isl.stale && c.kind != LabelKind::Island {
                 continue;
             }
+            // (over an island, its title would float in the sky: left out)
+            if c.kind == LabelKind::Island
+                && isl.city.as_ref().is_some_and(|ci| {
+                    let b = ci.aabb();
+                    eye.x > b.min.x
+                        && eye.x < b.max.x
+                        && eye.z > b.min.z
+                        && eye.z < b.max.z
+                        && eye.y < b.max.y * 3.0 + 200.0
+                })
+            {
+                continue;
+            }
             let (text, size, color) = match c.kind {
                 LabelKind::Island => {
                     let mut s = isl.title.clone();
-                    if isl.from_cache.is_some() {
+                    if isl.from_cache.is_some() && isl.status.error.is_some() {
+                        s.push_str("  · cached (cannot be read now)");
+                    } else if isl.from_cache.is_some() {
                         s.push_str("  · cached, walking");
                     } else if !isl.status.done && isl.hw.is_none() {
                         s.push_str(&format!("  · {} …", isl.status.entries));
@@ -2083,7 +2146,10 @@ impl App {
                     let state = if isl.hw.is_some() {
                         "the machine".to_string()
                     } else if let Some(e) = &isl.status.error {
-                        format!("could not be read: {e}")
+                        match isl.from_cache {
+                            Some(t) => format!("could not be read ({e}); the city from {}", preview::time_string(t)),
+                            None => format!("could not be read: {e}"),
+                        }
                     } else if isl.from_cache.is_some() {
                         format!("cached; walking ({} found)", isl.status.entries)
                     } else if isl.status.done {

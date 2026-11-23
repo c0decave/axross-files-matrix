@@ -78,14 +78,14 @@ pub const MATRIX: Theme = Theme {
     types: [
         rgb(0x1d7a3a), // folder
         rgb(0x39ff6a), // code
-        rgb(0xa8f5bc), // document
+        rgb(0x8cf0aa), // document
         rgb(0x2fe0b4), // image
         rgb(0xa6f53c), // video
         rgb(0x62f7b8), // audio
         rgb(0xd4e05a), // archive
         rgb(0x1fae4a), // binary
         rgb(0x44c8e0), // data
-        rgb(0x83dd94), // config
+        rgb(0x6fd88a), // config
         rgb(0x46a35e), // other
     ],
     label: rgb(0xb8ffc8),

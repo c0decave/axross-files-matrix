@@ -339,6 +339,8 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
                 let fine = smoothstep(0.35, 0.9, max(fwidth(across) / cw, fwidth(h) / ch));
                 let w = mix(win, p_on * 0.2, fine);
                 c += base * w * (0.22 + 0.55 * glow);
+                // darker towards the street, lighter up high: depth
+                c *= 0.55 + 0.6 * in.local.y;
                 // code running down some of the tallest faces
                 if (in.size.y > 6.0 && g.sky_top.w > 0.0 && in.seed < 0.45) {
                     let col = floor(across / 0.55);
@@ -405,7 +407,7 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
             let side = 1.0 - abs(in.local.x - 0.5) * 2.0;
             // (close by it fades: a beam, never a white wall)
             let near = clamp(length(in.world - g.eye.xyz) / 80.0, 0.12, 1.0);
-            return vec4<f32>(g.highlight.rgb * k * breathe * 0.45 * near * (0.3 + 0.7 * side), 1.0);
+            return vec4<f32>(g.highlight.rgb * k * breathe * 0.85 * near * (0.3 + 0.7 * side), 1.0);
         }
         default: {}
     }

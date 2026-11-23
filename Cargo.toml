@@ -8,7 +8,7 @@ keywords = ["filesystem", "visualization", "3d", "treemap", "disk-usage"]
 categories = ["visualization", "filesystem"]
 readme = "README.md"
 edition = "2024"
-rust-version = "1.88"
+rust-version = "1.95"
 exclude = ["/docs/*.png", "/tests/snapshots"]
 
 [dependencies]

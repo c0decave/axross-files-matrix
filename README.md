@@ -4,7 +4,7 @@ The data on your mountpoints as a 3D city you fly through - Matrix style,
 with real file access. Written in Rust (wgpu and egui), a companion of
 [axross](https://github.com/c0decave/axross).
 
-![A city of 200 000 files](docs/city-200k.png)
+![Flying over a city of 200 000 files under the digital rain](docs/matrix.png)
 
 - **Every mountpoint is an island** - the local disks, every mount the
   system shows (pseudo file systems hidden), and, when axross is installed,
@@ -32,6 +32,7 @@ with real file access. Written in Rust (wgpu and egui), a companion of
 - **Guarded against flashes** - the picture is measured on the GPU and
   veiled where it would flash more than three times a second, as in
   [axross-amp](https://github.com/c0decave/axross-amp)
+  ([Photosensitivity](docs/FLASH_SAFETY.md))
 
 > **Photosensitivity warning.** The city moves: digital rain, flights, the
 > teleport's warp. The picture is guarded against flashes (WCAG 2.3.1 and
@@ -44,22 +45,26 @@ with real file access. Written in Rust (wgpu and egui), a companion of
 
 <table>
   <tr>
-    <td><img src="docs/street.png" alt="Flying low through the districts"></td>
+    <td><img src="docs/city-200k.png" alt="A city of 200 000 files from above"></td>
+    <td><img src="docs/street.png" alt="Among the towers"></td>
+  </tr>
+  <tr>
     <td><img src="docs/city-small.png" alt="A small city beside the machine's island"></td>
+    <td><img src="docs/hardware.png" alt="The machine's island: cores, memory, cards, disks"></td>
   </tr>
   <tr>
     <td><img src="docs/search.png" alt="Search hits as pillars of light"></td>
     <td><img src="docs/preview.png" alt="The inspect panel with a preview"></td>
   </tr>
   <tr>
-    <td><img src="docs/hardware.png" alt="The machine's island"></td>
     <td><img src="docs/teleport.png" alt="The teleport menu"></td>
+    <td></td>
   </tr>
 </table>
 
 <sub>The cities in the pictures are made-up trees (`--synthetic`), the
 machine a made-up one; the pictures are rendered by the tests
-(`tests/screenshots.rs`, `AFM_SHOTS=docs`).</sub>
+(`AFM_SHOTS=docs cargo test --test screenshots`).</sub>
 
 ## Install
 
@@ -145,7 +150,15 @@ cargo test
 cargo run --release --example bench   # frame times and memory with 200 000 files
 ```
 
-Rust 1.88 or later. Linux needs nothing beyond a C compiler (for `ring`);
+What the bench measures with 200 000 files: the city is laid out in about
+30 ms on its own thread; the level of detail picks 25 000 - 60 000 boxes a
+frame in 0.1 - 2 ms (all 200 000 buildings opened: about 1 ms); every box
+is one instance of a single draw call. Walking a real tree of 200 000
+files (warm, four readers) takes about 0.35 s. The window keeps its own
+work per frame near 1 ms; the frame rate then depends on the GPU (a
+software renderer - Mesa's llvmpipe - needs 0.2 s for a 1080p frame).
+
+Rust 1.95 or later (what egui 0.37 and wgpu 30 need). Linux needs nothing beyond a C compiler (for `ring`);
 the tests render with any wgpu adapter (Mesa's lavapipe on CI).
 
 Releasing: [docs/RELEASING.md](docs/RELEASING.md).

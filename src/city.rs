@@ -306,7 +306,7 @@ impl Default for Lod {
             collapse: 0.03,
             open: 0.12,
             label_district: 0.2,
-            label_building: 0.05,
+            label_building: 0.08,
         }
     }
 }
@@ -402,7 +402,7 @@ pub fn select(
             // labels for the buildings that are big on the screen (checked
             // for the larger ones only: they come largest first)
             if angle > lod.label_building * 2.0 {
-                for b in layout.buildings[own].iter().take(24) {
+                for b in layout.buildings[own].iter().take(12) {
                     let (cx, cz) = b.rect.center();
                     let top = vec3(ox + cx, b.base + b.height, oz + cz);
                     let s = b.rect.w().max(b.rect.h()).max(b.height * 0.5);

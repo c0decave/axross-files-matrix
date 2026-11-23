@@ -141,19 +141,40 @@ fn a_city_of_200000_files() {
         h.state_mut().last_frame_instances
     );
     assert_matrix(&l, "200k");
-    // low over the streets: the Matrix look up close
-    let eye = c + vec3(side * 0.08, 22.0, side * 0.12);
+    // inside the city: towers receding under the rain (the Matrix look),
+    // a street, the skyline
     h.state_mut().camera.set_mode(Mode::Fly);
-    h.state_mut().look_from(eye, eye + vec3(-1.0, -0.22, -0.55));
-    frames(&mut h, 3);
-    let img = shot(&mut h, "street");
-    let l = look(&img, (0.05, 0.1, 0.95, 0.9));
-    eprintln!(
-        "street: {l:?}, {} boxes",
-        h.state_mut().last_frame_instances
-    );
-    assert_matrix(&l, "street");
-    assert!(l.bright > 0.002, "lit edges and the rain's heads: {l:?}");
+    for (name, eye, dir) in [
+        (
+            "matrix",
+            c + vec3(side * 0.05, 140.0, side * 0.45),
+            vec3(-0.2, -0.22, -1.0),
+        ),
+        (
+            "street",
+            c + vec3(side * 0.32, 60.0, side * 0.36),
+            vec3(-0.7, -0.1, -0.7),
+        ),
+        (
+            "skyline",
+            c + vec3(-side * 0.38, 35.0, side * 0.1),
+            vec3(0.9, -0.05, -0.3),
+        ),
+    ] {
+        h.state_mut().look_from(eye, eye + dir);
+        frames(&mut h, 3);
+        let img = shot(&mut h, name);
+        let l = look(&img, (0.05, 0.1, 0.95, 0.9));
+        eprintln!(
+            "{name}: {l:?}, {} boxes",
+            h.state_mut().last_frame_instances
+        );
+        assert_matrix(&l, name);
+        assert!(
+            l.bright > 0.002,
+            "{name}: lit edges and the rain's heads: {l:?}"
+        );
+    }
 }
 
 #[test]
@@ -170,7 +191,7 @@ fn search_hits_stand_as_pillars_and_the_camera_flies_there() {
     h.state_mut()
         .look_from(c + vec3(side * 0.6, side * 0.45, side * 0.7), c);
     frames(&mut h, 2);
-    let img = shot(&mut h, "search-pillars");
+    let img = shot(&mut h, "search");
     let pillars = look(&img, (0.05, 0.08, 0.95, 0.6));
     eprintln!("pillars: {pillars:?}");
     assert!(pillars.white > 0.0005, "the pillars' light: {pillars:?}");
@@ -197,7 +218,7 @@ fn search_hits_stand_as_pillars_and_the_camera_flies_there() {
             .wait_preview(std::time::Duration::from_secs(10))
     );
     frames(&mut h, 3);
-    let img = shot(&mut h, "search");
+    let img = shot(&mut h, "search-hit");
     let l = look(&img, (0.05, 0.1, 0.7, 0.9));
     eprintln!("at the hit: {l:?}");
     assert!(l.white > 0.0002, "the chosen building's highlight: {l:?}");

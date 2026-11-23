@@ -44,7 +44,8 @@ The first release: the MVP of the spec.
   permission errors marked; huge folders read up to a cap; names that are
   no UTF-8 or hold newlines kept and shown escaped. The last walk of each
   island is cached (checksummed, every field checked when read back), so
-  the city stands at once on the next start while the new walk runs.
+  the city stands at once on the next start while the new walk runs - and
+  stays, marked, when its folder cannot be read any more.
 - **Flight**: free flight (WASD, Q/E, mouse look on the right button or
   captured with M, Shift faster, the wheel sets the speed), orbit and map
   (drag, pan, zoom, click a district to fly there), flights along paths
