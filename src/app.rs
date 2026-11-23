@@ -158,6 +158,65 @@ enum Bg {
     },
     /// The systems listed again.
     Systems(Result<mcp::Systems, String>),
+    /// Fonts for the scripts egui's own do not draw (found on a thread).
+    Fonts(Vec<(String, Vec<u8>)>),
+}
+
+/// A row of the Teleport menu's systems.
+#[derive(Clone, Debug)]
+pub struct SysRow {
+    pub name: String,
+    sign: &'static str,
+    family: &'static str,
+    color: Color32,
+    where_: String,
+    pub state: SysState,
+    label: String,
+    has_island: bool,
+}
+
+/// The Teleport menu's cached rows.
+#[derive(Default)]
+struct TeleportCache {
+    key: (u64, String),
+    stamp: Option<Instant>,
+    rows: std::rc::Rc<Vec<SysRow>>,
+    hits: HitFilter,
+}
+
+/// The search hits the menu's filter takes, found a little each frame.
+#[derive(Default)]
+struct HitFilter {
+    query: String,
+    search: String,
+    scanned: usize,
+    matched: Vec<u32>,
+}
+
+/// An island's districts for the Teleport menu, largest first (at most
+/// 108), made again when its tree changed - at most once a second while it
+/// grows.
+fn island_districts<'a>(
+    isl: &Island,
+    cache: &'a mut std::collections::HashMap<u64, (usize, Instant, Vec<NodeId>)>,
+) -> &'a [NodeId] {
+    let len = isl.tree.len();
+    let stale = cache
+        .get(&isl.id)
+        .is_none_or(|(l, at, _)| *l != len && at.elapsed() > Duration::from_secs(1));
+    if stale {
+        let root = isl.tree.root();
+        let mut kids: Vec<NodeId> = root
+            .children
+            .iter()
+            .copied()
+            .filter(|c| isl.tree.nodes[*c as usize].kind == Kind::Dir)
+            .collect();
+        kids.sort_by_key(|c| std::cmp::Reverse(isl.tree.nodes[*c as usize].total));
+        kids.truncate(108);
+        cache.insert(isl.id, (len, Instant::now(), kids));
+    }
+    &cache[&isl.id].2
 }
 
 /// A flight waiting for its target: an island to stand, a district of it
@@ -198,6 +257,10 @@ pub enum OpenAsk {
     /// A system needs a password or key passphrase axross has not stored
     /// (the matrix never asks for one).
     Unlock { name: String },
+    /// axross's server holds as many systems open as it may: `name` could
+    /// not be opened; `open` are the open ones, least recently visited
+    /// first.
+    TooMany { name: String, open: Vec<String> },
 }
 
 struct PreviewJob {
@@ -211,19 +274,71 @@ struct PreviewJob {
 
 /// The preview worker: one preview at a time, and of the requests waiting
 /// only the newest (choosing ten files fast reads one, not ten).
+/// Previews read at once (each on a thread of its own); one that has not
+/// answered for [`PREVIEW_ABANDON`] counts no more - a file on a dead mount
+/// holds its thread, never the others' - up to [`PREVIEW_ALIVE`] threads
+/// in all.
+const PREVIEW_THREADS: usize = 3;
+const PREVIEW_ABANDON: Duration = Duration::from_secs(5);
+const PREVIEW_ALIVE: usize = 24;
+
+/// The preview dispatcher: of the requests waiting only the newest is
+/// read, on a thread of its own.
 fn preview_worker(rx: Receiver<PreviewJob>, tx: Sender<Bg>, wake: walk::Wake) {
-    while let Ok(mut job) = rx.recv() {
-        while let Ok(newer) = rx.try_recv() {
-            job = newer;
+    // (the threads under way: when each started)
+    let running: Arc<Mutex<Vec<(u64, Instant)>>> = Arc::new(Mutex::new(Vec::new()));
+    let mut waiting: Option<PreviewJob> = None;
+    let mut next_id = 0u64;
+    loop {
+        let next = if waiting.is_some() {
+            rx.recv_timeout(Duration::from_millis(100)).ok()
+        } else {
+            match rx.recv() {
+                Ok(j) => Some(j),
+                Err(_) => return,
+            }
+        };
+        if let Some(j) = next {
+            waiting = Some(j);
         }
-        let p = preview::load(&job.at, &job.name, job.size, job.is_dir);
-        if tx
-            .send(Bg::Preview(job.island, job.node, Box::new(p)))
-            .is_err()
+        while let Ok(newer) = rx.try_recv() {
+            waiting = Some(newer);
+        }
+        if waiting.is_none() {
+            continue;
+        }
         {
+            let r = running.lock().unwrap_or_else(|p| p.into_inner());
+            let busy = r
+                .iter()
+                .filter(|(_, at)| at.elapsed() < PREVIEW_ABANDON)
+                .count();
+            if busy >= PREVIEW_THREADS || r.len() >= PREVIEW_ALIVE {
+                continue;
+            }
+        }
+        let Some(job) = waiting.take() else { continue };
+        next_id += 1;
+        let id = next_id;
+        running
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .push((id, Instant::now()));
+        let (tx, wake, running) = (tx.clone(), wake.clone(), running.clone());
+        let started = std::thread::Builder::new()
+            .name("afm-preview".into())
+            .spawn(move || {
+                let p = preview::load(&job.at, &job.name, job.size, job.is_dir);
+                running
+                    .lock()
+                    .unwrap_or_else(|p| p.into_inner())
+                    .retain(|(k, _)| *k != id);
+                let _ = tx.send(Bg::Preview(job.island, job.node, Box::new(p)));
+                wake();
+            });
+        if started.is_err() {
             return;
         }
-        wake();
     }
 }
 
@@ -326,6 +441,8 @@ pub struct App {
     last_teleport: f32,
     frames: u64,
     queued_teleport: Option<(Vec3, f32, f32)>,
+    /// A teleport to an island's node waiting its turn.
+    queued_target: Option<(usize, NodeId)>,
     placed_sides: Vec<f32>,
     view_rect: Rect,
     pub last_frame_instances: usize,
@@ -339,6 +456,12 @@ pub struct App {
     pub axross: Axross,
     /// The beams need placing again (an island moved).
     beams_dirty: bool,
+    /// The camera jumped this frame (the veil's ground is cleared).
+    cut: bool,
+    /// Until the camera is moved by hand, it frames the biggest city (the
+    /// first view): which island and at which size it framed.
+    pub auto_frame: bool,
+    framed: Option<(u64, f32)>,
     /// The open question, if one is shown.
     pub open_ask: Option<OpenAsk>,
     /// The window has the keyboard (None: not known).
@@ -349,8 +472,11 @@ pub struct App {
     pub legend_open: bool,
     /// How much bigger the machine's island is drawn.
     pub machine_scale: f32,
-    /// The teleport window's page of search hits.
-    hits_page: usize,
+    /// The Teleport menu's cached rows, and districts per island.
+    tp_cache: TeleportCache,
+    tp_districts: std::collections::HashMap<u64, (usize, Instant, Vec<NodeId>)>,
+    /// Counts up whenever the systems are listed anew.
+    systems_version: u64,
     /// The Teleport menu's filter (across systems, islands, spots, hits).
     pub teleport_filter: String,
     /// The systems being opened or opened, by profile name.
@@ -363,6 +489,9 @@ pub struct App {
     axross_manager: bool,
     /// A system to open again once the systems are listed again.
     retry_after_refresh: Option<String>,
+    egui_ctx: egui::Context,
+    /// The fallback fonts are in (tests wait for them).
+    pub fonts_ready: bool,
     /// The cache folder's size and files (once pruned).
     cache_usage: Option<(u64, usize)>,
     cache_clearing: bool,
@@ -389,6 +518,9 @@ impl App {
         let (settings, loaded) = settings::load(&settings_path);
         let theme = theme::find(&settings.theme);
         ctx.set_visuals(theme::visuals(theme));
+        // (a character no font has is drawn as a box - in a test harness
+        // too, which would stop at it)
+        ctx.set_missing_glyph_policy(egui::MissingGlyphPolicy::Tofu);
         ctx.global_style_mut(|s| {
             s.spacing.item_spacing = vec2(8.0, 6.0);
             s.spacing.button_padding = vec2(8.0, 4.0);
@@ -470,6 +602,7 @@ impl App {
             last_teleport: -10.0,
             frames: 0,
             queued_teleport: None,
+            queued_target: None,
             placed_sides: Vec::new(),
             view_rect: Rect::from_min_size(Pos2::ZERO, vec2(800.0, 600.0)),
             last_frame_instances: 0,
@@ -478,22 +611,35 @@ impl App {
             starting: false,
             axross: Axross::Looking,
             beams_dirty: false,
+            cut: false,
+            auto_frame: true,
+            framed: None,
             open_ask: None,
             focused: true,
             hidden: false,
             legend_open: true,
             machine_scale: 1.0,
-            hits_page: 0,
+            tp_cache: TeleportCache::default(),
+            tp_districts: std::collections::HashMap::new(),
+            systems_version: 0,
             teleport_filter: String::new(),
             live: std::collections::HashMap::new(),
             attempts: 0,
             pending_fly: None,
             axross_manager: false,
             retry_after_refresh: None,
+            egui_ctx: ctx.clone(),
+            fonts_ready: false,
             cache_usage: None,
             cache_clearing: false,
             opts,
         };
+        if let settings::Loaded::Salvaged(keys) = &loaded {
+            app.toast(format!(
+                "Some settings were not understood and have their defaults: {}",
+                keys.join(", ")
+            ));
+        }
         if let settings::Loaded::SetAside(p) = loaded {
             app.toast(format!(
                 "The settings file could not be read; set aside as {}",
@@ -501,6 +647,14 @@ impl App {
             ));
         }
         app.ask_mode_open = app.settings.ask_mode_before_flight;
+        {
+            // (scanned on a thread: the window never waits for it)
+            let (tx, wake) = (app.bg_tx.clone(), app.wake.clone());
+            crate::fonts::find_in_background(move |f| {
+                let _ = tx.send(Bg::Fonts(f));
+                wake();
+            });
+        }
         app.populate();
         app
     }
@@ -819,6 +973,44 @@ impl App {
         })
     }
 
+    /// Where a system stands, its island and profile known already (the
+    /// menu's rows: no search per row).
+    fn system_state_with(&self, name: &str, island: Option<usize>, p: &mcp::Profile) -> SysState {
+        if let Some(l) = self.live.get(name)
+            && matches!(
+                l.state,
+                SysState::Connecting
+                    | SysState::Failed(_)
+                    | SysState::NeedsSecret
+                    | SysState::Unavailable(_)
+            )
+        {
+            return l.state.clone();
+        }
+        let island = self
+            .live
+            .get(name)
+            .and_then(|l| l.island)
+            .and_then(|id| self.islands.iter().position(|x| x.id == id))
+            .or(island);
+        if let Some(i) = island {
+            let isl = &self.islands[i];
+            return match &isl.status.error {
+                Some(e) => SysState::Failed(e.clone()),
+                None if isl.walker.is_none() && !isl.status.done => SysState::NotOpen,
+                None if !isl.status.done => SysState::Walking,
+                None => SysState::Open,
+            };
+        }
+        if p.needs_secret {
+            SysState::NeedsSecret
+        } else if !p.openable {
+            SysState::Unavailable(p.reason.clone())
+        } else {
+            SysState::NotOpen
+        }
+    }
+
     /// Where a system stands.
     pub fn system_state(&self, name: &str) -> SysState {
         if let Some(l) = self.live.get(name)
@@ -853,11 +1045,20 @@ impl App {
     /// at once, "connecting…" - and the camera flies there. `path`: a
     /// district inside it to fly to once it has been read (a saved spot).
     pub fn teleport_system(&mut self, name: &str, path: Vec<Vec<u8>>) {
+        if let Some(l) = self.live.get_mut(name) {
+            l.visited = Instant::now();
+        }
         let Some(profile) = self.profile(name) else {
-            self.toast(format!(
-                "No saved connection named {}",
-                crate::tree::display_text(std::ffi::OsStr::new(name))
-            ));
+            // (no longer in axross's list: an island that still stands is
+            // still flown to)
+            if let Some(i) = self.system_island(name) {
+                self.fly_when_ready(i, path, name);
+            } else {
+                self.toast(format!(
+                    "{} is no longer among axross's saved connections",
+                    crate::wire::shown(name, 80)
+                ));
+            }
             return;
         };
         let state = self.system_state(name);
@@ -966,23 +1167,13 @@ impl App {
         let tx = self.bg_tx.clone();
         let wake = self.wake.clone();
         let n = name.to_string();
-        let timeout = self
-            .opts
-            .connect_timeout
-            .unwrap_or(crate::systems::CONNECT_TIMEOUT);
+        // (the window gives up at the connect's time limit - see
+        // `connect_deadlines`; the call itself waits much longer, so that a
+        // late success is heard and closed on the server)
         let _ = std::thread::Builder::new()
             .name("afm-system-open".into())
             .spawn(move || {
-                let result = client.open_profile(&n, timeout).map_err(|e| {
-                    if e.contains("timed out") || e.contains("no answer") {
-                        format!(
-                            "no answer within {} s (the host may be down)",
-                            timeout.as_secs()
-                        )
-                    } else {
-                        e
-                    }
-                });
+                let result = client.open_profile(&n, crate::systems::LATE_ANSWER);
                 let _ = tx.send(Bg::SystemOpened {
                     name: n,
                     attempt,
@@ -1000,17 +1191,12 @@ impl App {
             return;
         };
         if live.attempt != attempt || live.state != SysState::Connecting {
-            // (cancelled, or tried again since: this answer is old - a
-            // connection it opened is closed unless a newer try uses it)
-            if let (Ok(opened), false) = (&result, live.state == SysState::Connecting)
-                && let McpState::Connected { client, .. } = &self.mcp
-            {
-                let (client, backend) = (client.clone(), opened.backend.clone());
-                let _ = std::thread::Builder::new()
-                    .name("afm-system-close".into())
-                    .spawn(move || {
-                        let _ = client.close_profile(&backend, Duration::from_secs(30));
-                    });
+            // (cancelled, timed out or tried again since: this answer is
+            // old - a connection it opened is closed on the server unless a
+            // newer try uses it)
+            if let (Ok(opened), false) = (&result, live.state == SysState::Connecting) {
+                let b = opened.backend.clone();
+                self.close_on_server(&b);
             }
             return;
         }
@@ -1033,9 +1219,15 @@ impl App {
                 self.start_walk(i, &[]);
             }
             Err(e) => {
+                // (whatever the server may hold of it: closed, best effort)
+                self.close_on_server(&format!("profile:{name}"));
+                let Some(live) = self.live.get_mut(name) else {
+                    return;
+                };
                 let lower = e.to_ascii_lowercase();
                 let secret = (lower.contains("password") || lower.contains("passphrase"))
                     && (lower.contains("not stored") || lower.contains("keyring"));
+                let too_many = lower.contains("at most") && lower.contains("open at once");
                 live.state = if secret {
                     SysState::NeedsSecret
                 } else {
@@ -1051,27 +1243,121 @@ impl App {
                 {
                     self.pending_fly = None;
                 }
+                if too_many {
+                    // (the server's limit of open systems: say which are
+                    // open, offer to close the one least recently visited)
+                    let mut open: Vec<(String, Instant)> = self
+                        .live
+                        .iter()
+                        .filter(|(n, l)| {
+                            n.as_str() != name
+                                && matches!(l.state, SysState::Walking | SysState::Open)
+                                && l.island.is_some()
+                        })
+                        .map(|(n, l)| (n.clone(), l.visited))
+                        .collect();
+                    open.sort_by_key(|(_, at)| *at);
+                    self.open_ask = Some(OpenAsk::TooMany {
+                        name: name.to_string(),
+                        open: open.into_iter().map(|(n, _)| n).collect(),
+                    });
+                }
             }
         }
     }
 
-    /// Gives up a connect under way (its late answer is dropped); the
-    /// island stays, "cancelled", with a retry.
+    /// Closes a backend on axross's server (a thread; best effort).
+    fn close_on_server(&self, backend: &str) {
+        if let McpState::Connected { client, .. } = &self.mcp {
+            let (client, backend) = (client.clone(), backend.to_string());
+            let _ = std::thread::Builder::new()
+                .name("afm-system-close".into())
+                .spawn(move || {
+                    let _ = client.close_profile(&backend, Duration::from_secs(30));
+                });
+        }
+    }
+
+    /// Closes a system: on the server (it frees one of its open slots) and
+    /// here - its walk ends, its island goes.
+    pub fn close_system(&mut self, name: &str) {
+        let Some(i) = self.system_island(name) else {
+            self.live.remove(name);
+            return;
+        };
+        let backend = match &self.islands[i].source {
+            IslandSource::Mcp { backend, .. } => backend.id.clone(),
+            _ => return,
+        };
+        self.close_on_server(&backend);
+        self.live.remove(name);
+        self.remove_island(i);
+        self.toast(format!("{name} closed"));
+    }
+
+    /// Takes island `i` out of the world (what pointed into it is let go).
+    fn remove_island(&mut self, i: usize) {
+        let isl = self.islands.remove(i);
+        if self
+            .pending_fly
+            .as_ref()
+            .is_some_and(|f| f.island == isl.id)
+        {
+            self.pending_fly = None;
+        }
+        world::drop_later(isl);
+        // (indices moved: the search starts over, the choice goes)
+        self.search_reset_all();
+        self.placed_sides.clear();
+        self.beams_dirty = true;
+        self.world_version += 1;
+    }
+
+    /// Connects that ran past their time limit: given up here, said so
+    /// (their late answer is closed on the server when it comes).
+    fn connect_deadlines(&mut self) {
+        let limit = self
+            .opts
+            .connect_timeout
+            .unwrap_or(crate::systems::CONNECT_TIMEOUT);
+        let late: Vec<String> = self
+            .live
+            .iter()
+            .filter(|(_, l)| {
+                l.state == SysState::Connecting && l.since.is_some_and(|t| t.elapsed() > limit)
+            })
+            .map(|(n, _)| n.clone())
+            .collect();
+        for n in late {
+            let why = format!(
+                "no answer within {} s (the host may be down)",
+                limit.as_secs()
+            );
+            self.give_up_system(&n, &why);
+        }
+    }
+
+    /// Gives up a connect under way (its late answer is closed on the
+    /// server); the island stays, "cancelled", with a retry.
     pub fn cancel_system(&mut self, name: &str) {
+        self.give_up_system(name, "cancelled");
+    }
+
+    fn give_up_system(&mut self, name: &str, why: &str) {
         let Some(live) = self.live.get_mut(name) else {
             return;
         };
         if live.state != SysState::Connecting {
             return;
         }
-        live.state = SysState::Failed("cancelled".into());
+        live.state = SysState::Failed(why.into());
         live.since = None;
         if let Some(i) = live
             .island
             .and_then(|id| self.islands.iter().position(|x| x.id == id))
         {
             let isl = &mut self.islands[i];
-            isl.status.error = Some("cancelled".into());
+            isl.status.error = Some(why.into());
             isl.status.done = true;
             if self
                 .pending_fly
@@ -1396,6 +1682,7 @@ impl App {
         while let Ok(bg) = self.bg_rx.try_recv() {
             match bg {
                 Bg::Mcp(Ok((client, label, command, backends, systems))) => {
+                    self.systems_version += 1;
                     self.mcp = McpState::Connected {
                         label,
                         command,
@@ -1414,7 +1701,12 @@ impl App {
                     attempt,
                     result,
                 } => self.system_opened(&name, attempt, result),
+                Bg::Fonts(fonts) => {
+                    self.egui_ctx.set_fonts(crate::fonts::definitions(fonts));
+                    self.fonts_ready = true;
+                }
                 Bg::Systems(systems) => {
+                    self.systems_version += 1;
                     if let McpState::Connected { systems: s, .. } = &mut self.mcp {
                         *s = systems;
                     }
@@ -1471,6 +1763,8 @@ impl App {
         }
         lap.push(("place", start.elapsed()));
         self.place_islands();
+        self.frame_first_view();
+        self.connect_deadlines();
         self.pending_flight();
         if self.opts.frame_stats && start.elapsed() > Duration::from_millis(20) {
             lap.push(("end", start.elapsed()));
@@ -1756,8 +2050,69 @@ impl App {
             .reduce(|a, b| a.union(b))
     }
 
+    /// The first view: until the camera is moved by hand, the biggest city
+    /// is framed (again when it has grown by a sixth).
+    fn frame_first_view(&mut self) {
+        if !self.auto_frame {
+            return;
+        }
+        let best = self
+            .islands
+            .iter()
+            .enumerate()
+            .filter(|(_, i)| i.hw.is_none())
+            .filter_map(|(k, i)| {
+                i.city
+                    .as_ref()
+                    .filter(|c| c.shown && c.target.is_none_or(|t| t == c.offset))
+                    .map(|c| (k, i.id, c.side()))
+            })
+            .max_by(|a, b| a.2.total_cmp(&b.2));
+        let Some((k, id, side)) = best else { return };
+        let again = match self.framed {
+            Some((fid, fside)) => fid != id || side > fside * 1.17 || side < fside * 0.83,
+            None => true,
+        };
+        if again {
+            self.framed = Some((id, side));
+            let (pos, target) = self.island_view(k);
+            let (yaw, pitch) = look_angles(pos, target);
+            self.camera.flight = None;
+            self.camera.pos = pos;
+            self.camera.yaw = yaw;
+            self.camera.pitch = pitch;
+            self.camera.target = target;
+            self.camera.distance = (pos - target).length();
+            self.world_version += 1;
+        }
+    }
+
+    /// Where the camera stands to see island `i` whole, from aside and
+    /// above (an empty or failed island from far enough to read it).
+    fn island_view(&self, i: usize) -> (Vec3, Vec3) {
+        let Some(c) = self.islands.get(i).and_then(|x| x.city.as_ref()) else {
+            return (self.camera.pos, self.camera.target);
+        };
+        let side = c.side().max(160.0);
+        let target = c.center() + vec3(0.0, c.layout.top.min(side * 0.1) * 0.3, 0.0);
+        (
+            target + vec3(side * 0.08, side * 0.55 + 20.0, side * 0.78 + 40.0),
+            target,
+        )
+    }
+
+    /// The fog's density for the world as it is: about 0.00055 for a city
+    /// of a kilometre, thinner for bigger ones.
+    fn fog_density(&self) -> f32 {
+        let extent = self
+            .world_box()
+            .map_or(1000.0, |b| (b.max.x - b.min.x).max(b.max.z - b.min.z));
+        (1.4 / (extent * 1.6).max(2500.0)).min(0.00056)
+    }
+
     /// Looks at the whole world from above and aside.
     pub fn overview(&mut self, fly: bool) {
+        self.auto_frame = false;
         let Some(b) = self.world_box() else { return };
         let c = b.center();
         let size = (b.max.x - b.min.x).max(b.max.z - b.min.z).max(100.0);
@@ -1787,6 +2142,7 @@ impl App {
 
     /// Places the camera (tests, screenshots).
     pub fn look_from(&mut self, pos: Vec3, target: Vec3) {
+        self.auto_frame = false;
         let (yaw, pitch) = look_angles(pos, target);
         self.camera.flight = None;
         self.camera.pos = pos;
@@ -1806,6 +2162,7 @@ impl App {
 
     /// Flies to an island's node and chooses it.
     pub fn fly_to(&mut self, island: usize, node: NodeId) {
+        self.auto_frame = false;
         let Some(b) = self.node_box(island, node) else {
             return;
         };
@@ -1820,6 +2177,27 @@ impl App {
 
     /// Jumps to an island's node at once (with the warp).
     pub fn teleport_to(&mut self, island: usize, node: NodeId) {
+        self.auto_frame = false;
+        if self.time() - self.last_teleport < TELEPORT_GAP {
+            // (its turn comes: nothing changes before - not even the
+            // choice, whose light would flicker with every request)
+            self.queued_target = Some((island, node));
+            return;
+        }
+        self.queued_target = None;
+        if node == 0 && self.islands.get(island).is_some_and(|i| i.city.is_some()) {
+            // (an island: seen whole - an empty or failed one from far
+            // enough to read its state)
+            self.select(island, 0);
+            let (pos, target) = self.island_view(island);
+            let (yaw, pitch) = look_angles(pos, target);
+            self.teleport(pos, yaw, pitch);
+            if self.camera.mode == Mode::Orbit {
+                self.camera.target = target;
+                self.camera.distance = (pos - target).length();
+            }
+            return;
+        }
         let Some(b) = self.node_box(island, node) else {
             return;
         };
@@ -1837,15 +2215,19 @@ impl App {
         }
     }
 
-    /// A teleport, at most two a second (more wait their turn: the warp
-    /// never strobes).
+    /// A teleport, at most one every [`TELEPORT_GAP`] (more wait their
+    /// turn: the warp never strobes).
     pub fn teleport(&mut self, pos: Vec3, yaw: f32, pitch: f32) {
-        if self.time() - self.last_teleport < 0.5 {
+        if self.time() - self.last_teleport < TELEPORT_GAP {
             self.queued_teleport = Some((pos, yaw, pitch));
             return;
         }
+        // (teleports in quick succession - a storm of them - jump without
+        // the warp: its streaks would add to the cuts' changes of light)
+        let alone = self.time() - self.last_teleport > 2.0;
         self.last_teleport = self.time();
-        let warp = !self.settings.reduce_motion;
+        self.cut = true;
+        let warp = !self.settings.reduce_motion && alone;
         let mode = self.camera.mode;
         self.camera.teleport(pos, yaw, pitch, warp);
         if mode == Mode::Orbit {
@@ -1916,7 +2298,6 @@ impl App {
             Some(Search::new(query))
         };
         self.search_index = 0;
-        self.hits_page = 0;
         self.world_version += 1;
     }
 
@@ -2075,7 +2456,9 @@ impl App {
                 self.camera.pos.z,
                 (self.opts.clock.unwrap_or(0.0) + self.time()) % 3600.0,
             ],
-            fog: [t.fog[0], t.fog[1], t.fog[2], 0.00055],
+            // (the fog thins with the world's size: a city of millions is
+            // seen whole from afar, never lost in it)
+            fog: [t.fog[0], t.fog[1], t.fog[2], self.fog_density()],
             sky_top: [
                 t.sky_top[0],
                 t.sky_top[1],
@@ -2243,9 +2626,12 @@ impl App {
                 Key::Escape => {
                     if self.captured {
                         self.set_capture(ctx, false);
+                    } else if self.teleport_open {
+                        // (the menu closes first)
+                        self.teleport_open = false;
                     } else if let Some(f) = self.pending_fly.take() {
-                        // (a flight that waits - and the connect it waits
-                        // for - given up)
+                        // (the flight that waits - and only the connect it
+                        // waits for - given up)
                         let name = self.live.iter().find_map(|(n, l)| {
                             (l.island == Some(f.island) && l.state == SysState::Connecting)
                                 .then(|| n.clone())
@@ -2254,18 +2640,6 @@ impl App {
                             self.cancel_system(&n);
                         }
                         self.toast(format!("{}: cancelled", f.what));
-                    } else if self.live.values().any(|l| l.state == SysState::Connecting) {
-                        // (connects under way: given up)
-                        let names: Vec<String> = self
-                            .live
-                            .iter()
-                            .filter(|(_, l)| l.state == SysState::Connecting)
-                            .map(|(n, _)| n.clone())
-                            .collect();
-                        for n in &names {
-                            self.cancel_system(n);
-                        }
-                        self.toast(format!("Connecting cancelled: {}", names.join(", ")));
                     } else {
                         self.selected = None;
                         self.sel_box = None;
@@ -2566,6 +2940,7 @@ impl App {
         let mut answer: Option<Option<OpenHow>> = None;
         let mut risky_path: Option<PathBuf> = None;
         let mut unlock: Option<(String, bool)> = None;
+        let mut swap: Option<(String, String)> = None;
         let manager = match &self.axross {
             Axross::Ready(p) if self.axross_manager => Some(p.clone()),
             _ => None,
@@ -2639,6 +3014,28 @@ impl App {
                         }
                     });
                 }
+                OpenAsk::TooMany { name, open } => {
+                    ui.label(RichText::new(format!("{name} could not be opened")).strong().size(16.0));
+                    ui.add_space(4.0);
+                    ui.label(format!(
+                        "axross's server keeps at most {} systems open at once. Open now: {}.",
+                        open.len().max(1),
+                        if open.is_empty() { "-".to_string() } else { open.join(", ") }
+                    ));
+                    ui.add_space(6.0);
+                    ui.horizontal_wrapped(|ui| {
+                        if let Some(oldest) = open.first()
+                            && ui
+                                .button(format!("Close {oldest} (visited longest ago) and open {name}"))
+                                .clicked()
+                        {
+                            swap = Some((oldest.clone(), name.clone()));
+                        }
+                        if ui.button("Cancel").clicked() {
+                            answer = Some(None);
+                        }
+                    });
+                }
                 OpenAsk::NoAxross { why, path } => {
                     ui.label(RichText::new("axross cannot open this").strong().size(16.0));
                     ui.add_space(4.0);
@@ -2668,6 +3065,15 @@ impl App {
                 }
             }
         });
+        if let Some((old, new)) = swap {
+            self.open_ask = None;
+            self.close_system(&old);
+            if let Some(l) = self.live.get_mut(&new) {
+                l.state = SysState::NotOpen;
+            }
+            self.teleport_system(&new, Vec::new());
+            return;
+        }
         if let Some((name, manager_wanted)) = unlock {
             self.open_ask = None;
             if manager_wanted {
@@ -2718,6 +3124,15 @@ impl App {
         self.last_frame = Instant::now();
         self.frames += 1;
         let input = self.camera_input(ui, &response);
+        if input.move_dir != [0.0; 3]
+            || input.look != [0.0; 2]
+            || input.orbit != [0.0; 2]
+            || input.pan != [0.0; 2]
+            || input.scroll != 0.0
+        {
+            // (moved by hand: the first view is left alone from now on)
+            self.auto_frame = false;
+        }
         {
             let cities = self.cities();
             let solid = |p: Vec3| city::solid(&cities, p);
@@ -2726,10 +3141,15 @@ impl App {
             self.camera = cam;
         }
         if let Some((p, y, pi)) = self.queued_teleport
-            && self.time() - self.last_teleport >= 0.5
+            && self.time() - self.last_teleport >= TELEPORT_GAP
         {
             self.queued_teleport = None;
             self.teleport(p, y, pi);
+        }
+        if let Some((i, n)) = self.queued_target
+            && self.time() - self.last_teleport >= TELEPORT_GAP
+        {
+            self.teleport_to(i, n);
         }
         let aspect = rect.width() / rect.height().max(1.0);
         // hover and click
@@ -2775,6 +3195,7 @@ impl App {
             guard: self.opts.flash_guard,
             dt,
             msaa: self.settings.msaa,
+            cut: std::mem::take(&mut self.cut),
         });
         if self.has_gpu {
             ui.painter().add(render::callback(rect, frame));
@@ -2818,6 +3239,7 @@ impl App {
             || input.scroll != 0.0
             || response.dragged()
             || self.queued_teleport.is_some()
+            || self.queued_target.is_some()
             || veiling
             || self.search.as_ref().is_some_and(|s| !s.done);
         let s = &self.settings;
@@ -2986,6 +3408,10 @@ impl App {
             kb.cmp(&ka).then(b.weight.total_cmp(&a.weight))
         });
         let mut taken: Vec<Rect> = Vec::new();
+        // (one label per text and island: a name the layout offers twice -
+        // a district and its title - is drawn once)
+        let mut drawn: std::collections::HashSet<(usize, String)> =
+            std::collections::HashSet::new();
         if let Some(l) = self.legend_rect(rect) {
             taken.push(l);
         }
@@ -3087,7 +3513,9 @@ impl App {
                             .unwrap_or(t.strong),
                         _ => t.strong,
                     };
-                    (s, 15.0, color)
+                    // (an empty or failed island: its state written large)
+                    let big = isl.tree.len() <= 1 || isl.status.error.is_some();
+                    (s, if big { 21.0 } else { 15.0 }, color)
                 }
                 LabelKind::District => {
                     let Some(n) = isl.tree.get(c.node) else {
@@ -3112,6 +3540,10 @@ impl App {
             } else {
                 egui::FontId::monospace(size)
             };
+            if drawn.contains(&(island, text.clone())) {
+                continue;
+            }
+            let key = (island, text.clone());
             let galley = painter.layout_no_wrap(text, font, color);
             let r = Rect::from_center_size(
                 at - vec2(0.0, galley.size().y * 0.5 + 2.0),
@@ -3128,6 +3560,7 @@ impl App {
                 continue;
             }
             taken.push(cover);
+            drawn.insert(key);
             if c.kind == LabelKind::Island {
                 painter.rect_filled(
                     r.expand(3.0),
@@ -3566,6 +3999,130 @@ impl App {
         }
     }
 
+    /// A place for a window: below the bar, `dx` from the view's left.
+    fn below_bar(&self, dx: f32) -> Pos2 {
+        Pos2::new(self.view_rect.left() + dx, self.view_rect.top() + 8.0)
+    }
+
+    /// Where windows may stand: the screen below the bar.
+    fn below_bar_rect(&self, ctx: &egui::Context) -> Rect {
+        let screen = ctx.content_rect();
+        Rect::from_min_max(Pos2::new(screen.left(), self.view_rect.top()), screen.max)
+    }
+
+    /// The Teleport menu's systems rows, made again only when the list,
+    /// the filter or (four times a second at most) a state changed; sorted
+    /// by name - a row never moves under the mouse.
+    fn system_rows(&mut self) -> Result<std::rc::Rc<Vec<SysRow>>, String> {
+        let profiles = match &self.mcp {
+            McpState::Connected { systems: Ok(s), .. } => &s.profiles,
+            McpState::Connected {
+                systems: Err(e), ..
+            } => return Err(e.clone()),
+            McpState::Looking => return Err("looking for axross's MCP server…".into()),
+            McpState::Off => return Err("axross's MCP server is off (Settings)".into()),
+            McpState::NotFound => {
+                return Err(
+                    "axross's MCP server was not found: no saved connections to show".into(),
+                );
+            }
+            McpState::Failed(e) => {
+                return Err(format!("axross's MCP server could not be started: {e}"));
+            }
+        };
+        let fresh = self.tp_cache.key == (self.systems_version, self.teleport_filter.clone())
+            && self
+                .tp_cache
+                .stamp
+                .is_some_and(|t| t.elapsed() < Duration::from_millis(250));
+        if fresh {
+            return Ok(self.tp_cache.rows.clone());
+        }
+        // which island each system has (once, not per row)
+        let mut island_of: std::collections::HashMap<&str, usize> =
+            std::collections::HashMap::new();
+        for (i, isl) in self.islands.iter().enumerate() {
+            if let IslandSource::Mcp { backend, .. } = &isl.source
+                && let Some(p) = backend.profile.as_deref()
+            {
+                island_of.insert(p, i);
+            }
+        }
+        let q = self.teleport_filter.clone();
+        let mut rows = Vec::new();
+        for p in profiles {
+            let fam = crate::systems::Family::of(&p.protocol);
+            let proto = p
+                .protocol_name
+                .clone()
+                .unwrap_or_else(|| p.protocol.clone());
+            let host = p.host.clone().unwrap_or_default();
+            let state = self.system_state_with(&p.name, island_of.get(p.name.as_str()).copied(), p);
+            let label = state.label();
+            if !crate::systems::matches(
+                &q,
+                &[&p.name, &p.protocol, &proto, &host, fam.label(), &label],
+            ) {
+                continue;
+            }
+            let mut where_ = proto;
+            if !host.is_empty() {
+                where_.push_str(" · ");
+                where_.push_str(&host);
+            }
+            let [r, g, b] = fam.color();
+            rows.push(SysRow {
+                name: p.name.clone(),
+                sign: fam.sign(),
+                family: fam.label(),
+                color: Color32::from_rgb(r, g, b),
+                where_,
+                state,
+                label,
+                has_island: island_of.contains_key(p.name.as_str()),
+            });
+        }
+        let rows = std::rc::Rc::new(rows);
+        self.tp_cache.key = (self.systems_version, q);
+        self.tp_cache.stamp = Some(Instant::now());
+        self.tp_cache.rows = rows.clone();
+        Ok(rows)
+    }
+
+    /// The hits the filter takes, found a little each frame (at most 1.5
+    /// ms): (indices into the hits, all looked at).
+    fn filtered_hits(&mut self) -> (usize, bool) {
+        let Some(s) = &self.search else {
+            return (0, true);
+        };
+        let q = self.teleport_filter.trim().to_lowercase();
+        if q.is_empty() {
+            return (s.hits.len(), true);
+        }
+        let f = &mut self.tp_cache.hits;
+        if f.query != q || f.search != s.query || f.scanned > s.hits.len() {
+            *f = HitFilter {
+                query: q.clone(),
+                search: s.query.clone(),
+                ..Default::default()
+            };
+        }
+        let start = Instant::now();
+        while f.scanned < s.hits.len() {
+            let (i, node) = s.hits[f.scanned];
+            if let Some(n) = self.islands.get(i).and_then(|isl| isl.tree.get(node))
+                && crate::systems::matches(&q, &[&display_name(&n.name, 80)])
+            {
+                f.matched.push(f.scanned as u32);
+            }
+            f.scanned += 1;
+            if f.scanned.is_multiple_of(256) && start.elapsed() > Duration::from_micros(1500) {
+                break;
+            }
+        }
+        (f.matched.len(), f.scanned >= s.hits.len())
+    }
+
     fn teleport_window(&mut self, ctx: &egui::Context) {
         if !self.teleport_open {
             return;
@@ -3576,35 +4133,25 @@ impl App {
         let mut save: Option<usize> = None;
         let mut sys_go: Option<String> = None;
         let mut sys_cancel: Option<String> = None;
-        let mut page = self.hits_page;
+        let mut sys_close: Option<String> = None;
         let mut filter = self.teleport_filter.clone();
         let t = self.theme;
         let screen = ctx.content_rect();
-        let q = filter.clone();
+        let systems = self.system_rows();
+        let (hit_count, hits_done) = self.filtered_hits();
+        let q = self.teleport_filter.clone();
         let m = |fields: &[&str]| crate::systems::matches(&q, fields);
-        // the systems of axross's connection manager, with their state
-        let systems: Result<Vec<(mcp::Profile, SysState)>, String> = match &self.mcp {
-            McpState::Connected { systems: Ok(s), .. } => Ok(s
-                .profiles
-                .iter()
-                .map(|p| (p.clone(), self.system_state(&p.name)))
-                .collect()),
-            McpState::Connected {
-                systems: Err(e), ..
-            } => Err(e.clone()),
-            McpState::Looking => Err("looking for axross's MCP server…".into()),
-            McpState::Off => Err("axross's MCP server is off (Settings)".into()),
-            McpState::NotFound => {
-                Err("axross's MCP server was not found: no saved connections to show".into())
-            }
-            McpState::Failed(e) => Err(format!("axross's MCP server could not be started: {e}")),
-        };
+        let width = 560.0_f32.min(screen.width() - 24.0);
+        let wide = width >= 520.0;
+        let below_bar = self.view_rect.top() + 8.0;
         egui::Window::new("Teleport")
             .open(&mut open)
-            .default_width(560.0_f32.min(screen.width() - 24.0))
+            .default_width(width)
+            .max_width(screen.width() - 16.0)
             .default_height((screen.height() - 120.0).clamp(200.0, 640.0))
-            .max_height(screen.height() - 80.0)
-            .default_pos(self.view_rect.left_top() + vec2(16.0, 16.0))
+            .max_height(screen.height() - below_bar - 40.0)
+            .default_pos(egui::pos2(self.view_rect.left() + 8.0, below_bar))
+            .constrain_to(egui::Rect::from_min_max(egui::pos2(0.0, below_bar), screen.max))
             .vscroll(true)
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
@@ -3615,120 +4162,82 @@ impl App {
                             .desired_width(ui.available_width() - 8.0),
                     );
                 });
-                egui::CollapsingHeader::new(
-                    RichText::new("Systems (axross's connection manager)").strong(),
-                )
-                .id_salt("tp-systems")
-                .default_open(true)
-                .show(ui, |ui| match &systems {
-                    Err(e) => {
-                        ui.label(RichText::new(e).color(t.muted));
-                    }
-                    Ok(list) if list.is_empty() => {
-                        ui.label(RichText::new("No saved connections in axross.").color(t.muted));
-                    }
-                    Ok(list) => {
-                        // (open, connecting and failed ones first)
-                        let rank = |st: &SysState| match st {
-                            SysState::Open | SysState::Walking => 0,
-                            SysState::Connecting => 1,
-                            SysState::Failed(_) | SysState::NeedsSecret => 2,
-                            _ => 3,
-                        };
-                        let mut rows: Vec<&(mcp::Profile, SysState)> = list.iter().collect();
-                        rows.sort_by_key(|(p, st)| (rank(st), p.name.clone()));
-                        egui::Grid::new("tp-systems-grid")
-                            .num_columns(5)
-                            .spacing(vec2(6.0, 4.0))
-                            .striped(true)
-                            .show(ui, |ui| {
-                                for (p, state) in rows {
-                                    let fam = crate::systems::Family::of(&p.protocol);
-                                    let proto = p
-                                        .protocol_name
-                                        .clone()
-                                        .unwrap_or_else(|| p.protocol.clone());
-                                    let host = p.host.clone().unwrap_or_default();
-                                    if !m(&[
-                                        &p.name,
-                                        &p.protocol,
-                                        &proto,
-                                        &host,
-                                        fam.label(),
-                                        &state.label(),
-                                    ]) {
-                                        continue;
+                egui::CollapsingHeader::new(RichText::new("Systems (axross's connection manager)").strong())
+                    .id_salt("tp-systems")
+                    .default_open(true)
+                    .show(ui, |ui| match &systems {
+                        Err(e) => {
+                            ui.label(RichText::new(e).color(t.muted));
+                        }
+                        Ok(rows) if rows.is_empty() => {
+                            ui.label(RichText::new(if q.trim().is_empty() {
+                                "No saved connections in axross."
+                            } else {
+                                "No saved connection matches the filter."
+                            }).color(t.muted));
+                        }
+                        Ok(rows) => {
+                            let row_h = 24.0;
+                            // (only the rows in sight are laid out)
+                            egui::ScrollArea::vertical()
+                                .id_salt("tp-system-rows")
+                                .max_height(row_h * 10.0)
+                                .auto_shrink([false, true])
+                                .show_rows(ui, row_h, rows.len(), |ui, range| {
+                                    for r in &rows[range] {
+                                        ui.horizontal(|ui| {
+                                            ui.set_height(row_h - 4.0);
+                                            match &r.state {
+                                                SysState::Connecting => {
+                                                    if ui.small_button("cancel").clicked() {
+                                                        sys_cancel = Some(r.name.clone());
+                                                    }
+                                                }
+                                                SysState::Failed(_) => {
+                                                    if ui.small_button("retry").clicked() {
+                                                        sys_go = Some(r.name.clone());
+                                                    }
+                                                }
+                                                SysState::NeedsSecret => {
+                                                    if ui.small_button("unlock").clicked() {
+                                                        sys_go = Some(r.name.clone());
+                                                    }
+                                                }
+                                                SysState::Unavailable(_) => {
+                                                    ui.add_enabled(false, egui::Button::new("go").small());
+                                                }
+                                                _ => {
+                                                    if ui.small_button("go").clicked() {
+                                                        sys_go = Some(r.name.clone());
+                                                    }
+                                                }
+                                            }
+                                            if r.has_island
+                                                && !matches!(r.state, SysState::Connecting)
+                                                && ui.small_button("close").on_hover_text("Close it (frees one of the server's open systems)").clicked()
+                                            {
+                                                sys_close = Some(r.name.clone());
+                                            }
+                                            ui.label(RichText::new(r.sign).monospace().color(r.color)).on_hover_text(r.family);
+                                            ui.add(egui::Label::new(RichText::new(&r.name).monospace().strong()).truncate());
+                                            if wide {
+                                                ui.add(egui::Label::new(RichText::new(&r.where_).color(t.muted).size(12.0)).truncate())
+                                                    .on_hover_text(&r.where_);
+                                            }
+                                            let color = match r.state {
+                                                SysState::Failed(_) | SysState::Unavailable(_) | SysState::NeedsSecret => t.warn,
+                                                SysState::Open | SysState::Walking | SysState::Connecting => t.accent,
+                                                SysState::NotOpen => t.muted,
+                                            };
+                                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                                ui.add(egui::Label::new(RichText::new(&r.label).color(color)).truncate())
+                                                    .on_hover_text(format!("{}\n{}", r.where_, r.label));
+                                            });
+                                        });
                                     }
-                                    match state {
-                                        SysState::Connecting => {
-                                            if ui.small_button("cancel").clicked() {
-                                                sys_cancel = Some(p.name.clone());
-                                            }
-                                        }
-                                        SysState::Failed(_) => {
-                                            if ui.small_button("retry").clicked() {
-                                                sys_go = Some(p.name.clone());
-                                            }
-                                        }
-                                        SysState::NeedsSecret => {
-                                            if ui.small_button("unlock").clicked() {
-                                                sys_go = Some(p.name.clone());
-                                            }
-                                        }
-                                        SysState::Unavailable(_) => {
-                                            ui.add_enabled(false, egui::Button::new("go").small());
-                                        }
-                                        _ => {
-                                            if ui.small_button("go").clicked() {
-                                                sys_go = Some(p.name.clone());
-                                            }
-                                        }
-                                    }
-                                    let [r, g, b] = fam.color();
-                                    ui.label(
-                                        RichText::new(fam.sign())
-                                            .monospace()
-                                            .color(Color32::from_rgb(r, g, b)),
-                                    )
-                                    .on_hover_text(fam.label());
-                                    let mut where_ = proto.clone();
-                                    if !host.is_empty() {
-                                        where_.push_str(&format!(" · {host}"));
-                                    }
-                                    ui.label(RichText::new(&p.name).monospace().strong());
-                                    let cut = |x: &str, n: usize| {
-                                        if x.chars().count() > n {
-                                            x.chars().take(n - 1).collect::<String>() + "…"
-                                        } else {
-                                            x.to_string()
-                                        }
-                                    };
-                                    ui.label(
-                                        RichText::new(cut(&where_, 30)).color(t.muted).size(12.0),
-                                    )
-                                    .on_hover_text(&where_);
-                                    let color = match state {
-                                        SysState::Failed(_)
-                                        | SysState::Unavailable(_)
-                                        | SysState::NeedsSecret => t.warn,
-                                        SysState::Open
-                                        | SysState::Walking
-                                        | SysState::Connecting => t.accent,
-                                        SysState::NotOpen => t.muted,
-                                    };
-                                    let full = state.label();
-                                    let shown = if full.chars().count() > 34 {
-                                        full.chars().take(33).collect::<String>() + "…"
-                                    } else {
-                                        full.clone()
-                                    };
-                                    ui.label(RichText::new(shown).color(color))
-                                        .on_hover_text(format!("{where_}\n{full}"));
-                                    ui.end_row();
-                                }
-                            });
-                    }
-                });
+                                });
+                        }
+                    });
                 egui::CollapsingHeader::new(RichText::new("Islands").strong())
                     .id_salt("tp-islands")
                     .default_open(true)
@@ -3737,174 +4246,116 @@ impl App {
                             if isl.city.is_none() {
                                 continue;
                             }
-                            // its districts, the largest first (those the
-                            // filter takes; the island when it or one does)
-                            let root = isl.tree.root();
-                            let mut kids: Vec<NodeId> = root
-                                .children
-                                .iter()
-                                .copied()
-                                .filter(|c| isl.tree.nodes[*c as usize].kind == Kind::Dir)
-                                .collect();
-                            kids.sort_by_key(|c| {
-                                std::cmp::Reverse(isl.tree.nodes[*c as usize].total)
-                            });
+                            let kids = island_districts(isl, &mut self.tp_districts);
                             let island_hit = m(&[&isl.title]);
-                            if !island_hit {
-                                kids.retain(|c| {
-                                    m(&[&display_name(&isl.tree.nodes[*c as usize].name, 200)])
-                                });
-                                if kids.is_empty() {
-                                    continue;
-                                }
+                            let kids: Vec<NodeId> = if island_hit {
+                                kids.to_vec()
+                            } else {
+                                kids.iter()
+                                    .copied()
+                                    .filter(|c| m(&[&display_name(&isl.tree.nodes[*c as usize].name, 200)]))
+                                    .collect()
+                            };
+                            if !island_hit && kids.is_empty() {
+                                continue;
                             }
                             ui.horizontal(|ui| {
                                 if ui.button("go").clicked() {
                                     go = Some((i, 0));
                                 }
-                                ui.label(RichText::new(&isl.title).strong());
+                                ui.add(egui::Label::new(RichText::new(&isl.title).strong()).truncate());
                             });
-                            let show =
-                                |ui: &mut Ui, list: &[NodeId], go: &mut Option<(usize, NodeId)>| {
-                                    for &c in list {
-                                        ui.horizontal(|ui| {
-                                            ui.add_space(18.0);
-                                            if ui.small_button("go").clicked() {
-                                                *go = Some((i, c));
-                                            }
-                                            let n = &isl.tree.nodes[c as usize];
-                                            let text = if isl.hw.is_some() {
-                                                display_name(&n.name, 40)
-                                            } else {
-                                                format!(
-                                                    "{}/  {}",
-                                                    display_name(&n.name, 40),
-                                                    hw::human_bytes(n.total)
-                                                )
-                                            };
-                                            ui.label(RichText::new(text).color(t.muted));
-                                        });
-                                    }
-                                };
+                            let show = |ui: &mut Ui, list: &[NodeId], go: &mut Option<(usize, NodeId)>| {
+                                for &c in list {
+                                    ui.horizontal(|ui| {
+                                        ui.add_space(18.0);
+                                        if ui.small_button("go").clicked() {
+                                            *go = Some((i, c));
+                                        }
+                                        let n = &isl.tree.nodes[c as usize];
+                                        let text = if isl.hw.is_some() {
+                                            display_name(&n.name, 40)
+                                        } else {
+                                            format!("{}/  {}", display_name(&n.name, 40), hw::human_bytes(n.total))
+                                        };
+                                        ui.add(egui::Label::new(RichText::new(text).color(t.muted)).truncate());
+                                    });
+                                }
+                            };
                             show(ui, &kids[..kids.len().min(8)], &mut go);
                             if kids.len() > 8 {
                                 egui::CollapsingHeader::new(format!("{} more", kids.len() - 8))
                                     .id_salt(("tp-more", isl.id))
-                                    .show(ui, |ui| {
-                                        let rest = &kids[8..kids.len().min(8 + TELEPORT_PAGE)];
-                                        show(ui, rest, &mut go);
-                                        if kids.len() > 8 + TELEPORT_PAGE {
-                                            ui.label(
-                                                RichText::new(format!(
-                                                    "and {} smaller ones: the search finds them",
-                                                    kids.len() - 8 - TELEPORT_PAGE
-                                                ))
-                                                .color(t.muted),
-                                            );
-                                        }
-                                    });
+                                    .show(ui, |ui| show(ui, &kids[8..], &mut go));
                             }
                         }
                     });
-                egui::CollapsingHeader::new(
-                    RichText::new("Spots (1-9 jump, Ctrl+1-9 save)").strong(),
-                )
-                .id_salt("tp-spots")
-                .default_open(true)
-                .show(ui, |ui| {
-                    for k in 0..9 {
-                        let s = self.settings.bookmarks.get(k).cloned().flatten();
-                        let label = s.as_ref().map_or("-".to_string(), |s| s.label.clone());
-                        if !q.trim().is_empty() && !m(&[&label]) {
-                            continue;
+                egui::CollapsingHeader::new(RichText::new("Spots (1-9 jump, Ctrl+1-9 save)").strong())
+                    .id_salt("tp-spots")
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        for k in 0..9 {
+                            let s = self.settings.bookmarks.get(k).cloned().flatten();
+                            let label = s.as_ref().map_or("-".to_string(), |s| s.label.clone());
+                            if !q.trim().is_empty() && !m(&[&label]) {
+                                continue;
+                            }
+                            ui.horizontal(|ui| {
+                                if ui
+                                    .add_enabled(s.is_some(), egui::Button::new(format!("{}", k + 1)).small())
+                                    .clicked()
+                                {
+                                    spot = Some(k + 1);
+                                }
+                                if ui.small_button("save here").clicked() {
+                                    save = Some(k + 1);
+                                }
+                                ui.add(egui::Label::new(RichText::new(label).color(t.muted)).truncate());
+                            });
                         }
-                        ui.horizontal(|ui| {
-                            if ui
-                                .add_enabled(
-                                    s.is_some(),
-                                    egui::Button::new(format!("{}", k + 1)).small(),
-                                )
-                                .clicked()
-                            {
-                                spot = Some(k + 1);
-                            }
-                            if ui.small_button("save here").clicked() {
-                                save = Some(k + 1);
-                            }
-                            ui.label(RichText::new(label).color(t.muted));
-                        });
-                    }
-                });
-                // the search hits: paged, never cut short in silence
+                    });
+                // the search hits: every one, only those in sight laid out
                 if let Some(s) = &self.search
                     && !s.hits.is_empty()
                 {
-                    let names: Vec<(usize, NodeId, String)> = s
-                        .hits
-                        .iter()
-                        .filter_map(|&(i, node)| {
-                            let name = self
-                                .islands
-                                .get(i)
-                                .and_then(|isl| isl.tree.get(node))
-                                .map(|x| display_name(&x.name, 50))?;
-                            (q.trim().is_empty() || m(&[&name])).then_some((i, node, name))
-                        })
-                        .collect();
-                    let n = names.len();
-                    let pages = n.div_ceil(TELEPORT_PAGE).max(1);
-                    page = page.min(pages - 1);
-                    let from = page * TELEPORT_PAGE;
-                    let to = (from + TELEPORT_PAGE).min(n);
-                    egui::CollapsingHeader::new(
-                        RichText::new(format!(
-                            "Search hits ({n}{})",
-                            if s.done { "" } else { ", still searching" }
-                        ))
-                        .strong(),
-                    )
-                    .id_salt("tp-hits")
-                    .default_open(true)
-                    .show(ui, |ui| {
-                        ui.horizontal(|ui| {
-                            if ui
-                                .add_enabled(page > 0, egui::Button::new("<").small())
-                                .clicked()
-                            {
-                                page -= 1;
-                            }
-                            ui.label(
-                                RichText::new(format!("{} - {} of {n}", (from + 1).min(n), to))
-                                    .color(t.muted),
-                            );
-                            if ui
-                                .add_enabled(page + 1 < pages, egui::Button::new(">").small())
-                                .clicked()
-                            {
-                                page += 1;
-                            }
+                    let filtered = !q.trim().is_empty();
+                    let title = format!(
+                        "Search hits ({hit_count}{}{})",
+                        if filtered { " match the filter" } else { "" },
+                        if !s.done || !hits_done { ", still looking" } else { "" }
+                    );
+                    egui::CollapsingHeader::new(RichText::new(title).strong())
+                        .id_salt("tp-hits")
+                        .default_open(true)
+                        .show(ui, |ui| {
+                            let row_h = 22.0;
+                            egui::ScrollArea::vertical()
+                                .id_salt("tp-hit-list")
+                                .max_height(row_h * 12.0)
+                                .auto_shrink([false, true])
+                                .show_rows(ui, row_h, hit_count, |ui, range| {
+                                    for k in range {
+                                        let at = if filtered { self.tp_cache.hits.matched[k] as usize } else { k };
+                                        let Some(&(i, node)) = s.hits.get(at) else { continue };
+                                        let name = self
+                                            .islands
+                                            .get(i)
+                                            .and_then(|isl| isl.tree.get(node))
+                                            .map(|x| display_name(&x.name, 60))
+                                            .unwrap_or_default();
+                                        ui.horizontal(|ui| {
+                                            ui.set_height(row_h - 4.0);
+                                            if ui.small_button("go").clicked() {
+                                                go = Some((i, node));
+                                            }
+                                            ui.add(egui::Label::new(RichText::new(name).monospace()).truncate());
+                                        });
+                                    }
+                                });
                         });
-                        egui::ScrollArea::vertical()
-                            .id_salt("tp-hit-list")
-                            .max_height(260.0)
-                            .show(ui, |ui| {
-                                for (i, node, name) in &names[from..to] {
-                                    ui.horizontal(|ui| {
-                                        if ui.small_button("go").clicked() {
-                                            go = Some((*i, *node));
-                                        }
-                                        ui.label(RichText::new(name).monospace());
-                                    });
-                                }
-                            });
-                    });
                 }
             });
-        if filter != self.teleport_filter {
-            page = 0;
-        }
         self.teleport_filter = filter;
-        self.hits_page = page;
         self.teleport_open = open;
         if let Some((i, n)) = go {
             self.teleport_to(i, n);
@@ -3917,6 +4368,11 @@ impl App {
         }
         if let Some(name) = sys_cancel {
             self.cancel_system(&name);
+            self.tp_cache.stamp = None;
+        }
+        if let Some(name) = sys_close {
+            self.close_system(&name);
+            self.tp_cache.stamp = None;
         }
         if let Some(name) = sys_go {
             if let Some(l) = self.live.get_mut(&name)
@@ -3925,6 +4381,7 @@ impl App {
                 l.state = SysState::NotOpen;
             }
             self.teleport_system(&name, Vec::new());
+            self.tp_cache.stamp = None;
         }
     }
 
@@ -3939,6 +4396,8 @@ impl App {
         let mut reconnect = false;
         egui::Window::new("Sources")
             .open(&mut open)
+            .default_pos(self.below_bar(160.0))
+            .constrain_to(self.below_bar_rect(ctx))
             .default_width(420.0_f32.min(ctx.content_rect().width() - 24.0))
             .max_height(ctx.content_rect().height() - 80.0)
             .vscroll(true)
@@ -4046,6 +4505,8 @@ impl App {
         let mut clear_cache = false;
         egui::Window::new("Settings")
             .open(&mut open)
+            .default_pos(self.below_bar(160.0))
+            .constrain_to(self.below_bar_rect(ctx))
             .default_width(380.0_f32.min(ctx.content_rect().width() - 24.0))
             .max_height(ctx.content_rect().height() - 80.0)
             .vscroll(true)
@@ -4236,6 +4697,8 @@ impl App {
             .and_then(|s| s.lock().ok().map(|s| (s.adapter.clone(), s.software)));
         egui::Window::new("Keys and mouse")
             .open(&mut open)
+            .default_pos(self.below_bar(160.0))
+            .constrain_to(self.below_bar_rect(ctx))
             .default_width(420.0_f32.min(ctx.content_rect().width() - 24.0))
             .max_height(ctx.content_rect().height() - 80.0)
             .vscroll(true)
@@ -4337,11 +4800,12 @@ impl App {
     }
 }
 
+/// The least time between two teleports (seconds): fewer than one and a
+/// half a second, well inside the three flashes a second the rule allows.
+const TELEPORT_GAP: f32 = 0.7;
+
 /// Search hits with a pillar of light over them (the rest: N, teleport).
 const PILLARS: usize = 400;
-
-/// Hits (and districts) the teleport window lists a page.
-const TELEPORT_PAGE: usize = 100;
 
 const LEGEND_LINE: f32 = 15.0;
 const LEGEND_COL: f32 = 92.0;
@@ -4577,6 +5041,12 @@ impl eframe::App for App {
         });
         self.focused = focused;
         self.hidden = hidden;
+        if let Some(sm) = &self.sampler {
+            // (resting: the load is not worth a frame)
+            let rest =
+                hidden || !focused || self.settings.idle_fps == 0 || self.settings.reduce_motion;
+            sm.quiet.store(rest, std::sync::atomic::Ordering::Relaxed);
+        }
         if !focused && self.captured {
             // (another window has the keyboard: the mouse is let go)
             self.set_capture(&ctx, false);

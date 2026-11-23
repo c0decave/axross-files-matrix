@@ -200,6 +200,7 @@ fn main() {
                         guard: true,
                         dt: 1.0 / 60.0,
                         msaa: true,
+                        cut: false,
                     };
                     let t = Instant::now();
                     let mut enc =

@@ -202,6 +202,66 @@ struct Out {
     lazy: bool,
 }
 
+/// The folders a walk is to read, in order: each handed out once. A
+/// folder already queued that is asked for moves to the front; one being
+/// read (in pieces or pages) or read already is never queued again - the
+/// window asks for a near folder that is not marked read yet, and a big one
+/// is not until its last piece.
+#[derive(Debug, Default)]
+pub struct Line {
+    queue: VecDeque<NodeId>,
+    queued: HashSet<NodeId>,
+    started: HashSet<NodeId>,
+}
+
+impl Line {
+    pub fn new(first: Option<NodeId>) -> Line {
+        let mut l = Line::default();
+        if let Some(f) = first {
+            l.push_back(f);
+        }
+        l
+    }
+    /// Queues `dir` at the end (false: queued, being read or read).
+    pub fn push_back(&mut self, dir: NodeId) -> bool {
+        if self.started.contains(&dir) || !self.queued.insert(dir) {
+            return false;
+        }
+        self.queue.push_back(dir);
+        true
+    }
+    /// `dir` asked for: first in line (false: being read or read).
+    pub fn ask(&mut self, dir: NodeId) -> bool {
+        if self.started.contains(&dir) {
+            return false;
+        }
+        if !self.queued.insert(dir)
+            && let Some(k) = self.queue.iter().position(|&d| d == dir)
+        {
+            self.queue.remove(k);
+        }
+        self.queue.push_front(dir);
+        true
+    }
+    /// The next folder to read: from now on it is being read.
+    pub fn pop(&mut self) -> Option<NodeId> {
+        let dir = self.queue.pop_front()?;
+        self.queued.remove(&dir);
+        self.started.insert(dir);
+        Some(dir)
+    }
+    pub fn len(&self) -> usize {
+        self.queue.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.queue.is_empty()
+    }
+    pub fn clear(&mut self) {
+        self.queue.clear();
+        self.queued.clear();
+    }
+}
+
 const BATCH: usize = 4096;
 const FLUSH_EVERY: Duration = Duration::from_millis(40);
 
@@ -321,6 +381,11 @@ fn read_local(
     device: Option<u64>,
     mut piece: impl FnMut(Vec<Found>, bool) -> bool,
 ) -> std::io::Result<bool> {
+    #[cfg(unix)]
+    if path.as_os_str().len() >= DEEP_PATH {
+        // (past what a path may hold: folder by folder, relative)
+        return deep::read(path, cap, device, piece);
+    }
     let mut out = Vec::new();
     let mut seen = 0usize;
     let mut cut = false;
@@ -368,6 +433,147 @@ fn read_local(
     }
     piece(out, false);
     Ok(cut)
+}
+
+/// A path at least this long is read folder by folder, each opened
+/// relative to the one above it (`openat`): no limit of a path's length
+/// (PATH_MAX, 4096 bytes) stops a walk.
+#[cfg(unix)]
+const DEEP_PATH: usize = 3000;
+
+#[cfg(unix)]
+mod deep {
+    use super::{Found, Kind};
+    use std::ffi::{CStr, CString, OsStr, OsString};
+    use std::os::unix::ffi::{OsStrExt, OsStringExt};
+    use std::path::{Component, Path};
+
+    /// An open folder, closed when dropped.
+    struct Fd(libc::c_int);
+    impl Drop for Fd {
+        fn drop(&mut self) {
+            if self.0 >= 0 {
+                // SAFETY: a descriptor this owns
+                unsafe { libc::close(self.0) };
+            }
+        }
+    }
+
+    fn last_error() -> std::io::Error {
+        std::io::Error::last_os_error()
+    }
+
+    /// `path`'s folder opened one name at a time, no link followed.
+    fn open_dir(path: &Path) -> std::io::Result<Fd> {
+        let flags = libc::O_RDONLY | libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC;
+        let start = if path.is_absolute() { c"/" } else { c"." };
+        // SAFETY: a NUL-ended path
+        let mut fd = Fd(unsafe { libc::open(start.as_ptr(), flags) });
+        if fd.0 < 0 {
+            return Err(last_error());
+        }
+        for c in path.components() {
+            let Component::Normal(name) = c else { continue };
+            let name = CString::new(name.as_bytes()).map_err(std::io::Error::other)?;
+            // SAFETY: an open folder and a NUL-ended name
+            let next = Fd(unsafe { libc::openat(fd.0, name.as_ptr(), flags) });
+            if next.0 < 0 {
+                return Err(last_error());
+            }
+            fd = next;
+        }
+        Ok(fd)
+    }
+
+    /// Like `read_local`, for a path too long to be used as one.
+    pub fn read(
+        path: &Path,
+        cap: usize,
+        device: Option<u64>,
+        mut piece: impl FnMut(Vec<Found>, bool) -> bool,
+    ) -> std::io::Result<bool> {
+        let fd = open_dir(path)?;
+        // SAFETY: the descriptor is handed to the stream (closed with it)
+        let dir = unsafe { libc::fdopendir(fd.0) };
+        if dir.is_null() {
+            return Err(last_error());
+        }
+        std::mem::forget(fd);
+        struct Dir(*mut libc::DIR);
+        impl Drop for Dir {
+            fn drop(&mut self) {
+                // SAFETY: a stream this owns
+                unsafe { libc::closedir(self.0) };
+            }
+        }
+        let dir = Dir(dir);
+        // SAFETY: the stream's own descriptor
+        let dfd = unsafe { libc::dirfd(dir.0) };
+        let mut out = Vec::new();
+        let mut seen = 0usize;
+        loop {
+            // SAFETY: an open stream; the entry is read before the next call
+            let ent = unsafe { libc::readdir(dir.0) };
+            if ent.is_null() {
+                break;
+            }
+            // SAFETY: readdir's entry holds a NUL-ended name
+            let name = unsafe { CStr::from_ptr((*ent).d_name.as_ptr()) };
+            let bytes = name.to_bytes();
+            if bytes == b"." || bytes == b".." {
+                continue;
+            }
+            if seen >= cap {
+                piece(out, false);
+                return Ok(true);
+            }
+            seen += 1;
+            // SAFETY: a zeroed stat filled by fstatat
+            let mut st: libc::stat = unsafe { std::mem::zeroed() };
+            let ok =
+                unsafe { libc::fstatat(dfd, name.as_ptr(), &mut st, libc::AT_SYMLINK_NOFOLLOW) }
+                    == 0;
+            let fmt = st.st_mode & libc::S_IFMT;
+            let kind = if !ok {
+                Kind::Other
+            } else if fmt == libc::S_IFLNK {
+                Kind::Link
+            } else if fmt == libc::S_IFDIR {
+                Kind::Dir
+            } else if fmt == libc::S_IFREG {
+                Kind::File
+            } else {
+                Kind::Other
+            };
+            let (size, alloc, mtime) = if ok && kind != Kind::Dir {
+                (
+                    st.st_size as u64,
+                    (st.st_blocks as u64).saturating_mul(512),
+                    st.st_mtime as i64,
+                )
+            } else if ok {
+                (0, 0, st.st_mtime as i64)
+            } else {
+                (0, 0, 0)
+            };
+            #[allow(clippy::unnecessary_cast)]
+            let foreign = ok && kind == Kind::Dir && device.is_some_and(|d| d != st.st_dev as u64);
+            out.push(Found {
+                name: OsString::from_vec(bytes.to_vec()),
+                kind,
+                size,
+                alloc,
+                mtime,
+                foreign,
+            });
+            if out.len() >= super::PIECE && !piece(std::mem::take(&mut out), true) {
+                return Ok(true);
+            }
+        }
+        let _ = OsStr::new("");
+        piece(out, false);
+        Ok(false)
+    }
 }
 
 fn listing_of(e: &std::io::Error) -> Listing {
@@ -419,7 +625,7 @@ fn walk_local(
     // the folders known: their path and depth (for reading them later)
     let mut dirs: HashMap<NodeId, (PathBuf, u32)> = HashMap::new();
     dirs.insert(0, (root.clone(), 0));
-    let mut queue: VecDeque<NodeId> = VecDeque::from([0]);
+    let mut queue = Line::new(Some(0));
     let (job_tx, job_rx) = channel::<Job>();
     let job_rx = Arc::new(Mutex::new(job_rx));
     let (done_tx, done_rx) = channel::<Done>();
@@ -488,14 +694,15 @@ fn walk_local(
         }
         // folders asked for: first in line
         while let Ok(dir) = requests.try_recv() {
-            if dirs.contains_key(&dir) && out.entries < limits.hard_cap as u64 {
-                queue.push_front(dir);
+            if dirs.contains_key(&dir) && out.entries < limits.hard_cap as u64 && queue.ask(dir) {
                 out.listing(dir, Listing::Pending);
                 reported_done = false;
             }
         }
         while inflight < workers * 4 {
-            let Some(dir) = queue.pop_front() else { break };
+            let Some(dir) = queue.pop() else { break };
+            // (being read: the window asks for it no more)
+            out.listing(dir, Listing::Pending);
             let Some((path, _)) = dirs.get(&dir) else {
                 continue;
             };
@@ -521,8 +728,10 @@ fn walk_local(
             // idle: wait for a folder to be asked for
             match requests.recv_timeout(Duration::from_millis(200)) {
                 Ok(dir) => {
-                    if dirs.contains_key(&dir) && out.entries < limits.hard_cap as u64 {
-                        queue.push_front(dir);
+                    if dirs.contains_key(&dir)
+                        && out.entries < limits.hard_cap as u64
+                        && queue.ask(dir)
+                    {
                         out.listing(dir, Listing::Pending);
                         reported_done = false;
                     }
@@ -651,7 +860,7 @@ fn walk_mcp(
 ) {
     let mut dirs: HashMap<NodeId, (Vec<u8>, u32)> = HashMap::new();
     dirs.insert(0, (root.as_bytes().to_vec(), 0));
-    let mut queue: VecDeque<NodeId> = VecDeque::new();
+    let mut queue = Line::new(None);
     let mut lazy = lazy;
     out.lazy = lazy;
     // first a shallow walk in one call (not for a backend read lazily);
@@ -675,7 +884,9 @@ fn walk_mcp(
     // (the walk's error, kept: said when the root cannot be read either)
     let mut first_error: Option<String> = None;
     match first {
-        None => queue.push_back(0),
+        None => {
+            queue.push_back(0);
+        }
         Some(Ok(page)) if page.next_offset.is_none() => {
             out.skipped_names += page.rejected as u64;
             // (keyed by the paths as the server shows them; the folders'
@@ -728,7 +939,9 @@ fn walk_mcp(
                 }
             }
         }
-        Some(Ok(_)) => queue.push_back(0),
+        Some(Ok(_)) => {
+            queue.push_back(0);
+        }
         Some(Err(e)) if !client.is_alive() => {
             out.listing(0, Listing::Failed);
             out.flush(true);
@@ -747,20 +960,18 @@ fn walk_mcp(
             break;
         }
         while let Ok(dir) = requests.try_recv() {
-            if dirs.contains_key(&dir) {
-                queue.push_front(dir);
+            if dirs.contains_key(&dir) && queue.ask(dir) {
                 out.listing(dir, Listing::Pending);
             }
         }
-        let Some(dir) = queue.pop_front() else {
+        let Some(dir) = queue.pop() else {
             out.flush(true);
             if !reported_done {
                 out.status(0, true, None, true);
                 reported_done = true;
             }
             match requests.recv_timeout(Duration::from_millis(300)) {
-                Ok(dir) if dirs.contains_key(&dir) => {
-                    queue.push_front(dir);
+                Ok(dir) if dirs.contains_key(&dir) && queue.ask(dir) => {
                     out.listing(dir, Listing::Pending);
                     reported_done = false;
                 }
@@ -769,6 +980,8 @@ fn walk_mcp(
             }
             continue;
         };
+        // (being read, page by page: the window asks for it no more)
+        out.listing(dir, Listing::Pending);
         let Some((path, depth)) = dirs.get(&dir).cloned() else {
             continue;
         };
@@ -1181,6 +1394,91 @@ mod tests {
         assert_eq!(status.note, None);
     }
 
+    /// Walks `source` while asking for `dir` over and over (as the window
+    /// does for a near folder not marked read): the tree it ends with.
+    fn walk_while_asking(source: Source, dir: NodeId) -> crate::tree::Tree {
+        let (tx, rx) = channel();
+        let w = Walker::start(1, 1, source, Limits::default(), tx, Arc::new(|| {}));
+        let mut t = crate::tree::Tree::new(OsStr::new("r"), 0);
+        let start = Instant::now();
+        loop {
+            assert!(start.elapsed() < Duration::from_secs(60), "the walk ends");
+            w.list(dir);
+            match rx.recv_timeout(Duration::from_millis(2)) {
+                Ok(Msg {
+                    event: Event::Batch(b),
+                    ..
+                }) => assert!(t.apply(b)),
+                Ok(Msg {
+                    event: Event::Status(s),
+                    ..
+                }) if s.done => {
+                    // (asked once more after the end: nothing more comes)
+                    w.list(dir);
+                    std::thread::sleep(Duration::from_millis(300));
+                    while let Ok(m) = rx.try_recv() {
+                        if let Event::Batch(b) = m.event {
+                            assert!(t.apply(b));
+                        }
+                    }
+                    return t;
+                }
+                _ => {}
+            }
+        }
+    }
+
+    #[test]
+    fn a_big_folder_asked_for_while_it_streams_is_read_once() {
+        let dir = Scratch::new("asked-while-read");
+        let n = PIECE * 3 + 17;
+        for i in 0..n {
+            std::fs::File::create(dir.path().join(format!("f{i:06}"))).unwrap();
+        }
+        let (plain, _) = walk_blocking(local(dir.path()), Limits::default(), OsStr::new("r"));
+        assert_eq!(plain.len(), n + 1);
+        for round in 0..5 {
+            let t = walk_while_asking(local(dir.path()), 0);
+            assert_eq!(t.len(), plain.len(), "round {round}: every entry once");
+            assert_eq!(t.root().children.len(), n);
+        }
+    }
+
+    #[test]
+    fn a_paged_remote_folder_asked_for_while_it_streams_is_read_once() {
+        // a folder of 6012 entries, 2000 a page, each page slow
+        let server = || {
+            Arc::new(crate::mcp::tests::tool_server(|name, args| {
+                let all: Vec<serde_json::Value> = (0..6012)
+                    .map(|i| json!({"path": format!("/f{i}"), "name": format!("f{i}"), "size": 1}))
+                    .collect();
+                let offset = args["offset"].as_u64().unwrap_or(0) as usize;
+                let v = match name {
+                    "walk_tree" => {
+                        std::thread::sleep(Duration::from_millis(60));
+                        let page: Vec<_> = all.iter().skip(offset).take(2000).cloned().collect();
+                        let next = (offset + page.len() < all.len()).then_some(offset + page.len());
+                        json!({"entries": page, "next_offset": next})
+                    }
+                    _ => json!(all),
+                };
+                json!({"content": [{"type": "text", "text": v.to_string()}], "isError": false})
+            }))
+        };
+        let source = |client| Source::Mcp {
+            client,
+            backend: "b".into(),
+            root: "/".into(),
+            lazy: false,
+        };
+        let (plain, _) = walk_blocking(source(server()), Limits::default(), OsStr::new("/"));
+        assert_eq!(plain.len(), 6013);
+        for round in 0..3 {
+            let t = walk_while_asking(source(server()), 0);
+            assert_eq!(t.len(), plain.len(), "round {round}: every entry once");
+        }
+    }
+
     #[test]
     fn the_limit_of_all_is_said() {
         let dir = Scratch::new("hard-cap");
@@ -1199,6 +1497,59 @@ mod tests {
             "{:?}",
             status.note
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn folders_past_the_length_of_a_path_are_read() {
+        // (1500 levels: the path is longer than PATH_MAX; read folder by
+        // folder, relative)
+        let dir = Scratch::new("past-path-max");
+        let made = make_deep(dir.path(), 1500);
+        let (t, status) = walk_blocking(local(dir.path()), Limits::default(), OsStr::new("r"));
+        assert!(status.error.is_none(), "{status:?}");
+        let b = t
+            .nodes
+            .iter()
+            .position(|n| n.name.as_ref() == OsStr::new("bottom.txt"))
+            .expect("found at the bottom");
+        assert_eq!(t.depth(b as NodeId), made + 1);
+        assert!(
+            t.nodes
+                .iter()
+                .all(|n| n.kind != Kind::Dir || n.listing == Listing::Listed)
+        );
+    }
+
+    /// A chain of `levels` folders "dd" below `root` with bottom.txt at its
+    /// end, each made relative to the one above (no path is ever too long);
+    /// the levels made.
+    #[cfg(unix)]
+    fn make_deep(root: &Path, levels: usize) -> usize {
+        use std::os::unix::ffi::OsStrExt;
+        let c = std::ffi::CString::new(root.as_os_str().as_bytes()).unwrap();
+        // SAFETY: plain descriptor calls on NUL-ended names
+        unsafe {
+            let mut fd = libc::open(c.as_ptr(), libc::O_RDONLY | libc::O_DIRECTORY);
+            assert!(fd >= 0);
+            for _ in 0..levels {
+                assert_eq!(libc::mkdirat(fd, c"dd".as_ptr(), 0o755), 0);
+                let next = libc::openat(fd, c"dd".as_ptr(), libc::O_RDONLY | libc::O_DIRECTORY);
+                assert!(next >= 0);
+                libc::close(fd);
+                fd = next;
+            }
+            let f = libc::openat(
+                fd,
+                c"bottom.txt".as_ptr(),
+                libc::O_CREAT | libc::O_WRONLY,
+                0o644,
+            );
+            assert!(f >= 0);
+            libc::close(f);
+            libc::close(fd);
+        }
+        levels
     }
 
     #[test]

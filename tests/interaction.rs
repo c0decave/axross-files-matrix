@@ -16,6 +16,7 @@ fn window(s: &Scratch, files: usize) -> Harness<'static, App> {
     let mut opts = options(s);
     opts.synthetic = Some(files);
     let mut h = Harness::builder()
+        .allow_missing_glyphs()
         .with_size(egui::vec2(1100.0, 700.0))
         .with_max_steps(32)
         .build_eframe(move |cc| App::new(cc, opts));

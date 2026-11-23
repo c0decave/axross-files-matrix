@@ -149,6 +149,9 @@ pub struct Live {
     /// of a cancelled one is dropped).
     pub since: Option<Instant>,
     pub attempt: u64,
+    /// When it was last teleported to (the least recently visited is
+    /// offered for closing when the server's slots are full).
+    pub visited: Instant,
 }
 
 impl Default for Live {
@@ -158,6 +161,7 @@ impl Default for Live {
             island: None,
             since: None,
             attempt: 0,
+            visited: Instant::now(),
         }
     }
 }
@@ -175,6 +179,9 @@ pub fn matches(query: &str, fields: &[&str]) -> bool {
 
 /// How long a connect may take before it is given up.
 pub const CONNECT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
+/// How long a connect is waited for in the background after the window
+/// gave up on it (a late success is closed on the server).
+pub const LATE_ANSWER: std::time::Duration = std::time::Duration::from_secs(600);
 /// How long a jump to a spot inside a system waits for its district.
 pub const SPOT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(90);
 

@@ -467,7 +467,8 @@ fn the_teleport_menu_with_the_systems_of_axross() {
     h.state_mut().pending_fly = None;
     h.state_mut().selected = None;
     h.state_mut().overview(false);
-    h.state_mut().teleport_filter = String::new();
+    // (the SFTP ones: open, connecting, failed, needing a secret)
+    h.state_mut().teleport_filter = "sftp".into();
     h.state_mut().teleport_open = true;
     frames(&mut h, 4);
     shot(&mut h, "teleport-systems");
@@ -475,4 +476,70 @@ fn the_teleport_menu_with_the_systems_of_axross() {
     h.get_by_label_contains("connecting…");
     h.get_by_label_contains("needs unlocking in axross");
     h.get_by_label_contains("failed: cannot open");
+}
+
+/// The far views with the real level of detail (its budget on): the
+/// first view of a big city, its overview from aside and from above.
+fn far_views(files: usize, name: &str) {
+    let s = Scratch::new(name);
+    let mut opts = options(&s);
+    opts.synthetic = Some(files);
+    opts.fixed_lod = false;
+    let mut h = harness(opts, SIZE);
+    settle(&mut h);
+    frames(&mut h, 4);
+    let first = shot(&mut h, &format!("{name}-first"));
+    let l = look(&first, (0.05, 0.1, 0.95, 0.9));
+    eprintln!(
+        "{name} first view: {l:?}, {} boxes",
+        h.state_mut().last_frame_instances
+    );
+    assert_matrix(&l, name);
+    // the biggest city framed: the view's middle is city, not sky or the machine
+    let mid = look(&first, (0.3, 0.35, 0.7, 0.75));
+    assert!(
+        mid.mean[1] > 12.0,
+        "{name}: the city fills the view's middle {mid:?}"
+    );
+    h.state_mut().overview(false);
+    frames(&mut h, 4);
+    let over = shot(&mut h, &format!("{name}-overview"));
+    let l = look(&over, (0.05, 0.1, 0.95, 0.9));
+    eprintln!(
+        "{name} overview: {l:?}, {} boxes",
+        h.state_mut().last_frame_instances
+    );
+    assert_matrix(&l, name);
+    assert!(l.white < 0.01, "{name}: no blown-out blobs {l:?}");
+    let (c, side) = the_city(h.state_mut());
+    h.state_mut()
+        .look_from(c + vec3(0.0, side * 1.1, side * 0.02), c);
+    frames(&mut h, 4);
+    let top = shot(&mut h, &format!("{name}-top"));
+    let l = look(&top, (0.05, 0.1, 0.95, 0.9));
+    eprintln!("{name} top: {l:?}");
+    assert!(
+        l.white < 0.01,
+        "{name} from above: no blown-out blobs {l:?}"
+    );
+    assert!(l.mean[1] > 10.0, "{name} from above: not black {l:?}");
+}
+
+#[test]
+fn far_views_of_200000_files() {
+    if !support::gpu_available() {
+        return;
+    }
+    far_views(200_000, "far-200k");
+}
+
+#[test]
+fn far_views_of_2000000_files() {
+    if !support::gpu_available() || std::env::var_os("AFM_BIG").is_none() {
+        eprintln!(
+            "SKIPPED: AFM_BIG=1 renders the city of two million files (slow in debug builds)"
+        );
+        return;
+    }
+    far_views(2_000_000, "far-2m");
 }

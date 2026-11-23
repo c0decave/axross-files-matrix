@@ -82,7 +82,7 @@ jobs:
       # lavapipe; winit loads the X libraries by name)
       - name: Linux libraries (Mesa's software Vulkan, Xvfb and the X libraries)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends mesa-vulkan-drivers xvfb libxkbcommon-x11-0 libx11-xcb1 libxcursor1 libxi6
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends mesa-vulkan-drivers xvfb libxkbcommon-x11-0 libx11-xcb1 libxcursor1 libxi6 fonts-noto-cjk fonts-noto-core fonts-symbola
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
       # (every test binary run, also past a failing one; each failure an
@@ -92,6 +92,8 @@ jobs:
         shell: bash
         env:
           AFM_REQUIRE_GPU: "1"
+          # (the names in every script must be drawn, with the fonts above)
+          AFM_REQUIRE_FONTS: "1"
         run: |
           set -o pipefail
           cargo test --no-fail-fast 2>&1 | tee target/test-output.log \

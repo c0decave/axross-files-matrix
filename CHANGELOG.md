@@ -86,6 +86,14 @@ The first release: the MVP of the spec.
   approached. A saved spot inside a system opens it again. The matrix
   never asks for or stores a secret: a system that needs one says "needs
   unlocking in axross" and opens axross's connection manager.
+- **Systems can be closed** (the menu's *close*; it frees one of axross's
+  open sessions), and every failed, cancelled or timed-out connect is
+  closed on the server, a late success too. When axross's server holds as
+  many systems as it may (8), the window says which are open and offers
+  to close the one visited longest ago. The Teleport menu costs well under
+  2 ms a frame with thousands of systems and half a million hits: its
+  rows are made once, only those in sight are laid out, they never move
+  under the mouse; Esc closes it first.
 - **Teleport**: a menu of the islands, their largest districts, the saved
   spots and every search hit (paged); 1-9 jump to saved spots, Ctrl+1-9 save them;
   a short warp, at most two teleports a second.
@@ -120,6 +128,38 @@ The first release: the MVP of the spec.
 - **An idle window rests**: nothing is drawn while hidden or minimised;
   when nothing moves only the rain asks for frames (8 a second, a setting;
   0 stills it), one a second unfocused.
+- **Every folder is read once**: a big folder streaming in pieces or pages
+  is never read again when the window asks for it meanwhile (it was
+  counted twice). Folders past the longest path a system takes are read
+  folder by folder (`openat`).
+- **Answers read into typed, bounded shapes**: lists cut at their bound
+  and the rest skipped unbuilt, strings cut, wrong types counted as
+  missing; no answer is held as a generic JSON tree (four million tiny
+  objects cost about their own size). Every string a server sends is cut
+  and escaped; a saved connection whose name is blank or holds control,
+  invisible or bidirectional characters is left out (and counted). Calls
+  without file data take answers of at most 8 MiB. The server runs under
+  a guard of its process group: its own children end with it, also when
+  this program is killed.
+- **A preview never waits on a dead file**: each on a thread of its own,
+  one that does not answer is left behind after five seconds.
+- **The Open guard is an allow-list**: only text, pictures, sound, video
+  and documents without macros open without a question, and only when
+  their first bytes are no program, script or desktop entry.
+- **Every script drawn**: fonts for Chinese, Japanese, Korean, Arabic,
+  Hebrew, Indic scripts, Thai and symbols are found among the system's on
+  a thread of its own (the window never waits for the scan) and added as
+  fallbacks; a character no font has is a box, never a stop.
+- **The far view**: no blown-out specks (bright points far away are
+  pressed down, the bloom takes little of one pixel), lit roofs on far
+  blocks, fog that thins with the world's size; the first view frames the
+  biggest city; an empty or failed island is framed whole, its state
+  written large. A teleport clears the guard's veil to black.
+- **Truly idle**: the machine's load wakes the window only for a light
+  that moves visibly, and not at all while it rests (hidden, unfocused,
+  no frames while idle).
+- **Settings**: a value of the wrong type resets that key alone; the file
+  only the user can read (0600 in a 0700 folder).
 - **axross's server, hardened**: answers longer than 32 MiB are read past
   in bounded memory and fail their call at once, as does an answer that is
   no JSON; three such and the server is ended; names with a slash, a

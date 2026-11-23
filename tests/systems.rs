@@ -32,6 +32,7 @@ fn opts(
 
 fn window(o: StartOptions) -> Harness<'static, App> {
     let mut h = Harness::builder()
+        .allow_missing_glyphs()
         .with_size(egui::vec2(1200.0, 760.0))
         .with_max_steps(16)
         .build_eframe(move |cc| App::new(cc, o));
@@ -64,18 +65,19 @@ fn island_of(app: &App, name: &str) -> usize {
         .unwrap_or_else(|| panic!("{name}: no island"))
 }
 
-/// The camera stands over island `i` (a teleport landed there).
+/// The camera looks at island `i` (a teleport landed there).
 fn camera_over(app: &App, i: usize) -> bool {
     let Some(c) = app.islands[i].city.as_ref() else {
         return false;
     };
+    // (the island framed whole: the camera's target on it)
     let b = c.aabb();
-    let p = app.camera.pos;
-    let margin = (b.max.x - b.min.x).max(60.0);
-    p.x > b.min.x - margin
-        && p.x < b.max.x + margin
-        && p.z > b.min.z - margin
-        && p.z < b.max.z + margin
+    let t = app.camera.target;
+    let margin = 20.0;
+    t.x > b.min.x - margin
+        && t.x < b.max.x + margin
+        && t.z > b.min.z - margin
+        && t.z < b.max.z + margin
 }
 
 #[test]
@@ -131,6 +133,10 @@ fn every_protocol_axross_registers_is_listed_opened_shown_and_reached() {
     // the menu lists them, with protocol, host and state
     h.state_mut().teleport_open = true;
     h.run_steps(3);
+    // (only the rows in sight are laid out: the first ones, by name)
+    h.get_by_label("adb-box");
+    h.state_mut().teleport_filter = "sftp".into();
+    h.run_steps(3);
     h.get_by_label("sftp-box");
     h.get_by_label_contains("sftp.example.test");
     // every one opened (all at once: none waits for another) ...
@@ -166,7 +172,7 @@ fn every_protocol_axross_registers_is_listed_opened_shown_and_reached() {
         h.state_mut().teleport_system(n, Vec::new());
         wait(&mut h, "the flight", |a| a.pending_fly.is_none());
         // (teleports wait their turn: at most two a second)
-        h.run_steps(20);
+        h.run_steps(26);
         assert!(camera_over(h.state_mut(), i), "{n}: the camera is there");
     }
     assert_eq!(Family::of("quantum-ftp"), Family::Generic);
@@ -192,6 +198,20 @@ fn a_failed_connect_says_why_and_can_be_retried() {
             .island_caption(i)
             .contains("failed: cannot open profile")
     );
+    // the camera stands back from the empty plot: the island whole, its
+    // state readable
+    wait(&mut h, "the flight", |a| a.pending_fly.is_none());
+    h.run_steps(26);
+    {
+        let a = h.state_mut();
+        let c = a.islands[i].city.as_ref().unwrap().center();
+        assert!(
+            (a.camera.pos - c).length() > 150.0,
+            "{:?} from {:?}",
+            a.camera.pos,
+            c
+        );
+    }
     h.state_mut().teleport_open = true;
     h.run_steps(3);
     h.get_by_label("retry").click();
@@ -215,8 +235,11 @@ fn a_slow_connect_can_be_cancelled_and_a_hung_one_times_out() {
     let t = Instant::now();
     h.run_steps(5);
     assert!(t.elapsed() < Duration::from_secs(2));
-    // Esc gives the flight and its connect up
-    h.key_press(egui::Key::Escape);
+    // the menu's "cancel" gives the connect up
+    h.state_mut().teleport_open = true;
+    h.state_mut().teleport_filter = "slow".into();
+    h.run_steps(3);
+    h.get_by_label("cancel").click();
     h.run_steps(2);
     assert_eq!(
         h.state_mut().system_state("slow"),
@@ -399,4 +422,144 @@ fn a_backend_without_sizes_and_one_that_cannot_be_listed() {
         unreachable!()
     };
     assert!(why.contains("closed the connection"), "{why}");
+}
+
+#[test]
+fn every_failed_or_timed_out_connect_is_closed_on_the_server() {
+    let s = Scratch::new("systems-close-failed");
+    let (o, seen) = opts(&s);
+    let mut h = window(o);
+    h.state_mut().teleport_system("broken", Vec::new());
+    h.state_mut().teleport_system("late", Vec::new());
+    wait(&mut h, "both given up", |a| {
+        matches!(a.system_state("broken"), SysState::Failed(_))
+            && matches!(a.system_state("late"), SysState::Failed(_))
+    });
+    let SysState::Failed(why) = h.state_mut().system_state("late") else {
+        unreachable!()
+    };
+    assert!(why.contains("no answer within 2 s"), "{why}");
+    // the late success, heard after the window gave up: closed on the server
+    wait(&mut h, "the closes", |_| {
+        let c = &seen.lock().unwrap().closed;
+        c.contains(&"profile:late".to_string()) && c.contains(&"profile:broken".to_string())
+    });
+}
+
+#[test]
+fn systems_are_closed_and_the_servers_limit_offers_the_least_recently_visited() {
+    let s = Scratch::new("systems-limit");
+    let (client, seen) = fake_mcp::start_with_limit(2);
+    let (mut o, _) = opts(&s);
+    o.mcp_client = Some(client);
+    let mut h = window(o);
+    h.state_mut().teleport_system("sftp-box", Vec::new());
+    wait(&mut h, "sftp-box", |a| {
+        a.system_state("sftp-box") == SysState::Open
+    });
+    h.state_mut().teleport_system("s3-box", Vec::new());
+    wait(&mut h, "s3-box", |a| {
+        a.system_state("s3-box") == SysState::Open
+    });
+    // a third: the server's limit - said, with the open ones, oldest first
+    h.state_mut().teleport_system("nfs-box", Vec::new());
+    wait(&mut h, "the question", |a| {
+        matches!(a.open_ask, Some(OpenAsk::TooMany { .. }))
+    });
+    assert_eq!(
+        h.state_mut().open_ask,
+        Some(OpenAsk::TooMany {
+            name: "nfs-box".into(),
+            open: vec!["sftp-box".into(), "s3-box".into()]
+        })
+    );
+    h.run_steps(2);
+    h.get_by_label_contains("Close sftp-box (visited longest ago) and open nfs-box")
+        .click();
+    h.run_steps(2);
+    wait(&mut h, "nfs-box open", |a| {
+        a.system_state("nfs-box") == SysState::Open
+    });
+    assert!(
+        seen.lock()
+            .unwrap()
+            .closed
+            .contains(&"profile:sftp-box".to_string())
+    );
+    assert!(
+        h.state_mut().system_island("sftp-box").is_none(),
+        "its island is gone"
+    );
+    // the menu's "close"
+    h.state_mut().teleport_open = true;
+    h.state_mut().teleport_filter = "s3-box".into();
+    h.run_steps(3);
+    h.get_by_label("close").click();
+    h.run_steps(2);
+    wait(&mut h, "closed", |_| {
+        seen.lock()
+            .unwrap()
+            .closed
+            .contains(&"profile:s3-box".to_string())
+    });
+    assert!(h.state_mut().system_island("s3-box").is_none());
+    assert_eq!(h.state_mut().system_state("s3-box"), SysState::NotOpen);
+}
+
+#[test]
+fn one_dead_file_never_holds_the_previews_of_others() {
+    let s = Scratch::new("systems-dead-preview");
+    let files = s.0.join("files");
+    std::fs::create_dir_all(&files).unwrap();
+    std::fs::write(files.join("alive.txt"), "a living file").unwrap();
+    let (mut o, _) = opts(&s);
+    o.synthetic = None;
+    o.paths = vec![files];
+    let mut h = window(o);
+    h.state_mut().teleport_system("stuck", Vec::new());
+    wait(&mut h, "stuck open", |a| {
+        a.system_state("stuck") == SysState::Open
+    });
+    // its file's preview hangs (the server never answers) ...
+    for _ in 0..6 {
+        let i = island_of(h.state_mut(), "stuck");
+        let n = h.state_mut().islands[i]
+            .tree
+            .nodes
+            .iter()
+            .position(|x| &*x.name == std::ffi::OsStr::new("readme.md"))
+            .unwrap() as u32;
+        h.state_mut().select(i, n);
+        h.run_steps(1);
+        std::thread::sleep(Duration::from_millis(150));
+    }
+    // (each a request of its own, each stuck)
+    std::thread::sleep(Duration::from_millis(300));
+    // ... and a file elsewhere still gets its preview (in seconds, not
+    // never)
+    let (i, n) = {
+        let a = h.state_mut();
+        let i = a
+            .islands
+            .iter()
+            .position(|x| {
+                matches!(
+                    x.source,
+                    axross_files_matrix::world::IslandSource::Local { .. }
+                )
+            })
+            .unwrap();
+        let n = a.islands[i]
+            .tree
+            .nodes
+            .iter()
+            .position(|x| &*x.name == std::ffi::OsStr::new("alive.txt"))
+            .unwrap() as u32;
+        (i, n)
+    };
+    h.state_mut().select(i, n);
+    assert!(
+        h.state_mut().wait_preview(Duration::from_secs(10)),
+        "the preview came"
+    );
 }

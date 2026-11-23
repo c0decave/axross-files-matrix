@@ -350,8 +350,9 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
                     c += base * tr * 0.45 * (0.3 + glow);
                 }
             } else {
-                // the roof: a lit rim inside the edge
-                c = base * (0.025 + 0.05 * glow);
+                // the roof: a lit rim inside the edge; a far block's roof a
+                // little lit (the city from afar is never black)
+                c = base * select(0.025 + 0.05 * glow, 0.07 + 0.1 * glow, block);
             }
             edge_gain = select(1.0, 0.75, block) * (0.55 + 1.6 * glow);
             if (unread) {
@@ -430,5 +431,11 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
         c += g.highlight.rgb * 0.05;
     }
     c += edge_color * (edge * gain * 1.3 + halo * gain * 0.25) * small;
+    // far away, bright points are pressed down (no blown-out specks for the
+    // bloom to spread); near, nothing changes
+    // (and never more than a bright light: no infinity reaches the bloom)
+    c = min(max(c, vec3<f32>(0.0)), vec3<f32>(48.0));
+    let far = clamp(length(in.world - g.eye.xyz) / 1200.0, 0.0, 1.5);
+    c = c / (1.0 + far * max(max(c.r, c.g), c.b));
     return vec4<f32>(fog_mix(c, in.world), 1.0);
 }

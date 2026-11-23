@@ -12,6 +12,9 @@
 //! Nothing goes through a shell: the program and each argument are passed
 //! as they are.
 
+use crate::wire::{Bounded, Flag, Num, Text};
+use serde::Deserialize;
+use serde_json::value::RawValue;
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::ffi::OsString;
@@ -26,6 +29,9 @@ use std::time::Duration;
 /// The longest line read from the server (a 4 MiB read_file page in
 /// base64 is under 6 MiB).
 pub const MAX_LINE: usize = 32 << 20;
+/// The longest answer to a call that carries no file data (a listing page,
+/// the saved connections): a bad answer is refused sooner.
+pub const SMALL_LINE: usize = 8 << 20;
 pub const PROTOCOL: &str = "2025-06-18";
 /// The most stderr lines kept (shown when the server fails).
 const STDERR_LINES: usize = 40;
@@ -59,7 +65,9 @@ impl Tool {
     }
 }
 
-type Waiters = Arc<Mutex<HashMap<u64, Sender<Result<Value, String>>>>>;
+/// The calls waiting: their answer's channel and the longest line they
+/// take.
+type Waiters = Arc<Mutex<HashMap<u64, (Sender<Result<Box<RawValue>, String>>, usize)>>>;
 type Shared = Arc<Mutex<Box<dyn Write + Send>>>;
 
 pub struct Client {
@@ -134,6 +142,9 @@ pub struct Protocol {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Systems {
     pub profiles: Vec<Profile>,
+    /// Saved connections left out: names that cannot stand as they are,
+    /// past the bound of 4096, or no object.
+    pub left_out: usize,
     /// Empty from a server that does not list them (older axross).
     pub protocols: Vec<Protocol>,
 }
@@ -147,46 +158,97 @@ pub struct Opened {
     pub class: Option<String>,
 }
 
-fn parse_profile(v: &Value) -> Option<Profile> {
-    let name = v["name"].as_str()?.to_string();
-    if name.is_empty() || name.len() > 256 || name.chars().any(char::is_control) {
+/// A saved connection as the server sends it (every field bounded).
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+struct ProfileWire {
+    name: Text<1024>,
+    protocol: Text<64>,
+    protocol_name: Text<256>,
+    host: Text<512>,
+    port: Num,
+    username: Text<512>,
+    open_as: Text<1100>,
+    openable: Flag,
+    reason: Text<2000>,
+    needs_secret: Flag,
+    production: Flag,
+}
+
+/// A protocol as the server sends it.
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+struct ProtocolWire {
+    protocol: Text<64>,
+    name: Text<256>,
+    credential: Text<32>,
+    default_port: Num,
+    is_local: Flag,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+struct SystemsWire {
+    profiles: Bounded<ProfileWire, 4096>,
+    protocols: Bounded<ProtocolWire, 1024>,
+}
+
+/// A saved connection made safe: its name used as it is (it opens the
+/// profile) - so one that is blank, or holds control, invisible or
+/// bidirectional characters, is left out; every other string shown
+/// escaped and cut.
+fn profile_of(w: ProfileWire) -> Option<Profile> {
+    let name = w.name.into_inner()?;
+    if name.len() > 256 || !crate::wire::plain_name(&name) {
         return None;
     }
-    let text = |k: &str| v[k].as_str().map(String::from).filter(|s| !s.is_empty());
-    let openable = v["openable"].as_bool().unwrap_or(true);
-    let reason = v["reason"]
-        .as_str()
-        .unwrap_or("")
-        .chars()
-        .take(500)
-        .collect::<String>();
+    let shown = |t: Option<String>, max: usize| {
+        t.filter(|s| !s.trim().is_empty())
+            .map(|s| crate::wire::shown(&s, max))
+    };
+    let openable = w.openable.or(true);
+    let reason = crate::wire::shown(w.reason.get().unwrap_or(""), 500);
     // (an older server says it only in the reason)
-    let needs_secret = v["needs_secret"].as_bool().unwrap_or_else(|| {
+    let needs_secret = w.needs_secret.0.unwrap_or_else(|| {
         let r = reason.to_ascii_lowercase();
         !openable && (r.contains("password") || r.contains("passphrase"))
     });
+    let protocol = w.protocol.into_inner().unwrap_or_default();
     Some(Profile {
-        protocol: v["protocol"].as_str().unwrap_or("").to_string(),
-        protocol_name: text("protocol_name"),
-        host: text("host"),
-        port: v["port"].as_u64(),
-        username: text("username"),
-        open_as: text("open_as"),
+        // (the protocol picks a family by its id: never escaped into a
+        // different one)
+        protocol: if crate::wire::plain_name(&protocol) {
+            crate::wire::shown(&protocol, 32)
+        } else {
+            String::new()
+        },
+        protocol_name: shown(w.protocol_name.into_inner(), 64),
+        host: shown(w.host.into_inner(), 128),
+        port: w.port.0,
+        username: shown(w.username.into_inner(), 128),
+        open_as: w
+            .open_as
+            .into_inner()
+            .filter(|s| crate::wire::plain_name(s)),
         openable,
         reason,
         needs_secret,
-        production: v["production"].as_bool().unwrap_or(false),
+        production: w.production.or(false),
         name,
     })
 }
 
-fn parse_protocol(v: &Value) -> Option<Protocol> {
+fn protocol_of(w: ProtocolWire) -> Option<Protocol> {
+    let id = w.protocol.into_inner()?;
+    if !crate::wire::plain_name(&id) {
+        return None;
+    }
     Some(Protocol {
-        id: v["protocol"].as_str()?.to_string(),
-        name: v["name"].as_str().unwrap_or("").to_string(),
-        credential: v["credential"].as_str().unwrap_or("").to_string(),
-        default_port: v["default_port"].as_u64().unwrap_or(0),
-        is_local: v["is_local"].as_bool().unwrap_or(false),
+        id: crate::wire::shown(&id, 32),
+        name: crate::wire::shown(w.name.get().unwrap_or(""), 64),
+        credential: crate::wire::shown(w.credential.get().unwrap_or(""), 16),
+        default_port: w.default_port.0.unwrap_or(0),
+        is_local: w.is_local.or(false),
     })
 }
 
@@ -211,6 +273,15 @@ pub struct RemoteEntry {
     pub size_known: bool,
 }
 
+/// One path's details.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Stat {
+    pub size: Option<u64>,
+    /// Seconds since 1970.
+    pub modified: Option<i64>,
+    pub mode: Option<String>,
+}
+
 /// A page of a walk.
 #[derive(Clone, Debug, Default)]
 pub struct WalkPage {
@@ -222,14 +293,106 @@ pub struct WalkPage {
     pub rejected: usize,
 }
 
-/// The entries of an answer and how many were left out.
-fn parse_entries(list: Option<&Vec<Value>>) -> (Vec<RemoteEntry>, usize) {
-    let Some(list) = list else {
-        return (Vec::new(), 0);
+/// An entry of a listing or a walk as the server sends it.
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+struct EntryWire {
+    path: Text<16384>,
+    path_b64: Text<22000>,
+    name: Text<4096>,
+    name_b64: Text<5500>,
+    is_dir: Flag,
+    is_link: Flag,
+    size: Num,
+    modified: Text<64>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+struct UnreadableWire {
+    path: Text<16384>,
+}
+
+/// A walk's or listing's page: at most 20 000 entries an answer.
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+struct PageWire {
+    entries: Bounded<EntryWire, 20_000>,
+    unreadable: Bounded<UnreadableWire, 10_000>,
+    next_offset: Num,
+    truncated: Flag,
+}
+
+fn entry_of(w: EntryWire) -> Option<RemoteEntry> {
+    let name = match w.name_b64.get().and_then(b64_decode) {
+        Some(raw) => raw,
+        None => w.name.into_inner()?.into_bytes(),
     };
-    let entries: Vec<RemoteEntry> = list.iter().filter_map(parse_entry).collect();
-    let rejected = list.len() - entries.len();
-    (entries, rejected)
+    let path = match w.path_b64.get().and_then(b64_decode) {
+        Some(raw) => String::from_utf8_lossy(&raw).into_owned(),
+        None => w.path.into_inner().unwrap_or_default(),
+    };
+    if !safe_name(&name) {
+        return None;
+    }
+    Some(RemoteEntry {
+        path,
+        name,
+        is_dir: w.is_dir.or(false),
+        is_link: w.is_link.or(false),
+        size: w.size.0.unwrap_or(0),
+        size_known: w.size.0.is_some(),
+        mtime: w.modified.get().map_or(0, parse_iso8601),
+    })
+}
+
+/// A page from a payload that is a list of entries or an object holding
+/// one (`entries`), with how many entries were left out.
+fn page_of(payload: &str) -> Result<(PageWire, usize), String> {
+    let p: PageWire = if payload.trim_start().starts_with('[') {
+        PageWire {
+            entries: serde_json::from_str(payload).map_err(|e| e.to_string())?,
+            ..Default::default()
+        }
+    } else {
+        serde_json::from_str(payload).map_err(|e| e.to_string())?
+    };
+    let dropped = p.entries.dropped;
+    Ok((p, dropped))
+}
+
+/// The entries of a page, and how many were left out (unsafe names, past
+/// the bound, no object).
+fn entries_of(p: PageWire) -> (Vec<RemoteEntry>, usize, Vec<String>, Option<u64>, bool) {
+    let total = p.entries.items.len();
+    let entries: Vec<RemoteEntry> = p.entries.items.into_iter().filter_map(entry_of).collect();
+    let rejected = total - entries.len() + p.entries.dropped;
+    let unreadable = p
+        .unreadable
+        .items
+        .into_iter()
+        .filter_map(|u| u.path.into_inner())
+        .collect();
+    (
+        entries,
+        rejected,
+        unreadable,
+        p.next_offset.0,
+        p.truncated.or(false),
+    )
+}
+
+/// The entries of an answer and how many were left out (tests).
+#[cfg(test)]
+fn parse_entries(list: Option<&Vec<Value>>) -> (Vec<RemoteEntry>, usize) {
+    let text = serde_json::to_string(&list.cloned().unwrap_or_default()).unwrap_or_default();
+    match page_of(&text) {
+        Ok((p, _)) => {
+            let (e, r, ..) = entries_of(p);
+            (e, r)
+        }
+        Err(_) => (Vec::new(), 0),
+    }
 }
 
 impl Client {
@@ -258,7 +421,29 @@ impl Client {
             .name("afm-mcp-read".into())
             .spawn(move || read_loop(reader, waiters, alive, writer))
             .map_err(|e| e.to_string())?;
-        let init = client.request(
+        #[derive(Default, Deserialize)]
+        #[serde(default)]
+        struct Info {
+            name: Text<128>,
+            version: Text<64>,
+        }
+        #[derive(Default, Deserialize)]
+        #[serde(default)]
+        struct Init {
+            #[serde(rename = "serverInfo")]
+            server_info: Option<Info>,
+        }
+        #[derive(Default, Deserialize)]
+        #[serde(default)]
+        struct ToolWire {
+            name: Text<128>,
+        }
+        #[derive(Default, Deserialize)]
+        #[serde(default)]
+        struct Tools {
+            tools: Bounded<ToolWire, 1024>,
+        }
+        let init: Init = client.request_typed(
             "initialize",
             json!({
                 "protocolVersion": PROTOCOL,
@@ -267,33 +452,42 @@ impl Client {
             }),
             timeout,
         )?;
-        client.server = init["serverInfo"]["name"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
-        client.version = init["serverInfo"]["version"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+        let info = init.server_info.unwrap_or_default();
+        client.server = crate::wire::shown(info.name.get().unwrap_or(""), 64);
+        client.version = crate::wire::shown(info.version.get().unwrap_or(""), 32);
         client.notify("notifications/initialized", json!({}))?;
-        let tools = client.request("tools/list", json!({}), timeout)?;
-        client.tools = tools["tools"]
-            .as_array()
-            .map(|a| {
-                a.iter()
-                    .filter_map(|t| t["name"].as_str().map(String::from))
-                    .collect()
-            })
-            .unwrap_or_default();
+        let tools: Tools = client.request_typed("tools/list", json!({}), timeout)?;
+        client.tools = tools
+            .tools
+            .items
+            .into_iter()
+            .filter_map(|t| t.name.into_inner())
+            .collect();
         Ok(client)
     }
 
     /// Starts `command` (the program, then its arguments) and talks to it.
     pub fn spawn(command: &[OsString], timeout: Duration) -> Result<Client, String> {
         let (program, args) = command.split_first().ok_or("no command")?;
-        let mut cmd = Command::new(program);
-        cmd.args(args)
-            .stdin(Stdio::piped())
+        // Linux: the server runs under a small guard shell of its process
+        // group, which the kernel tells (SIGTERM) when this program dies -
+        // even by SIGKILL - and which then kills the whole group: the
+        // server's own children (a helper it started) end with it too.
+        #[cfg(target_os = "linux")]
+        let mut cmd = {
+            let mut c = Command::new("/bin/sh");
+            c.args(["-c", GUARD, "afm-mcp-guard"])
+                .arg(program)
+                .args(args);
+            c
+        };
+        #[cfg(not(target_os = "linux"))]
+        let mut cmd = {
+            let mut c = Command::new(program);
+            c.args(args);
+            c
+        };
+        cmd.stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
         #[cfg(windows)]
@@ -319,7 +513,7 @@ impl Client {
             // started from a thread that lasts - spawn_lasting.)
             unsafe {
                 cmd.pre_exec(|| {
-                    libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL);
+                    libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGTERM);
                     Ok(())
                 });
             }
@@ -388,8 +582,15 @@ impl Client {
         self.send(&json!({"jsonrpc": "2.0", "method": method, "params": params}))
     }
 
-    /// One request and its answer's `result` (an `error` as Err).
-    pub fn request(&self, method: &str, params: Value, timeout: Duration) -> Result<Value, String> {
+    /// One request and its answer's `result` as JSON text (an `error` as
+    /// Err); an answer longer than `max_line` fails it.
+    pub fn request_raw(
+        &self,
+        method: &str,
+        params: Value,
+        timeout: Duration,
+        max_line: usize,
+    ) -> Result<Box<RawValue>, String> {
         if !self.is_alive() {
             return Err("the server has ended".into());
         }
@@ -398,7 +599,7 @@ impl Client {
         self.waiters
             .lock()
             .unwrap_or_else(|p| p.into_inner())
-            .insert(id, tx);
+            .insert(id, (tx, max_line.min(MAX_LINE)));
         let sent =
             self.send(&json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params}));
         if let Err(e) = sent {
@@ -432,6 +633,17 @@ impl Client {
         }
     }
 
+    /// One request, its answer read into `T` (bounded: see [`crate::wire`]).
+    pub fn request_typed<T: for<'de> Deserialize<'de>>(
+        &self,
+        method: &str,
+        params: Value,
+        timeout: Duration,
+    ) -> Result<T, String> {
+        let raw = self.request_raw(method, params, timeout, SMALL_LINE)?;
+        serde_json::from_str(raw.get()).map_err(|e| format!("{method}: {e}"))
+    }
+
     /// The name this server knows `tool` by (None: it has none of them).
     pub fn tool_name(&self, tool: Tool) -> Option<&'static str> {
         tool.names()
@@ -444,28 +656,65 @@ impl Client {
         self.tool_name(tool).is_some()
     }
 
-    /// Calls `tool`: its structured result (or the JSON in its text), an
-    /// error result as Err with its text.
-    pub fn call(&self, tool: Tool, args: Value, timeout: Duration) -> Result<Value, String> {
+    /// Calls `tool`: its result's JSON text - the structured content, or
+    /// the JSON in its text - an error result as Err with its text. An
+    /// answer longer than `max_line` fails the call at once.
+    pub fn call_payload(
+        &self,
+        tool: Tool,
+        args: Value,
+        timeout: Duration,
+        max_line: usize,
+    ) -> Result<String, String> {
+        #[derive(Default, Deserialize)]
+        #[serde(default)]
+        struct Part {
+            text: Text<MAX_LINE>,
+        }
+        #[derive(Default, Deserialize)]
+        struct ToolResult<'a> {
+            #[serde(default)]
+            content: Bounded<Part, 64>,
+            #[serde(rename = "structuredContent", borrow, default)]
+            structured: Option<&'a RawValue>,
+            #[serde(rename = "isError", default)]
+            is_error: Flag,
+        }
         let name = self
             .tool_name(tool)
             .ok_or_else(|| format!("the server has no {} tool", tool.names()[0]))?;
-        let r = self.request(
+        let raw = self.request_raw(
             "tools/call",
             json!({"name": name, "arguments": args}),
             timeout,
+            max_line,
         )?;
-        let text = r["content"]
-            .as_array()
-            .and_then(|c| c.iter().find_map(|p| p["text"].as_str()))
-            .unwrap_or("");
-        if r["isError"].as_bool() == Some(true) {
-            return Err(text.chars().take(500).collect());
+        let r: ToolResult = serde_json::from_str(raw.get()).map_err(|e| format!("{name}: {e}"))?;
+        let text = r
+            .content
+            .items
+            .into_iter()
+            .find_map(|p| p.text.into_inner())
+            .unwrap_or_default();
+        if r.is_error.or(false) {
+            return Err(crate::wire::shown(&text, 500));
         }
-        if let Some(s) = r.get("structuredContent") {
-            return Ok(s.clone());
+        match r.structured {
+            Some(s) if s.get() != "null" => Ok(s.get().to_string()),
+            _ => Ok(text),
         }
-        serde_json::from_str(text).map_err(|e| format!("{name}: no JSON result ({e})"))
+    }
+
+    /// [`Self::call_payload`] read into `T`.
+    fn call_typed<T: for<'de> Deserialize<'de>>(
+        &self,
+        tool: Tool,
+        args: Value,
+        timeout: Duration,
+    ) -> Result<T, String> {
+        let payload = self.call_payload(tool, args, timeout, SMALL_LINE)?;
+        serde_json::from_str(&payload)
+            .map_err(|e| format!("{}: no JSON result ({e})", tool.names()[0]))
     }
 
     /// The backends (`list_backends`). A server serving its local disk
@@ -484,12 +733,58 @@ impl Client {
                 production: false,
             }]);
         }
-        let v = self.call(Tool::ListBackends, json!({}), timeout)?;
-        let list = v.get("backends").unwrap_or(&v);
+        #[derive(Default, Deserialize)]
+        #[serde(default)]
+        struct BackendWire {
+            id: Text<1100>,
+            class: Text<128>,
+            name: Text<512>,
+            remote: Flag,
+            is_default: Flag,
+            profile: Text<1024>,
+            protocol: Text<64>,
+            production: Flag,
+        }
+        #[derive(Default, Deserialize)]
+        #[serde(default)]
+        struct Backends {
+            backends: Bounded<BackendWire, 256>,
+        }
+        let payload = self.call_payload(Tool::ListBackends, json!({}), timeout, SMALL_LINE)?;
+        let list: Bounded<BackendWire, 256> = if payload.trim_start().starts_with('[') {
+            serde_json::from_str(&payload).map_err(|e| e.to_string())?
+        } else {
+            serde_json::from_str::<Backends>(&payload)
+                .map_err(|e| e.to_string())?
+                .backends
+        };
         Ok(list
-            .as_array()
-            .map(|a| a.iter().filter_map(parse_backend).collect())
-            .unwrap_or_default())
+            .items
+            .into_iter()
+            .filter_map(|b| {
+                let id = b.id.into_inner()?;
+                if !crate::wire::plain_name(&id) && !id.is_empty() {
+                    return None;
+                }
+                Some(Backend {
+                    id,
+                    class: crate::wire::shown(b.class.get().unwrap_or(""), 64),
+                    name: crate::wire::shown(b.name.get().unwrap_or(""), 128),
+                    remote: b.remote.or(false),
+                    is_default: b.is_default.or(false),
+                    profile: b
+                        .profile
+                        .into_inner()
+                        .filter(|p| crate::wire::plain_name(p)),
+                    protocol: b
+                        .protocol
+                        .into_inner()
+                        .filter(|p| crate::wire::plain_name(p))
+                        .map(|p| crate::wire::shown(&p, 32)),
+                    production: b.production.or(false),
+                })
+            })
+            .collect())
     }
 
     /// The saved remote profiles' names (`list_remote_profiles`; empty when
@@ -509,29 +804,43 @@ impl Client {
         if !self.has(Tool::ListProfiles) {
             return Err(NO_PROFILE_TOOLS.into());
         }
-        let v = self.call(Tool::ListProfiles, json!({}), timeout)?;
-        let list = v.get("profiles").unwrap_or(&v);
-        let mut profiles: Vec<Profile> = list
-            .as_array()
-            .map(|a| {
-                a.iter()
-                    .filter_map(|p| match p.as_str() {
-                        // (a server of names only)
-                        Some(n) => parse_profile(&json!({"name": n})),
-                        None => parse_profile(p),
-                    })
-                    .take(4096)
-                    .collect()
-            })
-            .unwrap_or_default();
+        let w: SystemsWire = if let Ok(payload) =
+            self.call_payload(Tool::ListProfiles, json!({}), timeout, SMALL_LINE)
+        {
+            if payload.trim_start().starts_with('[') {
+                SystemsWire {
+                    profiles: serde_json::from_str(&payload).map_err(|e| e.to_string())?,
+                    ..Default::default()
+                }
+            } else {
+                serde_json::from_str(&payload).map_err(|e| e.to_string())?
+            }
+        } else {
+            return Err(self
+                .call_payload(Tool::ListProfiles, json!({}), timeout, SMALL_LINE)
+                .err()
+                .unwrap_or_default());
+        };
+        let total = w.profiles.items.len();
+        let mut left_out = w.profiles.dropped;
+        let mut profiles: Vec<Profile> = w
+            .profiles
+            .items
+            .into_iter()
+            .filter_map(profile_of)
+            .collect();
+        left_out += total - profiles.len();
         profiles.sort_by(|a, b| a.name.cmp(&b.name));
         profiles.dedup_by(|a, b| a.name == b.name);
-        let protocols = v["protocols"]
-            .as_array()
-            .map(|a| a.iter().filter_map(parse_protocol).take(1024).collect())
-            .unwrap_or_default();
+        let protocols = w
+            .protocols
+            .items
+            .into_iter()
+            .filter_map(protocol_of)
+            .collect();
         Ok(Systems {
             profiles,
+            left_out,
             protocols,
         })
     }
@@ -541,15 +850,28 @@ impl Client {
         if !self.has(Tool::OpenProfile) {
             return Err("this axross's MCP server cannot open saved connections".into());
         }
-        let v = self.call(Tool::OpenProfile, json!({"profile": name}), timeout)?;
-        let backend = v["backend"]
-            .as_str()
-            .map(String::from)
+        #[derive(Default, Deserialize)]
+        #[serde(default)]
+        struct OpenedWire {
+            backend: Text<1100>,
+            protocol: Text<64>,
+            class: Text<128>,
+        }
+        let v: OpenedWire =
+            self.call_typed(Tool::OpenProfile, json!({"profile": name}), timeout)?;
+        let backend = v
+            .backend
+            .into_inner()
+            .filter(|b| crate::wire::plain_name(b))
             .unwrap_or_else(|| format!("profile:{name}"));
         Ok(Opened {
             backend,
-            protocol: v["protocol"].as_str().map(String::from),
-            class: v["class"].as_str().map(String::from),
+            protocol: v
+                .protocol
+                .into_inner()
+                .filter(|p| crate::wire::plain_name(p))
+                .map(|p| crate::wire::shown(&p, 32)),
+            class: v.class.into_inner().map(|c| crate::wire::shown(&c, 64)),
         })
     }
 
@@ -558,8 +880,13 @@ impl Client {
         if !self.has(Tool::CloseProfile) {
             return Ok(());
         }
-        self.call(Tool::CloseProfile, json!({"backend": backend}), timeout)
-            .map(|_| ())
+        self.call_payload(
+            Tool::CloseProfile,
+            json!({"backend": backend}),
+            timeout,
+            SMALL_LINE,
+        )
+        .map(|_| ())
     }
 
     /// One folder's entries (`list_directory`).
@@ -571,9 +898,9 @@ impl Client {
     ) -> Result<Vec<RemoteEntry>, String> {
         let mut args = path.args();
         with_backend(&mut args, backend);
-        let v = self.call(Tool::ListDirectory, args, timeout)?;
-        let list = v.get("entries").unwrap_or(&v);
-        Ok(parse_entries(list.as_array()).0)
+        let payload = self.call_payload(Tool::ListDirectory, args, timeout, MAX_LINE)?;
+        let (p, _) = page_of(&payload)?;
+        Ok(entries_of(p).0)
     }
 
     /// One folder's entries a page at a time (`walk_tree` one level deep,
@@ -593,8 +920,9 @@ impl Client {
             }
             let mut args = path.args();
             with_backend(&mut args, backend);
-            let v = self.call(Tool::ListDirectory, args, timeout)?;
-            let (entries, rejected) = parse_entries(v.get("entries").unwrap_or(&v).as_array());
+            let payload = self.call_payload(Tool::ListDirectory, args, timeout, MAX_LINE)?;
+            let (p, _) = page_of(&payload)?;
+            let (entries, rejected, ..) = entries_of(p);
             return Ok(WalkPage {
                 entries,
                 rejected,
@@ -639,21 +967,15 @@ impl Client {
         args["max_depth"] = json!(max_depth);
         args["max_entries"] = json!(max_entries);
         args["offset"] = json!(offset);
-        let v = self.call(Tool::Walk, args, timeout)?;
-        let (entries, rejected) = parse_entries(v["entries"].as_array());
+        let payload = self.call_payload(Tool::Walk, args, timeout, SMALL_LINE)?;
+        let (p, _) = page_of(&payload)?;
+        let (entries, rejected, unreadable, next_offset, truncated) = entries_of(p);
         Ok(WalkPage {
             entries,
             rejected,
-            unreadable: v["unreadable"]
-                .as_array()
-                .map(|a| {
-                    a.iter()
-                        .filter_map(|u| u["path"].as_str().map(String::from))
-                        .collect()
-                })
-                .unwrap_or_default(),
-            next_offset: v["next_offset"].as_u64(),
-            truncated: v["truncated"].as_bool().unwrap_or(false),
+            unreadable,
+            next_offset,
+            truncated,
         })
     }
 
@@ -669,12 +991,19 @@ impl Client {
         with_backend(&mut args, backend);
         args["max_bytes"] = json!(max.max(1));
         args["encoding"] = json!("base64");
-        let v = self.call(Tool::ReadFile, args, timeout)?;
-        if let Some(b) = v["content_b64"].as_str() {
+        #[derive(Default, Deserialize)]
+        #[serde(default)]
+        struct ReadWire {
+            content_b64: Text<MAX_LINE>,
+            text: Text<MAX_LINE>,
+        }
+        let payload = self.call_payload(Tool::ReadFile, args, timeout, MAX_LINE)?;
+        let v: ReadWire = serde_json::from_str(&payload).map_err(|e| format!("read_file: {e}"))?;
+        if let Some(b) = v.content_b64.get() {
             let mut bytes = b64_decode(b).ok_or("read_file: bad base64")?;
             bytes.truncate(max as usize);
             Ok(bytes)
-        } else if let Some(t) = v["text"].as_str() {
+        } else if let Some(t) = v.text.get() {
             let mut bytes = t.as_bytes().to_vec();
             bytes.truncate(max as usize);
             Ok(bytes)
@@ -684,10 +1013,22 @@ impl Client {
     }
 
     /// One path's details (`get_path_info`).
-    pub fn stat(&self, backend: &str, path: &PathArg, timeout: Duration) -> Result<Value, String> {
+    pub fn stat(&self, backend: &str, path: &PathArg, timeout: Duration) -> Result<Stat, String> {
+        #[derive(Default, Deserialize)]
+        #[serde(default)]
+        struct StatWire {
+            size: Num,
+            modified: Text<64>,
+            mode: Text<32>,
+        }
         let mut args = path.args();
         with_backend(&mut args, backend);
-        self.call(Tool::Stat, args, timeout)
+        let w: StatWire = self.call_typed(Tool::Stat, args, timeout)?;
+        Ok(Stat {
+            size: w.size.0,
+            modified: w.modified.get().map(parse_iso8601),
+            mode: w.mode.into_inner().map(|m| crate::wire::shown(&m, 32)),
+        })
     }
 }
 
@@ -801,6 +1142,12 @@ fn spawn_lasting(mut cmd: Command) -> std::io::Result<std::process::Child> {
     cmd.spawn()
 }
 
+/// The guard shell (Linux): the server with the guard's stdin (a
+/// background job's would be /dev/null), and on SIGTERM - this program's
+/// death - the whole process group killed.
+#[cfg(target_os = "linux")]
+const GUARD: &str = r#"exec 3<&0; trap 'kill -KILL 0' TERM; "$@" 0<&3 3<&- & exec 3<&-; wait $!"#;
+
 /// One line read from the server.
 #[derive(Debug, PartialEq)]
 pub enum Line {
@@ -869,9 +1216,41 @@ fn fail_all(waiters: &Waiters, why: &str) {
         .unwrap_or_else(|p| p.into_inner())
         .drain()
         .collect();
-    for (_, tx) in waiting {
+    for (_, (tx, _)) in waiting {
         let _ = tx.send(Err(why.to_string()));
     }
+}
+
+/// The longest line the calls waiting now take (no call: a small one -
+/// a ping, a notification).
+fn line_bound(waiters: &Waiters) -> usize {
+    waiters
+        .lock()
+        .unwrap_or_else(|p| p.into_inner())
+        .values()
+        .map(|(_, max)| *max)
+        .max()
+        .unwrap_or(SMALL_LINE)
+}
+
+/// A message from the server, read without building its result: that is
+/// handed on as JSON text and read into a typed shape by the call.
+#[derive(Deserialize)]
+struct Envelope {
+    #[serde(default)]
+    id: Option<Box<RawValue>>,
+    #[serde(default)]
+    method: Text<128>,
+    #[serde(default)]
+    result: Option<Box<RawValue>>,
+    #[serde(default)]
+    error: Option<ErrorWire>,
+}
+
+#[derive(Default, Deserialize)]
+#[serde(default)]
+struct ErrorWire {
+    message: Text<2000>,
 }
 
 fn read_loop(reader: impl Read, waiters: Waiters, alive: Arc<AtomicBool>, writer: Shared) {
@@ -881,8 +1260,12 @@ fn read_loop(reader: impl Read, waiters: Waiters, alive: Arc<AtomicBool>, writer
     loop {
         // (an answer over the bound fails what waits for it at once - no
         // waiting out its timeout - and is read past without keeping it)
-        let read = read_line_bounded(&mut r, &mut line, MAX_LINE, || {
-            fail_all(&waiters, "the server's answer is over 32 MiB: refused")
+        let max = line_bound(&waiters);
+        let read = read_line_bounded(&mut r, &mut line, max, || {
+            fail_all(
+                &waiters,
+                &format!("the server's answer is over {} MiB: refused", max >> 20),
+            )
         });
         let text = match read {
             Ok(Line::Text(t)) => t,
@@ -898,7 +1281,7 @@ fn read_loop(reader: impl Read, waiters: Waiters, alive: Arc<AtomicBool>, writer
         if text.iter().all(|c| c.is_ascii_whitespace()) {
             continue;
         }
-        let Ok(msg) = serde_json::from_slice::<Value>(&text) else {
+        let Ok(msg) = serde_json::from_slice::<Envelope>(&text) else {
             // no JSON: whatever waits fails now, not at its timeout
             fail_all(
                 &waiters,
@@ -910,20 +1293,23 @@ fn read_loop(reader: impl Read, waiters: Waiters, alive: Arc<AtomicBool>, writer
             }
             continue;
         };
-        if let (Some(method), Some(id)) = (msg.get("method").and_then(Value::as_str), msg.get("id"))
-        {
+        drop(text);
+        if let (Some(method), Some(id)) = (msg.method.get(), msg.id.as_ref()) {
             // a request from the server: a ping is answered, anything else
             // refused (this client offers nothing)
+            let id = id.get();
             let answer = if method == "ping" {
-                json!({"jsonrpc": "2.0", "id": id, "result": {}})
+                format!(r#"{{"jsonrpc":"2.0","id":{id},"result":{{}}}}"#)
             } else {
-                json!({"jsonrpc": "2.0", "id": id, "error": {"code": -32601, "message": "not offered"}})
+                format!(
+                    r#"{{"jsonrpc":"2.0","id":{id},"error":{{"code":-32601,"message":"not offered"}}}}"#
+                )
             };
             let mut w = writer.lock().unwrap_or_else(|p| p.into_inner());
             let _ = writeln!(w, "{answer}").and_then(|_| w.flush());
             continue;
         }
-        let Some(id) = msg.get("id").and_then(Value::as_u64) else {
+        let Some(id) = msg.id.as_ref().and_then(|i| i.get().parse::<u64>().ok()) else {
             // a notification (progress, a log line): nothing to do
             continue;
         };
@@ -931,16 +1317,11 @@ fn read_loop(reader: impl Read, waiters: Waiters, alive: Arc<AtomicBool>, writer
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .remove(&id);
-        if let Some(tx) = tx {
-            let answer = if let Some(e) = msg.get("error") {
-                Err(e["message"]
-                    .as_str()
-                    .unwrap_or("error")
-                    .chars()
-                    .take(500)
-                    .collect())
-            } else {
-                Ok(msg.get("result").cloned().unwrap_or(Value::Null))
+        if let Some((tx, _)) = tx {
+            let answer = match (msg.error, msg.result) {
+                (Some(e), _) => Err(crate::wire::shown(e.message.get().unwrap_or("error"), 500)),
+                (None, Some(r)) => Ok(r),
+                (None, None) => RawValue::from_string("null".into()).map_err(|e| e.to_string()),
             };
             let _ = tx.send(answer);
         }
@@ -948,42 +1329,6 @@ fn read_loop(reader: impl Read, waiters: Waiters, alive: Arc<AtomicBool>, writer
     alive.store(false, Ordering::Relaxed);
     // everyone still waiting hears it now, not at their timeout
     fail_all(&waiters, "the server has ended");
-}
-
-fn parse_backend(v: &Value) -> Option<Backend> {
-    Some(Backend {
-        id: v["id"].as_str()?.to_string(),
-        class: v["class"].as_str().unwrap_or("").to_string(),
-        name: v["name"].as_str().unwrap_or("").to_string(),
-        remote: v["remote"].as_bool().unwrap_or(false),
-        is_default: v["is_default"].as_bool().unwrap_or(false),
-        profile: v["profile"].as_str().map(String::from),
-        protocol: v["protocol"].as_str().map(String::from),
-        production: v["production"].as_bool().unwrap_or(false),
-    })
-}
-
-fn parse_entry(v: &Value) -> Option<RemoteEntry> {
-    let name = match v["name_b64"].as_str().and_then(b64_decode) {
-        Some(raw) => raw,
-        None => v["name"].as_str()?.as_bytes().to_vec(),
-    };
-    let path = match v["path_b64"].as_str().and_then(b64_decode) {
-        Some(raw) => String::from_utf8_lossy(&raw).into_owned(),
-        None => v["path"].as_str().unwrap_or("").to_string(),
-    };
-    if !safe_name(&name) {
-        return None;
-    }
-    Some(RemoteEntry {
-        path,
-        name,
-        is_dir: v["is_dir"].as_bool().unwrap_or(false),
-        is_link: v["is_link"].as_bool().unwrap_or(false),
-        size: v["size"].as_u64().unwrap_or(0),
-        size_known: v["size"].is_u64(),
-        mtime: v["modified"].as_str().map_or(0, parse_iso8601),
-    })
 }
 
 /// A name a server may give for an entry: not empty, not `.` or `..`, no
@@ -1398,7 +1743,7 @@ pub(crate) mod tests {
         );
         // an unknown method is an error, not a hang
         assert!(
-            c.request("nope", json!({}), Duration::from_secs(5))
+            c.request_raw("nope", json!({}), Duration::from_secs(5), SMALL_LINE)
                 .is_err()
         );
     }
@@ -1592,7 +1937,7 @@ pub(crate) mod tests {
                 };
                 let reply = match m["method"].as_str() {
                     Some("initialize") => json!({"jsonrpc": "2.0", "id": id, "result": {"serverInfo": {"name": "x"}}}).to_string().into_bytes(),
-                    Some("tools/list") => json!({"jsonrpc": "2.0", "id": id, "result": {"tools": [{"name": "list_backends"}]}}).to_string().into_bytes(),
+                    Some("tools/list") => json!({"jsonrpc": "2.0", "id": id, "result": {"tools": [{"name": "list_backends"}, {"name": "list_remote_profiles"}]}}).to_string().into_bytes(),
                     _ => answer(id),
                 };
                 if out
@@ -1613,7 +1958,7 @@ pub(crate) mod tests {
         let t = std::time::Instant::now();
         let e = c.backends(Duration::from_secs(60)).unwrap_err();
         assert!(t.elapsed() < Duration::from_secs(20), "{:?}", t.elapsed());
-        assert!(e.contains("32 MiB"), "{e}");
+        assert!(e.contains("MiB: refused"), "{e}");
     }
 
     #[test]
@@ -1714,5 +2059,117 @@ pub(crate) mod tests {
         assert!(c.is_alive());
         c.shutdown();
         assert!(gone(pid));
+    }
+
+    #[test]
+    fn a_huge_listing_of_tiny_objects_costs_about_its_own_size() {
+        // 31 MiB: 4 million `{"a":1}` as the saved connections - read in
+        // bounded memory and time, every one left out (no name)
+        let c = server_answering(|id| {
+            let mut s = format!(
+                r#"{{"jsonrpc":"2.0","id":{id},"result":{{"content":[],"structuredContent":{{"profiles":["#
+            );
+            for i in 0..4_000_000 {
+                if i > 0 {
+                    s.push(',');
+                }
+                s.push_str(r#"{"a":1}"#);
+            }
+            s.push_str(r#"]}}}"#);
+            s.into_bytes()
+        });
+        let t = std::time::Instant::now();
+        let r = c.systems(Duration::from_secs(60));
+        assert!(t.elapsed() < Duration::from_secs(30), "{:?}", t.elapsed());
+        match r {
+            Ok(s) => {
+                assert!(s.profiles.is_empty());
+                assert!(s.left_out > 1000);
+            }
+            Err(e) => assert!(e.contains("MiB") || e.contains("no answer"), "{e}"),
+        }
+    }
+
+    #[test]
+    fn server_strings_are_cut_and_escaped_and_odd_names_left_out() {
+        let list = json!({"profiles": [
+            {"name": "box", "protocol": "sftp", "protocol_name": "x".repeat(2_000_000), "host": "h\nx\u{202e}", "reason": "r"},
+            {"name": " ", "protocol": "sftp"},
+            {"name": "\u{feff}bom", "protocol": "sftp"},
+            {"name": "a\u{200b}b", "protocol": "sftp"},
+            {"name": "rtl\u{202e}", "protocol": "sftp"},
+            {"name": "\u{65e5}\u{672c} \u{1f680}", "protocol": "s3"}
+        ]});
+        let w: SystemsWire = serde_json::from_str(&list.to_string()).unwrap();
+        let p: Vec<Profile> = w
+            .profiles
+            .items
+            .into_iter()
+            .filter_map(profile_of)
+            .collect();
+        let names: Vec<&str> = p.iter().map(|x| x.name.as_str()).collect();
+        assert_eq!(names, ["box", "\u{65e5}\u{672c} \u{1f680}"]);
+        assert!(p[0].protocol_name.as_ref().unwrap().chars().count() <= 65);
+        assert_eq!(p[0].host.as_deref(), Some("h\\u{a}x\\u{202e}"));
+    }
+
+    /// (A helper for the test below, in a process of its own: holds a
+    /// server whose own child writes its pid where AFM_HOLD names.)
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn hold_a_server_for_the_test() {
+        let Some(pidfile) = std::env::var_os("AFM_HOLD") else {
+            return;
+        };
+        let script = format!(
+            r#"read a; printf '%s\n' '{{"jsonrpc":"2.0","id":1,"result":{{"serverInfo":{{"name":"hang"}}}}}}'; read b; read c; printf '%s\n' '{{"jsonrpc":"2.0","id":2,"result":{{"tools":[]}}}}'; sleep 600 & echo $! > '{}'; wait"#,
+            std::path::Path::new(&pidfile).display()
+        );
+        let _c = Client::spawn(
+            &["/bin/sh".into(), "-c".into(), script.into()],
+            Duration::from_secs(10),
+        )
+        .unwrap();
+        std::thread::sleep(Duration::from_secs(60));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn the_servers_own_children_end_when_the_program_is_killed() {
+        let dir = crate::testdir::Scratch::new("mcp-hold");
+        let pidfile = dir.path().join("grandchild.pid");
+        let mut holder = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "mcp::tests::hold_a_server_for_the_test",
+                "--nocapture",
+            ])
+            .env("AFM_HOLD", &pidfile)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap();
+        let start = std::time::Instant::now();
+        let pid: i32 = loop {
+            if let Ok(t) = std::fs::read_to_string(&pidfile)
+                && let Ok(p) = t.trim().parse()
+            {
+                break p;
+            }
+            assert!(
+                start.elapsed() < Duration::from_secs(20),
+                "the helper started its server"
+            );
+            std::thread::sleep(Duration::from_millis(50));
+        };
+        assert!(!gone(pid));
+        // the program dies the hard way: nothing of it runs any more
+        holder.kill().unwrap();
+        let _ = holder.wait();
+        let start = std::time::Instant::now();
+        while !gone(pid) && start.elapsed() < Duration::from_secs(5) {
+            std::thread::sleep(Duration::from_millis(50));
+        }
+        assert!(gone(pid), "the server's own child ended too");
     }
 }

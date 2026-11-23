@@ -232,98 +232,87 @@ pub fn file_manager_via(opener: Option<&Path>, path: &Path) -> Option<Launch> {
     }
 }
 
-/// Extensions of what a default program may run (or install).
-const RUNNABLE: &[&str] = &[
-    "desktop",
-    "sh",
-    "bash",
-    "zsh",
-    "csh",
-    "ksh",
-    "fish",
-    "py",
-    "pyw",
-    "pl",
-    "rb",
-    "php",
-    "jar",
-    "exe",
-    "com",
-    "bat",
-    "cmd",
-    "msi",
-    "msp",
-    "scr",
-    "pif",
-    "ps1",
-    "psm1",
-    "vbs",
-    "vbe",
-    "js",
-    "jse",
-    "wsf",
-    "wsh",
-    "hta",
-    "cpl",
-    "lnk",
-    "url",
-    "reg",
-    "inf",
-    "app",
-    "command",
-    "tool",
-    "workflow",
-    "terminal",
-    "appimage",
-    "run",
-    "bin",
-    "deb",
-    "rpm",
-    "apk",
-    "pkg",
-    "dmg",
-    "flatpakref",
-    "snap",
-    "elf",
-    "out",
-    "so",
-    "dylib",
-    "dll",
-    "kext",
+/// What opens with the default program without a question: documents,
+/// pictures, sound and video that run nothing - by their extension, and
+/// only when their first bytes are no program, script or desktop entry.
+/// Everything else asks first (an allow-list: a type nobody thought of is
+/// asked about, not opened).
+const SAFE: &[&str] = &[
+    // text
+    "txt", "text", "md", "markdown", "rst", "log", "csv", "tsv", "json", "yaml", "yml", "toml",
+    // pictures
+    "png", "jpg", "jpeg", "gif", "bmp", "webp", "tif", "tiff", "heic", "heif", "avif", "ico", "cr2",
+    "nef", "arw", "dng", "raf", "orf", // sound
+    "mp3", "flac", "ogg", "oga", "opus", "wav", "aac", "m4a", "aiff", "aif", "wma",
+    // video
+    "mp4", "m4v", "mkv", "webm", "mov", "avi", "mpg", "mpeg", "ogv", "wmv",
+    // documents without macros
+    "pdf", "epub", "odt", "ods", "odp", "docx", "xlsx", "pptx",
 ];
+
+/// What a file's first bytes say it is, when that is something that runs.
+pub fn sniff_runs(head: &[u8]) -> Option<&'static str> {
+    let text = String::from_utf8_lossy(&head[..head.len().min(4096)]);
+    if head.starts_with(b"#!") {
+        Some("it is a script (it starts with #!): opening it can run it")
+    } else if text.contains("[Desktop Entry]") {
+        Some("it is a desktop entry (by its content): opening it can run the command in it")
+    } else if head.starts_with(b"\x7fELF")
+        || head.starts_with(b"MZ")
+        || head.starts_with(&[0xcf, 0xfa, 0xed, 0xfe])
+        || head.starts_with(&[0xce, 0xfa, 0xed, 0xfe])
+        || head.starts_with(&[0xca, 0xfe, 0xba, 0xbe])
+    {
+        Some("it is a program (by its content): opening it can run it")
+    } else {
+        None
+    }
+}
 
 /// Why opening `path` with the default program needs a question first
 /// (None: it does not). `untrusted` names a medium it lies on (a removable
-/// one, a network file system). Reads the file's mode (off the window's
-/// thread).
+/// one, a network file system). Reads the file's mode and first bytes (off
+/// the window's thread).
 pub fn risk_of(path: &Path, untrusted: Option<&str>) -> Option<String> {
     let meta = std::fs::symlink_metadata(path).ok();
     if meta.as_ref().is_some_and(|m| m.is_dir()) {
         // (a folder opens in the file manager)
         return untrusted.map(|u| format!("it lies on {u}"));
     }
+    #[cfg(unix)]
+    if let Some(m) = &meta {
+        use std::os::unix::fs::PermissionsExt;
+        if m.file_type().is_symlink() {
+            return Some("it is a symbolic link: it may open something else".into());
+        }
+        if m.is_file() && m.permissions().mode() & 0o7111 != 0 {
+            return Some("it is executable: opening it can run it".into());
+        }
+    }
     let name = path
         .file_name()
         .map(|n| n.to_string_lossy().to_ascii_lowercase())
         .unwrap_or_default();
-    if let Some(ext) = name.rsplit_once('.').map(|(_, e)| e.to_string())
-        && RUNNABLE.contains(&ext.as_str())
-    {
+    // (no trimming: "x.desktop." and "x.desktop " are no "desktop")
+    let ext = name
+        .rsplit_once('.')
+        .map(|(_, e)| e.to_string())
+        .unwrap_or_default();
+    if !SAFE.contains(&ext.as_str()) {
         return Some(match ext.as_str() {
             "desktop" => "it is a desktop entry: opening it can run the command in it".into(),
-            "lnk" | "url" => "it is a shortcut: opening it can run what it points to".into(),
-            _ => format!("it is a program or a script (.{ext}): opening it can run it"),
+            "lnk" | "url" | "webloc" | "inetloc" | "appref-ms" | "application" | "scf" => {
+                "it is a shortcut: opening it can run what it points to".into()
+            }
+            "" => "it has no type the system can tell safely: opening it may run it".into(),
+            e => format!("files of type .{e} can run code or change the system when opened"),
         });
     }
-    #[cfg(unix)]
-    if let Some(m) = &meta {
-        use std::os::unix::fs::PermissionsExt;
-        if m.is_file() && m.permissions().mode() & 0o111 != 0 {
-            return Some("it is executable: opening it can run it".into());
-        }
-        if m.file_type().is_symlink() {
-            return Some("it is a symbolic link: it may open something else".into());
-        }
+    // an allowed type: its first bytes must agree
+    if let Ok(head) = crate::preview::read_regular(path, 4096)
+        && let Some(why) = sniff_runs(&head)
+    {
+        return Some(why.into());
     }
     untrusted.map(|u| format!("it lies on {u}, which this machine does not control"))
 }
@@ -406,37 +395,88 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
         let dir = crate::testdir::Scratch::new("risk");
         let d = dir.path();
-        let file = |name: &str, mode: u32| {
+        let file = |name: &str, mode: u32, body: &[u8]| {
             let p = d.join(name);
-            std::fs::write(&p, b"x").unwrap();
+            std::fs::write(&p, body).unwrap();
             std::fs::set_permissions(&p, std::fs::Permissions::from_mode(mode)).unwrap();
             p
         };
         assert!(
-            risk_of(&file("evil.desktop", 0o644), None)
+            risk_of(&file("evil.desktop", 0o644, b"x"), None)
                 .unwrap()
                 .contains("desktop entry")
         );
+        assert!(risk_of(&file("run.sh", 0o644, b"x"), None).is_some());
         assert!(
-            risk_of(&file("run.sh", 0o644), None)
-                .unwrap()
-                .contains("script")
-        );
-        assert!(
-            risk_of(&file("tool", 0o755), None)
+            risk_of(&file("tool", 0o755, b"x"), None)
                 .unwrap()
                 .contains("executable")
         );
-        assert!(risk_of(&file("SETUP.EXE", 0o644), None).is_some());
-        assert_eq!(risk_of(&file("notes.txt", 0o644), None), None);
+        assert!(risk_of(&file("SETUP.EXE", 0o644, b"x"), None).is_some());
+        assert_eq!(risk_of(&file("notes.txt", 0o644, b"plain"), None), None);
+        assert_eq!(
+            risk_of(&file("photo.JPG", 0o644, b"\xff\xd8\xff"), None),
+            None
+        );
         assert!(
-            risk_of(&file("photo.jpg", 0o644), Some("a removable medium"))
+            risk_of(&file("photo.jpg", 0o644, b"x"), Some("a removable medium"))
                 .unwrap()
                 .contains("removable")
         );
         std::os::unix::fs::symlink(d.join("notes.txt"), d.join("link.txt")).unwrap();
         assert!(risk_of(&d.join("link.txt"), None).unwrap().contains("link"));
         assert_eq!(risk_of(d, None), None, "a folder opens in the file manager");
+        // what a deny-list missed: asked about now
+        for name in [
+            "a.msc",
+            "a.chm",
+            "a.xll",
+            "a.application",
+            "a.appref-ms",
+            "a.settingcontent-ms",
+            "a.library-ms",
+            "a.scf",
+            "a.wsc",
+            "a.sct",
+            "a.diagcab",
+            "a.gadget",
+            "a.msix",
+            "a.jnlp",
+            "a.iso",
+            "a.docm",
+            "a.xlsm",
+            "a.inetloc",
+            "a.webloc",
+            "a.scpt",
+            "a.action",
+            "a.mobileconfig",
+            "x.desktop.",
+            "x.desktop ",
+            "noextension",
+        ] {
+            assert!(
+                risk_of(&file(name, 0o644, b"data"), None).is_some(),
+                "{name}"
+            );
+        }
+        // by content: a desktop entry or a script under a harmless name
+        assert!(risk_of(&file("readme", 0o644, b"[Desktop Entry]\nExec=sh"), None).is_some());
+        assert!(
+            risk_of(&file("hello.txt", 0o644, b"[Desktop Entry]\nExec=sh"), None)
+                .unwrap()
+                .contains("content")
+        );
+        assert!(
+            risk_of(&file("go.txt", 0o644, b"#!/bin/sh\nrm -rf ~"), None)
+                .unwrap()
+                .contains("script")
+        );
+        assert!(
+            risk_of(&file("pic.png", 0o644, b"\x7fELF\x02"), None)
+                .unwrap()
+                .contains("program")
+        );
+        assert!(risk_of(&file("setuid.txt", 0o4644, b"x"), None).is_some());
     }
 
     #[cfg(unix)]

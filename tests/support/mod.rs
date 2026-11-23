@@ -72,6 +72,7 @@ pub fn gpu_available() -> bool {
 /// The window at `size`, rendered by wgpu.
 pub fn harness(opts: StartOptions, size: egui::Vec2) -> Harness<'static, App> {
     Harness::builder()
+        .allow_missing_glyphs()
         .with_size(size)
         .with_max_steps(64)
         .wgpu()

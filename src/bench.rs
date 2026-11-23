@@ -329,6 +329,7 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
             guard: true,
             dt: 1.0 / 60.0,
             msaa: opts.msaa,
+            cut: false,
         };
         let mut enc = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("afm benchmark"),

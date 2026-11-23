@@ -49,6 +49,10 @@ pub struct FrameData {
     /// Smooth edges: the scene drawn with four samples a pixel (where the
     /// GPU can).
     pub msaa: bool,
+    /// The camera jumped (a teleport): the veil's ground is set to black -
+    /// what the guard softens fades through black, never towards a ghost of
+    /// the view before.
+    pub cut: bool,
 }
 
 /// What the renderer tells the window (the flash guard's state, the GPU).
@@ -908,6 +912,18 @@ impl Renderer {
         let Some(t) = self.targets.as_mut() else {
             return;
         };
+        if f.cut {
+            for h in &t.history {
+                let _ = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("afm history cleared (a cut)"),
+                    color_attachments: &[color(h, wgpu::LoadOp::Clear(wgpu::Color::BLACK))],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                    multiview_mask: None,
+                });
+            }
+        }
         let cur = t.current;
         // the scene
         {

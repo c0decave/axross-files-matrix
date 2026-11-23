@@ -67,7 +67,10 @@ fn fs_bright(in: FullOut) -> @location(0) vec4<f32> {
     let threshold = 0.3;
     let soft = clamp(l - threshold + knee, 0.0, 2.0 * knee);
     let w = max(soft * soft / (4.0 * knee + 1e-5), l - threshold) / max(l, 1e-5);
-    return vec4<f32>(min(c * w, vec3<f32>(40.0)), 1.0);
+    // (a tiny, very bright point gives a small glow, never a blob: what
+    // the bloom takes of a pixel is bounded)
+    let b = min(max(c * w, vec3<f32>(0.0)), vec3<f32>(40.0));
+    return vec4<f32>(b / (1.0 + luma(b) * 0.8), 1.0);
 }
 
 // half size again (13 taps, as a box of boxes)

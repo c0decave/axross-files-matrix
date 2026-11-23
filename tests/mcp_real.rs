@@ -193,6 +193,7 @@ fn systems_of_a_real_axross() {
     };
     opts.mcp_client = Some(client.clone());
     let mut h = egui_kittest::Harness::builder()
+        .allow_missing_glyphs()
         .with_size(egui::vec2(1100.0, 700.0))
         .build_eframe(move |cc| axross_files_matrix::app::App::new(cc, opts));
     let wait = |h: &mut egui_kittest::Harness<'static, axross_files_matrix::app::App>,

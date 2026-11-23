@@ -964,11 +964,29 @@ pub fn island(m: &Machine) -> HwIsland {
 pub struct Sampler {
     rx: std::sync::mpsc::Receiver<(Vec<f32>, f32)>,
     pub last: Option<(Vec<f32>, f32)>,
+    /// Set by the window while it rests (hidden, unfocused, or no frames
+    /// while idle): samples are kept, the window is not woken for them.
+    pub quiet: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+
+/// Whether a new sample differs visibly from the one the window was last
+/// woken for (a light that moves less is not worth a frame).
+pub fn visibly_changed(shown: &(Vec<f32>, f32), new: &(Vec<f32>, f32)) -> bool {
+    const STEP: f32 = 0.08;
+    shown.0.len() != new.0.len()
+        || (shown.1 - new.1).abs() >= STEP
+        || shown
+            .0
+            .iter()
+            .zip(&new.0)
+            .any(|(a, b)| (a - b).abs() >= STEP)
 }
 
 impl Sampler {
     pub fn start(wake: crate::walk::Wake) -> Sampler {
         let (tx, rx) = std::sync::mpsc::channel();
+        let quiet = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let q = quiet.clone();
         let _ = std::thread::Builder::new()
             .name("afm-hw-sample".into())
             .spawn(move || {
@@ -976,6 +994,7 @@ impl Sampler {
                 {
                     let root = std::path::Path::new("/");
                     let mut prev = linux::cpu_times(root);
+                    let mut woken_for: Option<(Vec<f32>, f32)> = None;
                     loop {
                         std::thread::sleep(std::time::Duration::from_secs(1));
                         let now = linux::cpu_times(root);
@@ -999,18 +1018,34 @@ impl Sampler {
                         } else {
                             0.0
                         };
-                        if tx.send((loads, share)).is_err() {
+                        let sample = (loads, share);
+                        // (a frame only for a light that moves visibly, and
+                        // none while the window rests)
+                        let wake_now = !q.load(std::sync::atomic::Ordering::Relaxed)
+                            && woken_for
+                                .as_ref()
+                                .is_none_or(|w| visibly_changed(w, &sample));
+                        if wake_now {
+                            woken_for = Some(sample.clone());
+                        }
+                        if tx.send(sample).is_err() {
                             break;
                         }
-                        wake();
+                        if wake_now {
+                            wake();
+                        }
                     }
                 }
                 #[cfg(not(target_os = "linux"))]
                 {
-                    let _ = (tx, wake);
+                    let _ = (tx, wake, q);
                 }
             });
-        Sampler { rx, last: None }
+        Sampler {
+            rx,
+            last: None,
+            quiet,
+        }
     }
 
     /// The newest sample, if a new one came.
@@ -1103,5 +1138,14 @@ mod tests {
         assert_eq!(human_bytes(1536), "1.5 KiB");
         assert_eq!(human_bytes(32 << 30), "32.0 GiB");
         assert_eq!(human_bytes(1 << 40), "1.0 TiB");
+    }
+
+    #[test]
+    fn only_a_visible_change_of_the_load_is_worth_a_frame() {
+        let a = (vec![0.10, 0.50], 0.30);
+        assert!(!visibly_changed(&a, &(vec![0.12, 0.47], 0.31)));
+        assert!(visibly_changed(&a, &(vec![0.30, 0.50], 0.30)));
+        assert!(visibly_changed(&a, &(vec![0.10, 0.50], 0.45)));
+        assert!(visibly_changed(&a, &(vec![0.10], 0.30)));
     }
 }

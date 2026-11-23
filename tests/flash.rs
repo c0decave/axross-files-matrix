@@ -117,6 +117,9 @@ fn teleports_pressed_every_frame_stay_within_the_rule() {
     });
     eprintln!("teleport storm: {r:?}");
     assert!(!r.fails(), "{r:?}");
+    // (with room to spare: the strict share well under its limit of 0.25 -
+    // a request waiting its turn changes nothing on screen)
+    assert!(r.p[0] < 0.1 && r.p[1] < 0.1, "{r:?}");
 }
 
 #[test]

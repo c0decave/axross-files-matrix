@@ -4,7 +4,7 @@ The data on your mountpoints as a 3D city you fly through - Matrix style,
 with real file access. Written in Rust (wgpu and egui), a companion of
 [axross](https://github.com/c0decave/axross).
 
-![Flying over a city of 200 000 files under the digital rain](docs/matrix.png)
+![Flying over a city of 200 000 files under the digital rain](https://raw.githubusercontent.com/c0decave/axross-files-matrix/main/docs/matrix.png)
 
 - **Every mountpoint is an island** - the local disks, every mount the
   system shows (pseudo file systems hidden), and, when axross is installed,
@@ -50,20 +50,20 @@ with real file access. Written in Rust (wgpu and egui), a companion of
 
 <table>
   <tr>
-    <td><img src="docs/city-200k.png" alt="A city of 200 000 files from above"></td>
-    <td><img src="docs/street.png" alt="Among the towers"></td>
+    <td><img src="https://raw.githubusercontent.com/c0decave/axross-files-matrix/main/docs/city-200k.png" alt="A city of 200 000 files from above"></td>
+    <td><img src="https://raw.githubusercontent.com/c0decave/axross-files-matrix/main/docs/street.png" alt="Among the towers"></td>
   </tr>
   <tr>
-    <td><img src="docs/city-small.png" alt="A small city beside the machine's island"></td>
-    <td><img src="docs/hardware.png" alt="The machine's island: cores, memory, cards, disks"></td>
+    <td><img src="https://raw.githubusercontent.com/c0decave/axross-files-matrix/main/docs/city-small.png" alt="A small city beside the machine's island"></td>
+    <td><img src="https://raw.githubusercontent.com/c0decave/axross-files-matrix/main/docs/hardware.png" alt="The machine's island: cores, memory, cards, disks"></td>
   </tr>
   <tr>
-    <td><img src="docs/search.png" alt="Search hits as pillars of light"></td>
-    <td><img src="docs/preview.png" alt="The inspect panel with a preview"></td>
+    <td><img src="https://raw.githubusercontent.com/c0decave/axross-files-matrix/main/docs/search.png" alt="Search hits as pillars of light"></td>
+    <td><img src="https://raw.githubusercontent.com/c0decave/axross-files-matrix/main/docs/preview.png" alt="The inspect panel with a preview"></td>
   </tr>
   <tr>
-    <td><img src="docs/teleport.png" alt="The teleport menu"></td>
-    <td><img src="docs/teleport-systems.png" alt="The teleport menu with the systems of axross's connection manager"></td>
+    <td><img src="https://raw.githubusercontent.com/c0decave/axross-files-matrix/main/docs/teleport.png" alt="The teleport menu"></td>
+    <td><img src="https://raw.githubusercontent.com/c0decave/axross-files-matrix/main/docs/teleport-systems.png" alt="The teleport menu with the systems of axross's connection manager"></td>
   </tr>
 </table>
 
@@ -166,7 +166,9 @@ phones, mail, databases, version control), any other protocol the generic
 look. A backend that tells no sizes gets equal footprints and says so; mail
 stores, databases and slow backends are read folder by folder as you come
 near. A saved spot (Ctrl+1-9) inside a system opens it again when you jump
-to it. The matrix never asks for or keeps a password: a system that needs
+to it. *close* ends a system (axross's server keeps at most 8 open; when
+they are taken, the window says which and offers to close the one visited
+longest ago). The matrix never asks for or keeps a password: a system that needs
 one axross has not stored says "needs unlocking in axross" and opens
 axross's connection manager (`axross --connection-manager=NAME`, 0.15.186
 and later), where it can be stored.
@@ -195,6 +197,15 @@ system it asks first and offers the file manager instead.
   (L hides it).
 - **Sizes**: by the space a file takes on the disk (a sparse 4 GB file is
   small), every file with a least footprint; a setting sizes by length.
+
+### Names in every script
+
+egui's own fonts draw Latin, Greek and Cyrillic. For Chinese, Japanese,
+Korean, Arabic, Hebrew, Indic scripts, Thai and symbols the window looks
+among the system's fonts (on a thread of its own, a few seconds at most)
+and adds what it finds - on Linux for example the packages
+`fonts-noto-cjk` and `fonts-noto-core`. `AFM_FONT_DIRS` names more folders
+to look in. A character no font has is drawn as a box.
 
 ### Settings
 

@@ -371,7 +371,7 @@ pub struct Lod {
 impl Default for Lod {
     fn default() -> Lod {
         Lod {
-            collapse: 0.03,
+            collapse: 0.045,
             open: 0.12,
             label_district: 0.2,
             label_building: 0.08,
@@ -561,7 +561,9 @@ pub fn select_within(
             return l;
         }
         let over = out.opaque.len() as f32 / budget.max(1) as f32;
-        l.collapse = (l.collapse * over.sqrt() * 1.3).max(l.collapse * 1.3);
+        // (from at least a small knob: no cliff from all opened to one block)
+        let from = l.collapse.max(0.01);
+        l.collapse = (from * over.sqrt() * 1.3).max(from * 1.3);
         select(islands, eye, frustum, &l, out);
     }
     if out.opaque.len() > budget {

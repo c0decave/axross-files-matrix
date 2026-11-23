@@ -120,7 +120,7 @@ pub struct Settings {
     pub gpu: String,
     /// Ctrl+1..9 save, 1..9 jump.
     pub bookmarks: Vec<Option<Spot>>,
-    /// "off", "notify" or "auto" (src/update.rs).
+    /// "off", "notify" or "auto" ("install" too) (src/update.rs).
     pub update_mode: String,
     /// When the last check ran (seconds since 1970) and whether it failed.
     pub update_last_check: Option<i64>,
@@ -207,7 +207,7 @@ impl Settings {
         if !["auto", "high", "low"].contains(&self.gpu.as_str()) {
             self.gpu = d.gpu.clone();
         }
-        if !["off", "notify", "auto"].contains(&self.update_mode.as_str()) {
+        if !["off", "notify", "auto", "install"].contains(&self.update_mode.as_str()) {
             self.update_mode = d.update_mode;
         }
         if let Some(w) = self.window
@@ -233,6 +233,9 @@ pub fn config_dir() -> PathBuf {
 pub enum Loaded {
     Fresh,
     Read,
+    /// Read, but these keys were not understood (a value of the wrong
+    /// type): they have their defaults; the rest is kept.
+    Salvaged(Vec<String>),
     /// The file was not good: set aside (where), defaults used.
     SetAside(PathBuf),
 }
@@ -243,30 +246,66 @@ pub fn load(path: &Path) -> (Settings, Loaded) {
     let Ok(meta) = std::fs::metadata(path) else {
         return (Settings::default(), Loaded::Fresh);
     };
-    let parsed = if meta.len() > MAX_BYTES {
+    let bytes = if meta.len() > MAX_BYTES || !meta.is_file() {
         None
     } else {
-        std::fs::read(path)
-            .ok()
-            .and_then(|b| serde_json::from_slice::<Settings>(&b).ok())
+        std::fs::read(path).ok()
     };
-    match parsed {
-        Some(s) => (s.sanitized(), Loaded::Read),
-        None => {
-            let aside = path.with_extension("json.corrupt");
-            let _ = std::fs::rename(path, &aside);
-            (Settings::default(), Loaded::SetAside(aside))
+    if let Some(s) = bytes
+        .as_ref()
+        .and_then(|b| serde_json::from_slice::<Settings>(b).ok())
+    {
+        return (s.sanitized(), Loaded::Read);
+    }
+    // a JSON object with some values of the wrong type: each key that is
+    // understood is kept, the others get their defaults
+    if let Some(serde_json::Value::Object(all)) = bytes
+        .as_ref()
+        .and_then(|b| serde_json::from_slice::<serde_json::Value>(b).ok())
+    {
+        let mut good = serde_json::Map::new();
+        let mut dropped = Vec::new();
+        for (k, v) in all {
+            let mut trial = good.clone();
+            trial.insert(k.clone(), v);
+            if serde_json::from_value::<Settings>(serde_json::Value::Object(trial.clone())).is_ok()
+            {
+                good = trial;
+            } else {
+                dropped.push(k.chars().take(40).collect());
+            }
+        }
+        if let Ok(s) = serde_json::from_value::<Settings>(serde_json::Value::Object(good)) {
+            return (s.sanitized(), Loaded::Salvaged(dropped));
         }
     }
+    // no JSON object at all: set aside, the defaults used
+    let aside = path.with_extension("json.corrupt");
+    let _ = std::fs::rename(path, &aside);
+    (Settings::default(), Loaded::SetAside(aside))
 }
 
 pub fn save(path: &Path, s: &Settings) -> std::io::Result<()> {
     if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir)?;
+        // (the server's command and spots inside remote systems: only the
+        // user reads them - the folder 0700, the file 0600)
+        crate::cache::make_private_dir(dir)?;
     }
     let text = serde_json::to_vec_pretty(s).map_err(std::io::Error::other)?;
     let tmp = path.with_extension(format!("json.tmp{}", std::process::id()));
-    std::fs::write(&tmp, text)?;
+    {
+        let mut o = std::fs::OpenOptions::new();
+        o.write(true).create(true).truncate(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            o.mode(0o600);
+        }
+        use std::io::Write;
+        let mut f = o.open(&tmp)?;
+        f.write_all(&text)?;
+        f.sync_all()?;
+    }
     std::fs::rename(&tmp, path).inspect_err(|_| {
         let _ = std::fs::remove_file(&tmp);
     })
@@ -350,5 +389,66 @@ mod tests {
         ];
         save(&p, &s).unwrap();
         assert_eq!(load(&p).0, s);
+    }
+
+    #[test]
+    fn one_wrong_value_is_salvaged_not_the_whole_file() {
+        let dir = Scratch::new("settings-salvage");
+        let p = dir.path().join(FILE);
+        std::fs::write(
+            &p,
+            br#"{"read_only": "no", "labels": false, "fly_speed": 40, "theme": 7}"#,
+        )
+        .unwrap();
+        let (s, how) = load(&p);
+        match how {
+            Loaded::Salvaged(keys) => {
+                assert!(
+                    keys.contains(&"read_only".to_string()) && keys.contains(&"theme".to_string()),
+                    "{keys:?}"
+                );
+            }
+            other => panic!("{other:?}"),
+        }
+        assert!(!s.labels);
+        assert_eq!(s.fly_speed, 40.0);
+        assert!(p.exists(), "not set aside");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn the_settings_are_private() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = Scratch::new("settings-private");
+        let p = dir.path().join("cfg").join(FILE);
+        std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+        std::fs::set_permissions(p.parent().unwrap(), std::fs::Permissions::from_mode(0o755))
+            .unwrap();
+        save(&p, &Settings::default()).unwrap();
+        assert_eq!(
+            std::fs::metadata(&p).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+        assert_eq!(
+            std::fs::metadata(p.parent().unwrap())
+                .unwrap()
+                .permissions()
+                .mode()
+                & 0o777,
+            0o700
+        );
+    }
+
+    #[test]
+    fn a_hand_set_update_mode_stays() {
+        let dir = Scratch::new("settings-update-mode");
+        let p = dir.path().join(FILE);
+        std::fs::write(&p, br#"{"update_mode": "auto"}"#).unwrap();
+        let (s, _) = load(&p);
+        assert_eq!(s.update_mode, "auto");
+        assert_eq!(
+            crate::update::UpdateMode::from_key(&s.update_mode),
+            Some(crate::update::UpdateMode::Install)
+        );
     }
 }

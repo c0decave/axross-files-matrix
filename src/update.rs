@@ -1413,6 +1413,10 @@ impl UpdateMode {
     }
 
     pub fn from_key(key: &str) -> Option<UpdateMode> {
+        // ("auto": the settings file's own word for installing by itself)
+        if key == "auto" {
+            return Some(UpdateMode::Install);
+        }
         UpdateMode::ALL.into_iter().find(|m| m.key() == key)
     }
 

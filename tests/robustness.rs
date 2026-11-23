@@ -22,6 +22,7 @@ use support::{Scratch, options};
 
 fn window(opts: StartOptions, size: egui::Vec2) -> Harness<'static, App> {
     let mut h = Harness::builder()
+        .allow_missing_glyphs()
         .with_size(size)
         .with_max_steps(32)
         .build_eframe(move |cc| App::new(cc, opts));
@@ -38,7 +39,6 @@ fn script(at: &Path, body: &str) -> PathBuf {
     at.to_path_buf()
 }
 
-#[cfg(unix)]
 /// The island and node of the file named `name`.
 fn find(app: &App, name: &str) -> (usize, NodeId) {
     for (i, isl) in app.islands.iter().enumerate() {
@@ -284,6 +284,7 @@ fn a_hung_mount_never_holds_the_window() {
     opts.probe = Some(Arc::new(HungProbe(Mutex::new(rx))));
     let start = Instant::now();
     let mut h = Harness::builder()
+        .allow_missing_glyphs()
         .with_size(egui::vec2(1000.0, 650.0))
         .with_max_steps(8)
         .build_eframe(move |cc| App::new(cc, opts));
@@ -403,5 +404,73 @@ fn the_smallest_window_keeps_every_control_reachable() {
         h.run_steps(3);
         let r = h.get_by_label("Check for updates…").rect();
         assert!(screen.contains_rect(r), "{size:?}: {r:?} in {screen:?}");
+        // the Teleport menu: on screen, below the bar, its rows' states in
+        // sight (Esc closes it)
+        h.state_mut().settings_open = false;
+        h.state_mut().teleport_open = true;
+        h.run_steps(3);
+        let w = h.get_by_label("Teleport").rect();
+        assert!(
+            w.left() >= 0.0 && w.right() <= size.x,
+            "{size:?}: the menu {w:?}"
+        );
+        let bar = h.get_by_label(" READ-ONLY ").rect();
+        assert!(
+            w.top() >= bar.bottom() - 1.0,
+            "{size:?}: below the bar {w:?}"
+        );
+        h.key_press(Key::Escape);
+        h.run_steps(2);
+        assert!(!h.state_mut().teleport_open, "Esc closes the menu");
+    }
+}
+
+#[test]
+fn names_in_every_script_are_drawn() {
+    let s = Scratch::new("scripts");
+    let files = s.0.join("files");
+    std::fs::create_dir_all(&files).unwrap();
+    let names = [
+        "\u{65e5}\u{672c}\u{8a9e}\u{306e}\u{30d5}\u{30a1}\u{30a4}\u{30eb}.txt",
+        "\u{d55c}\u{ad6d}\u{c5b4}.md",
+        "\u{0645}\u{0644}\u{0641}.txt",
+        "\u{092b}\u{093c}\u{093e}\u{0907}\u{0932}.txt",
+        "rocket \u{1f680}.txt",
+    ];
+    for n in names {
+        std::fs::write(files.join(n), "x").unwrap();
+    }
+    let mut opts = options(&s);
+    opts.paths = vec![files];
+    let mut h = window(opts, egui::vec2(1100.0, 700.0));
+    // the fonts come from a thread: the window draws meanwhile (missing
+    // glyphs as boxes, never a stop)
+    let start = Instant::now();
+    while !h.state_mut().fonts_ready && start.elapsed() < Duration::from_secs(15) {
+        h.state_mut().pump(Duration::from_millis(5));
+        h.run_steps(1);
+    }
+    let required = std::env::var_os("AFM_REQUIRE_FONTS").is_some();
+    if !h.state_mut().fonts_ready {
+        assert!(!required, "no fonts for these scripts were found");
+        eprintln!("SKIPPED: no fonts for these scripts on this machine (AFM_FONT_DIRS names some)");
+        return;
+    }
+    h.run_steps(3);
+    for n in names {
+        let (i, node) = find(h.state_mut(), n);
+        h.state_mut().select(i, node);
+        h.run_steps(3);
+        h.get_by_label(n);
+        let ctx = h.ctx.clone();
+        let id = egui::FontId::proportional(14.0);
+        for c in n.chars().filter(|c| !c.is_ascii()) {
+            let drawn = ctx.fonts_mut(|f| f.has_glyph(&id, c));
+            if required {
+                assert!(drawn, "{c:?} of {n} has a glyph");
+            } else if !drawn {
+                eprintln!("(no font here draws {c:?}: a box)");
+            }
+        }
     }
 }

@@ -25,6 +25,10 @@ pub const SLOW: Duration = Duration::from_millis(1500);
 pub struct Seen {
     pub opened: Vec<String>,
     pub closed: Vec<String>,
+    /// This server's own settings (each test its own server).
+    pub limit: Option<usize>,
+    pub extra: usize,
+    pub big: Option<(usize, usize)>,
 }
 
 /// The protocols of axross's registry (tests/fixtures/axross-protocols.json).
@@ -36,6 +40,10 @@ pub fn registry() -> Vec<Value> {
 /// The saved connections: one per registered protocol (`<protocol>-box`),
 /// one of a protocol this program does not know, and the odd ones.
 pub fn profiles() -> Vec<Value> {
+    profiles_with(0)
+}
+
+fn profiles_with(extra: usize) -> Vec<Value> {
     let mut out: Vec<Value> = registry()
         .iter()
         .map(|p| {
@@ -50,12 +58,24 @@ pub fn profiles() -> Vec<Value> {
         json!({"name": name, "protocol": proto, "host": "odd.example.test", "openable": openable,
                "reason": reason, "needs_secret": secret, "production": false, "open_as": null})
     };
+    for i in 0..extra {
+        out.push(odd(
+            &format!("many-{i:04}"),
+            ["sftp", "s3", "smb", "imap"][i % 4],
+            true,
+            "",
+            false,
+        ));
+    }
     out.push(odd("future", "quantum-ftp", true, "", false));
+    out.push(odd("big", "sftp", true, "", false));
     out.push(odd("locked", "sftp", false,
         "needs a password that is not stored in the keyring; store it once from the axross GUI (connection dialog: Store password)", true));
     out.push(odd("broken", "sftp", true, "", false));
     out.push(odd("slow", "sftp", true, "", false));
     out.push(odd("hung", "sftp", true, "", false));
+    out.push(odd("late", "sftp", true, "", false));
+    out.push(odd("stuck", "sftp", true, "", false));
     out.push(odd("nosizes", "imap", true, "", false));
     out.push(odd("erroring", "webdav", true, "", false));
     out
@@ -89,11 +109,30 @@ fn answer(name: &str, args: &Value, seen: &Mutex<Seen>) -> Value {
     let backend = args["backend"].as_str().unwrap_or("");
     let system = backend.strip_prefix("profile:").unwrap_or("");
     match name {
-        "list_remote_profiles" => wrap(json!({"profiles": profiles(), "protocols": registry()})),
+        "list_remote_profiles" => {
+            let extra = seen.lock().unwrap().extra;
+            wrap(json!({"profiles": profiles_with(extra), "protocols": registry()}))
+        }
         "list_backends" => wrap(json!({"backends": []})),
         "open_remote_profile" => {
             let p = args["profile"].as_str().unwrap_or("").to_string();
-            seen.lock().unwrap().opened.push(p.clone());
+            {
+                let mut s = seen.lock().unwrap();
+                s.opened.push(p.clone());
+                let open = s
+                    .opened
+                    .iter()
+                    .filter(|o| !s.closed.contains(&format!("profile:{o}")))
+                    .collect::<std::collections::HashSet<_>>()
+                    .len();
+                if s.limit.is_some_and(|l| open > l) {
+                    s.opened.pop();
+                    return error(&format!(
+                        "tool 'open_remote_profile' rejected args: at most {} profiles may be open at once; call close_remote_profile first",
+                        s.limit.unwrap_or(0)
+                    ));
+                }
+            }
             match p.as_str() {
                 "locked" => error(
                     "profile 'locked' needs a password that is not stored in the keyring; store it once from the axross GUI (connection dialog: Store password) - the MCP server never prompts",
@@ -101,6 +140,10 @@ fn answer(name: &str, args: &Value, seen: &Mutex<Seen>) -> Value {
                 "broken" => error(
                     "cannot open profile 'broken': ConnectionRefusedError: [Errno 111] Connection refused",
                 ),
+                "late" => {
+                    std::thread::sleep(Duration::from_millis(3500));
+                    wrap(json!({"backend": "profile:late", "profile": "late", "protocol": "sftp"}))
+                }
                 "hung" => {
                     std::thread::sleep(Duration::from_secs(3600));
                     error("never")
@@ -109,7 +152,8 @@ fn answer(name: &str, args: &Value, seen: &Mutex<Seen>) -> Value {
                     if p == "slow" {
                         std::thread::sleep(SLOW);
                     }
-                    let proto = profiles()
+                    let extra = seen.lock().unwrap().extra;
+                    let proto = profiles_with(extra)
                         .into_iter()
                         .find(|x| x["name"] == p)
                         .map(|x| x["protocol"].clone())
@@ -129,6 +173,29 @@ fn answer(name: &str, args: &Value, seen: &Mutex<Seen>) -> Value {
         "close_remote_profile" => {
             seen.lock().unwrap().closed.push(backend.to_string());
             wrap(json!({"backend": backend, "closed": true}))
+        }
+        "walk_tree" | "list_directory" if system == "big" => {
+            let (n, page) = seen.lock().unwrap().big.unwrap_or((6012, 2000));
+            let path = args["path"]
+                .as_str()
+                .unwrap_or("/")
+                .trim_end_matches('/')
+                .to_string();
+            if !path.is_empty() {
+                return wrap(json!({"entries": [], "next_offset": null}));
+            }
+            std::thread::sleep(Duration::from_millis(80));
+            let offset = args["offset"].as_u64().unwrap_or(0) as usize;
+            let max = args["max_entries"]
+                .as_u64()
+                .unwrap_or(1000)
+                .min(page as u64) as usize;
+            let end = (offset + max).min(n);
+            let entries: Vec<Value> = (offset..end)
+                .map(|i| json!({"path": format!("/f{i}"), "name": format!("f{i}"), "size": 10, "is_dir": false}))
+                .collect();
+            let next = (end < n).then_some(end);
+            wrap(json!({"entries": entries, "next_offset": next}))
         }
         "walk_tree" | "list_directory" => {
             if system == "erroring" {
@@ -177,17 +244,51 @@ fn answer(name: &str, args: &Value, seen: &Mutex<Seen>) -> Value {
                         "complete": next.is_none(), "offset": offset, "next_offset": next}),
             )
         }
+        "read_file" | "get_path_info" if system == "stuck" => {
+            // (a file on a mount that does not answer)
+            std::thread::sleep(Duration::from_secs(3600));
+            error("never")
+        }
         "read_file" => wrap(json!({"content_b64": "aGVsbG8=", "size": 5, "truncated": false})),
         "get_path_info" => wrap(json!({"size": 5})),
         _ => error("unknown tool"),
     }
 }
 
+/// The server with one more system, `big`: one folder of `n` files served
+/// `page` a page, each page slow (a remote folder that streams in pages).
+pub fn start_with_big_folder(n: usize, page: usize) -> (Arc<Client>, Arc<Mutex<Seen>>) {
+    start_with(Seen {
+        big: Some((n, page)),
+        ..Default::default()
+    })
+}
+
+/// The server with `n` more saved connections.
+pub fn start_with_profiles(n: usize) -> (Arc<Client>, Arc<Mutex<Seen>>) {
+    start_with(Seen {
+        extra: n,
+        ..Default::default()
+    })
+}
+
+/// The server with a limit of open systems, as axross's has.
+pub fn start_with_limit(limit: usize) -> (Arc<Client>, Arc<Mutex<Seen>>) {
+    start_with(Seen {
+        limit: Some(limit),
+        ..Default::default()
+    })
+}
+
 /// The server and what it saw.
 pub fn start() -> (Arc<Client>, Arc<Mutex<Seen>>) {
+    start_with(Seen::default())
+}
+
+fn start_with(settings: Seen) -> (Arc<Client>, Arc<Mutex<Seen>>) {
     let (to_server_r, to_server_w) = std::io::pipe().unwrap();
     let (from_server_r, from_server_w) = std::io::pipe().unwrap();
-    let seen = Arc::new(Mutex::new(Seen::default()));
+    let seen = Arc::new(Mutex::new(settings));
     let out = Arc::new(Mutex::new(from_server_w));
     let s2 = seen.clone();
     std::thread::spawn(move || {

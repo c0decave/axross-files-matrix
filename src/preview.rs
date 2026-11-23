@@ -436,17 +436,17 @@ pub fn load(at: &Where, name: &str, size: u64, is_dir: bool) -> Preview {
             ];
             let arg = PathArg::from_bytes(path);
             if let Ok(v) = client.stat(backend, &arg, Duration::from_secs(30)) {
-                if let Some(s) = v["size"].as_u64() {
+                if let Some(s) = v.size {
                     rows.push((
                         "size".into(),
                         format!("{} ({s} bytes)", crate::hw::human_bytes(s)),
                     ));
                 }
-                if let Some(m) = v["modified"].as_str() {
-                    rows.push(("changed".into(), time_local(crate::mcp::parse_iso8601(m))));
+                if let Some(m) = v.modified {
+                    rows.push(("changed".into(), time_local(m)));
                 }
-                if let Some(m) = v["mode"].as_str() {
-                    rows.push(("mode".into(), m.to_string()));
+                if let Some(m) = v.mode {
+                    rows.push(("mode".into(), m));
                 }
             }
             let details = Details { rows };
