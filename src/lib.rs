@@ -2,6 +2,7 @@
 //! `src/main.rs`; the tests drive the window through [`app::App`]).
 
 pub mod app;
+pub mod bench;
 pub mod cache;
 pub mod camera;
 pub mod city;
@@ -9,6 +10,7 @@ pub mod detach;
 pub mod dump;
 pub mod flash;
 pub mod fspath;
+pub mod gpu;
 pub mod hw;
 pub mod layout;
 pub mod math;

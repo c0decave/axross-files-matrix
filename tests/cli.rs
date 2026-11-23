@@ -81,3 +81,58 @@ fn dumps_a_city_as_json() {
     assert_eq!(missing.status.code(), Some(1));
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn the_benchmark_runs_headless_on_a_small_city() {
+    let out = exe()
+        .args([
+            "--benchmark",
+            "3000",
+            "--frames",
+            "12",
+            "--size",
+            "320x200",
+            "--json",
+        ])
+        .output()
+        .unwrap();
+    if out.status.code() == Some(3) {
+        // (no GPU adapter at all: said so, exit status 3)
+        let msg = "SKIPPED: no GPU adapter - the benchmark was not run";
+        assert!(std::env::var_os("AFM_REQUIRE_GPU").is_none(), "{msg}");
+        eprintln!("{msg}");
+        return;
+    }
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(v["files"], 3000);
+    assert_eq!(v["frames"], 12);
+    assert_eq!(v["size"], serde_json::json!([320, 200]));
+    assert!(!v["adapter"].as_str().unwrap().is_empty());
+    assert!(v["instances"]["max"].as_u64().unwrap() > 0);
+    assert_eq!(v["instanced_draw_calls"], 1);
+    assert!(v["draw_calls"].as_u64().unwrap() >= 10);
+    for key in ["cpu_ms", "frame_ms"] {
+        let s = &v[key];
+        let (m, p95, p99) = (
+            s["median"].as_f64().unwrap(),
+            s["p95"].as_f64().unwrap(),
+            s["p99"].as_f64().unwrap(),
+        );
+        assert!(m > 0.0 && m <= p95 && p95 <= p99, "{key}: {s}");
+    }
+    // and as text
+    let text = exe()
+        .args(["--benchmark", "1000", "--frames", "6", "--size", "160x100"])
+        .output()
+        .unwrap();
+    let t = String::from_utf8_lossy(&text.stdout);
+    assert!(
+        t.contains("adapter: ") && t.contains("draw calls") && t.contains("p99"),
+        "{t}"
+    );
+}

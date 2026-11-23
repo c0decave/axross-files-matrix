@@ -80,6 +80,9 @@ pub struct Settings {
     pub rain: bool,
     /// Less motion: no warp streaks, slower camera flights, still rain.
     pub reduce_motion: bool,
+    /// Which GPU: "auto", "high" (a dedicated one) or "low" (an integrated
+    /// one) - at the next start.
+    pub gpu: String,
     /// Ctrl+1..9 save, 1..9 jump.
     pub bookmarks: Vec<Option<Spot>>,
     /// "off", "notify" or "auto" (src/update.rs).
@@ -109,6 +112,7 @@ impl Default for Settings {
             scanlines: true,
             rain: true,
             reduce_motion: false,
+            gpu: "auto".into(),
             bookmarks: vec![None; 9],
             update_mode: "notify".into(),
             update_last_check: None,
@@ -145,6 +149,9 @@ impl Settings {
                 *s = Spot::default();
             }
             s.label = s.label.chars().take(120).collect();
+        }
+        if !["auto", "high", "low"].contains(&self.gpu.as_str()) {
+            self.gpu = d.gpu.clone();
         }
         if !["off", "notify", "auto"].contains(&self.update_mode.as_str()) {
             self.update_mode = d.update_mode;

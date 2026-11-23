@@ -87,6 +87,30 @@ For remote backends install axross's MCP server -
 `uvx axross-headless-mcp`) - or axross itself; the city finds it on the
 PATH. Without it: local disks and mounts only.
 
+## GPU
+
+The city is drawn by [wgpu](https://wgpu.rs) - Vulkan, Metal, DirectX 12
+or OpenGL, whichever the system has; no vendor's own toolkit is needed.
+The dedicated GPU is preferred (*Settings › GPU*: automatic, high
+performance, low power - from the next start). The status line says what
+draws the city (`Vulkan · <adapter>`), and says so calmly when it is a
+software renderer (llvmpipe, lavapipe, WARP): that works, a few frames a
+second.
+
+Overrides, for a start from a terminal:
+
+| Variable | |
+|---|---|
+| `WGPU_BACKEND` | the API: `vulkan`, `metal`, `dx12`, `gl` |
+| `WGPU_ADAPTER_NAME` | a part of the adapter's name, e.g. `nvidia`, `radeon`, `intel` |
+| `WGPU_POWER_PREF` | `high` or `low` (when the setting is automatic) |
+
+`axross-files-matrix --benchmark` measures it on your machine: a city of
+200 000 files flown through for 600 frames offscreen (no vsync), with the
+adapter, the boxes and draw calls per frame, and the CPU side and the whole
+frame as median, p95 and p99 (`--json` for the numbers, `--all` to draw
+every building with no level of detail, `--size 3840x2160`).
+
 ## Use
 
 ```sh
@@ -147,7 +171,8 @@ walk cache lives in the cache folder (`~/.cache/axross-files-matrix/`).
 ```sh
 cargo build --release
 cargo test
-cargo run --release --example bench   # frame times and memory with 200 000 files
+cargo run --release -- --benchmark    # frame times on this machine's GPU
+cargo run --release --example bench   # also the walk, the layout and the memory
 ```
 
 What the bench measures with 200 000 files: the city is laid out in about

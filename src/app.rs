@@ -214,6 +214,8 @@ pub struct App {
     pub last_frame_instances: usize,
     /// The tests' flashing signal (0..1 over the picture; 0 in use).
     pub test_signal: f32,
+    /// The window's size (kept for the next start).
+    window_size: Option<[f32; 2]>,
 }
 
 fn now_secs() -> i64 {
@@ -314,6 +316,7 @@ impl App {
             view_rect: Rect::from_min_size(Pos2::ZERO, vec2(800.0, 600.0)),
             last_frame_instances: 0,
             test_signal: 0.0,
+            window_size: None,
             opts,
         };
         if let settings::Loaded::SetAside(p) = loaded {
@@ -783,6 +786,9 @@ impl App {
             }
         }
         self.settings.fly_speed = self.camera.speed;
+        if let Some(size) = self.window_size {
+            self.settings.window = Some(size);
+        }
         let _ = settings::save(&self.settings_path, &self.settings);
     }
 
@@ -1112,6 +1118,11 @@ impl App {
             self.seen = (self.world_version, key);
             let eye = self.camera.pos;
             let lod = self.lod;
+            // (last frame's buffer, once the renderer let go of it: no new
+            // allocation of megabytes each frame)
+            if let Ok(v) = Arc::try_unwrap(std::mem::take(&mut self.instances)) {
+                self.frame_set.opaque = v;
+            }
             {
                 let mut cities: Vec<&mut IslandCity> = self
                     .islands
@@ -1833,7 +1844,17 @@ impl App {
                 let ms = FrameTimes::mean_ms(&self.times.frames);
                 let fps = if ms > 0.0 { 1000.0 / ms } else { 0.0 };
                 ui.label(RichText::new(format!("{fps:.0} fps · {} boxes", self.last_frame_instances)).monospace().color(t.muted));
-                if let Some(s) = self.render_stats.as_ref().and_then(|s| s.lock().ok().map(|s| s.clone()))
+                let stats = self.render_stats.as_ref().and_then(|s| s.lock().ok().map(|s| s.clone()));
+                if let Some(s) = &stats {
+                    ui.label(RichText::new(&s.adapter).color(t.muted));
+                    if s.software {
+                        ui.label(RichText::new("software renderer: slow").color(t.warn)).on_hover_text(
+                            "No GPU was found (or none that can draw this window): a software renderer draws the city, a few frames a second. \
+                             With a GPU, see the README's GPU section (WGPU_BACKEND, WGPU_ADAPTER_NAME, Settings > GPU).",
+                        );
+                    }
+                }
+                if let Some(s) = stats
                     && s.veil
                 {
                     ui.label(RichText::new("flash guard veiling").color(t.warn))
@@ -2315,6 +2336,22 @@ impl App {
                     &mut s.reduce_motion,
                     "Reduce motion (no warp, still rain, slower flights)",
                 );
+                ui.horizontal(|ui| {
+                    ui.label("GPU:");
+                    let current = crate::gpu::Preference::from_key(&s.gpu);
+                    egui::ComboBox::from_id_salt("gpu")
+                        .selected_text(current.label())
+                        .show_ui(ui, |ui| {
+                            for p in [
+                                crate::gpu::Preference::Auto,
+                                crate::gpu::Preference::HighPerformance,
+                                crate::gpu::Preference::LowPower,
+                            ] {
+                                ui.selectable_value(&mut s.gpu, p.key().to_string(), p.label());
+                            }
+                        });
+                });
+                ui.label(RichText::new("(the GPU is chosen at the start)").color(t.muted));
                 ui.separator();
                 ui.label(RichText::new("Flight").strong());
                 ui.add(egui::Slider::new(&mut s.mouse_sensitivity, 0.1..=5.0).text("mouse"));
@@ -2344,11 +2381,24 @@ impl App {
             return;
         }
         let mut open = true;
+        let adapter = self
+            .render_stats
+            .as_ref()
+            .and_then(|s| s.lock().ok().map(|s| (s.adapter.clone(), s.software)));
         egui::Window::new("Keys and mouse")
             .open(&mut open)
             .default_width(420.0)
             .show(ctx, |ui| {
                 egui::Grid::new("help").num_columns(2).show(ui, |ui| {
+                    if let Some((a, soft)) = &adapter {
+                        ui.label(RichText::new("drawn by").color(self.theme.muted));
+                        ui.label(if *soft {
+                            format!("{a} (a software renderer)")
+                        } else {
+                            a.clone()
+                        });
+                        ui.end_row();
+                    }
                     for (k, v) in HELP {
                         ui.label(RichText::new(*k).monospace().color(self.theme.accent));
                         ui.label(*v);
@@ -2487,6 +2537,9 @@ fn invert(m: &crate::math::Mat4) -> [[f32; 4]; 4] {
 impl eframe::App for App {
     fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
         let t0 = Instant::now();
+        if let Some(r) = ui.ctx().input(|i| i.viewport().inner_rect) {
+            self.window_size = Some([r.width(), r.height()]);
+        }
         let ctx = ui.ctx().clone();
         self.pump(Duration::from_millis(6));
         self.step_search(Duration::from_millis(3));
@@ -2571,6 +2624,46 @@ impl eframe::App for App {
     fn on_exit(&mut self) {
         self.save_all();
     }
+}
+
+#[cfg(unix)]
+static ASKED_TO_END: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+#[cfg(unix)]
+extern "C" fn asked_to_end(_: libc::c_int) {
+    // (asked a second time - the window not closing: ended at once)
+    if ASKED_TO_END.swap(true, std::sync::atomic::Ordering::SeqCst) {
+        // SAFETY: _exit is async-signal-safe
+        unsafe { libc::_exit(130) };
+    }
+}
+
+/// SIGTERM and SIGINT (a logout, `kill`, Ctrl+C in the terminal it runs in)
+/// close the window as its close button does: the walk caches and the
+/// settings written, not the process cut off. (As axross-amp does; the
+/// program's own start, not the tests'.)
+#[cfg(unix)]
+pub fn close_on_signals(ctx: &egui::Context) {
+    let handler = asked_to_end as extern "C" fn(libc::c_int) as libc::sighandler_t;
+    // SAFETY: the handler only stores to an atomic (or _exits)
+    unsafe {
+        libc::signal(libc::SIGTERM, handler);
+        libc::signal(libc::SIGINT, handler);
+    }
+    let ctx = ctx.clone();
+    let _ = std::thread::Builder::new()
+        .name("afm-signals".into())
+        .spawn(move || {
+            loop {
+                std::thread::sleep(Duration::from_millis(100));
+                if ASKED_TO_END.load(std::sync::atomic::Ordering::SeqCst) {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    ctx.request_repaint();
+                    // (asked again each second, should a frame not come)
+                    std::thread::sleep(Duration::from_secs(1));
+                }
+            }
+        });
 }
 
 #[cfg(test)]

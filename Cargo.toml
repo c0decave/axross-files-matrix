@@ -17,6 +17,8 @@ dirs = "7.0.0"
 eframe = "0.37.0"
 egui = "0.37"
 image = { version = "0.25.10", default-features = false, features = ["jpeg", "png"] }
+# (already in the lock through eframe: the benchmark's headless GPU)
+pollster = "1.0"
 # (already in the lock through rustls: the update's Ed25519 signature and
 # SHA-256, the cache's checksum - src/update.rs, src/cache.rs)
 ring = "0.17.14"
@@ -26,8 +28,6 @@ ureq = { version = "3.5.1", default-features = false, features = ["rustls"] }
 
 [dev-dependencies]
 egui_kittest = { version = "0.37.0", features = ["wgpu", "snapshot", "eframe"] }
-# (already in the lock through eframe: the measurements' headless GPU)
-pollster = "1.0"
 
 [target.'cfg(unix)'.dependencies]
 # (already in the lock through the window crates: setsid and fcntl for going

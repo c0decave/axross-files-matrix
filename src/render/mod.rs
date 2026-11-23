@@ -62,10 +62,12 @@ pub struct Stats {
 const SCENE: wgpu::TextureFormat = wgpu::TextureFormat::Rgba16Float;
 const DEPTH: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 const FINAL: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
-const LUMA: wgpu::TextureFormat = wgpu::TextureFormat::Rgba32Float;
+/// The guard's grid: 8 bits each (luminance, saturated red / 320) - a
+/// format every backend can render to and copy.
+const LUMA: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8Unorm;
 const BLOOM_LEVELS: usize = 4;
 /// A luminance row padded to wgpu's copy alignment.
-const LUMA_ROW: u32 = ((GRID_W as u32 * 16).div_ceil(256)) * 256;
+const LUMA_ROW: u32 = ((GRID_W as u32 * 4).div_ceil(256)) * 256;
 const STAGING: usize = 3;
 
 const FREE: u8 = 0;
@@ -183,8 +185,8 @@ impl Renderer {
         let r = Renderer::new(&rs.device, rs.target_format);
         let info = rs.adapter.get_info();
         if let Ok(mut s) = r.stats.lock() {
-            s.adapter = format!("{} ({:?})", info.name, info.backend);
-            s.software = info.device_type == wgpu::DeviceType::Cpu;
+            s.adapter = crate::gpu::describe(&info);
+            s.software = crate::gpu::is_software(&info.name, info.device_type);
         }
         let stats = r.stats.clone();
         rs.renderer.write().callback_resources.insert(r);
@@ -252,8 +254,8 @@ impl Renderer {
                 resource: globals.as_entire_binding(),
             }],
         });
-        // (no filtering: Rgba32Float and some adapters' half floats cannot
-        // be filtered; the shaders take their taps themselves)
+        // (no filtering: some adapters cannot filter half floats -
+        // the shaders take their taps themselves; the shaders take their taps themselves)
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("afm sampler"),
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -698,17 +700,9 @@ impl Renderer {
                     if let Ok(data) = st.buffer.get_mapped_range(..) {
                         for y in 0..GRID_H {
                             for x in 0..GRID_W {
-                                let o = y * LUMA_ROW as usize + x * 16;
-                                let f = |i: usize| {
-                                    f32::from_le_bytes([
-                                        data[o + i],
-                                        data[o + i + 1],
-                                        data[o + i + 2],
-                                        data[o + i + 3],
-                                    ])
-                                };
-                                lum[y * GRID_W + x] = f(0);
-                                red[y * GRID_W + x] = f(4);
+                                let o = y * LUMA_ROW as usize + x * 4;
+                                lum[y * GRID_W + x] = data[o] as f32 / 255.0;
+                                red[y * GRID_W + x] = data[o + 1] as f32 / 255.0 * 320.0;
                             }
                         }
                     }
@@ -940,6 +934,20 @@ impl Renderer {
 }
 
 impl Renderer {
+    /// The draw calls a frame issues: the sky, the sea, the boxes (one
+    /// instanced call for every opaque box, one for the glowing ones), the
+    /// bloom chain, the picture, its average, the guard's grid, the copy
+    /// into the window.
+    pub fn draw_calls(&self, guard: bool) -> u32 {
+        let boxes = (self.opaque > 0) as u32 + (self.count > self.opaque) as u32;
+        2 + boxes + 1 + 2 * (BLOOM_LEVELS as u32 - 1) + 2 + guard as u32 + 1
+    }
+
+    /// The boxes drawn in the last frame.
+    pub fn instance_count(&self) -> u32 {
+        self.count
+    }
+
     /// A whole frame into `target` (of the format given to [`Renderer::new`]),
     /// as egui's pass would get it: the measurements and headless pictures.
     pub fn bench_frame(

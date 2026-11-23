@@ -14,6 +14,7 @@ use std::path::PathBuf;
 
 const USAGE: &str = "axross-files-matrix [OPTIONS] [FOLDER ...]
        axross-files-matrix --dump-city FOLDER [--json] [--depth N]
+       axross-files-matrix --benchmark [FILES] [--frames N] [--size WxH] [--all] [--json]
        axross-files-matrix --help | --version | --self-test
 
 Without folders every mountpoint the system shows is an island (pseudo file
@@ -30,6 +31,15 @@ folders: islands of those alone.
   --foreground, -F  stay in the terminal (else it goes to the background)
   --dump-city DIR   walk DIR, lay it out, print the city (text, or --json),
                     down to --depth N levels (default 3); no window
+  --benchmark [N]   a city of N files (default 200000) flown through for
+                    --frames frames (600) at --size (1920x1080), offscreen,
+                    no vsync: the adapter, boxes and draw calls per frame,
+                    CPU and whole-frame times (median, p95, p99); --all
+                    draws every building (no level of detail); --json
+
+The GPU: a dedicated one by default (Settings > GPU); WGPU_ADAPTER_NAME
+picks one by a part of its name, WGPU_BACKEND the API (vulkan, metal,
+dx12, gl), WGPU_POWER_PREF (high, low) the preference.
 
 Keys: W A S D fly, Q / E down and up, Shift faster, the wheel sets the
 speed, right drag or M looks around, F switches free flight and orbit,
@@ -67,6 +77,42 @@ fn main() -> eframe::Result {
         println!("{}", update::self_test_answer(update::Version::current()));
         return Ok(());
     }
+    if let Some(i) = raw.iter().position(|a| a == "--benchmark") {
+        let files = args
+            .get(i + 1)
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(200_000);
+        let size = value_after(&args, "--size")
+            .and_then(|v| {
+                let (w, h) = v.split_once(['x', 'X'])?;
+                Some((w.parse().ok()?, h.parse().ok()?))
+            })
+            .unwrap_or((1920, 1080));
+        let settings_path =
+            axross_files_matrix::settings::config_dir().join(axross_files_matrix::settings::FILE);
+        let opts = axross_files_matrix::bench::BenchOptions {
+            files,
+            frames: value_after(&args, "--frames")
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(600),
+            size,
+            all: args.iter().any(|a| a == "--all"),
+            preference: axross_files_matrix::gpu::Preference::from_key(
+                &axross_files_matrix::settings::load(&settings_path).0.gpu,
+            ),
+        };
+        match axross_files_matrix::bench::run(&opts) {
+            Ok(r) if args.iter().any(|a| a == "--json") => {
+                println!("{}", serde_json::to_string_pretty(&r).unwrap_or_default())
+            }
+            Ok(r) => print!("{}", r.text()),
+            Err(e) => {
+                eprintln!("axross-files-matrix: the benchmark cannot run: {e}");
+                std::process::exit(3);
+            }
+        }
+        return Ok(());
+    }
     if let Some(i) = raw.iter().position(|a| a == "--dump-city") {
         let Some(dir) = raw.get(i + 1) else {
             eprintln!("axross-files-matrix: --dump-city needs a folder");
@@ -98,6 +144,8 @@ fn main() -> eframe::Result {
         }
         let s = a.to_string_lossy();
         match s.as_ref() {
+            "--frames" | "--size" | "--depth" => skip_next = true,
+            "--all" | "--json" => {}
             "--synthetic" => {
                 opts.synthetic = args.get(k + 1).and_then(|v| v.parse().ok());
                 skip_next = true;
@@ -155,16 +203,18 @@ fn main() -> eframe::Result {
     }
     let settings_path =
         axross_files_matrix::settings::config_dir().join(axross_files_matrix::settings::FILE);
-    let size = axross_files_matrix::settings::load(&settings_path)
-        .0
-        .window
-        .unwrap_or([1280.0, 800.0]);
+    let saved = axross_files_matrix::settings::load(&settings_path).0;
+    let size = saved.window.unwrap_or([1280.0, 800.0]);
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title("axross files matrix")
             .with_app_id("axross-files-matrix")
             .with_inner_size(size)
             .with_min_inner_size([640.0, 420.0]),
+        // (the dedicated GPU unless the settings say otherwise)
+        wgpu_options: axross_files_matrix::gpu::configuration(
+            axross_files_matrix::gpu::Preference::from_key(&saved.gpu),
+        ),
         ..Default::default()
     };
     eframe::run_native(
@@ -172,6 +222,8 @@ fn main() -> eframe::Result {
         options,
         Box::new(move |cc| {
             let app = app::App::new(cc, opts);
+            #[cfg(unix)]
+            app::close_on_signals(&cc.egui_ctx);
             axross_files_matrix::detach::signal_ready();
             Ok(Box::new(app))
         }),

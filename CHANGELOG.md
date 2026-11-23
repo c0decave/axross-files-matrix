@@ -74,6 +74,14 @@ The first release: the MVP of the spec.
   grid on the GPU and read back; where a field would flash more than three
   times a second it is veiled towards its own slow average. The frames are
   held to an independent meter in the tests.
+- **The GPU**: the dedicated one preferred (*Settings › GPU*: automatic,
+  high performance, low power), never a software renderer while a GPU is
+  there; `WGPU_ADAPTER_NAME`, `WGPU_BACKEND`, `WGPU_POWER_PREF` override
+  it. The status line names the API and the adapter, and says calmly when
+  it is a software renderer.
+- **`--benchmark [FILES]`**: a synthetic city (200 000 files) flown through
+  offscreen with no vsync - the adapter, boxes and draw calls per frame, the
+  CPU side and the whole frame as median, p95 and p99, as text or JSON.
 - **Headless**: `--version`, `--self-test`, `--dump-city DIR [--json]`.
 - **Signed updates** from the GitHub releases (as axross-amp's), off until
   the maintainer pins the release key; CI with the supply-chain gate,

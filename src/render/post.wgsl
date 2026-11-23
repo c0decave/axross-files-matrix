@@ -201,7 +201,8 @@ fn fs_luma(in: FullOut) -> @location(0) vec4<f32> {
             }
         }
     }
-    return vec4<f32>(l / 16.0, red / 16.0, 0.0, 1.0);
+    // (8 bits each: the red value over its largest, 320)
+    return vec4<f32>(l / 16.0, red / 16.0 / 320.0, 0.0, 1.0);
 }
 
 // into egui's frame (its own encoding)
