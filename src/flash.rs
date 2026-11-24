@@ -397,7 +397,11 @@ mod tests {
             let lum: Vec<f32> = (0..n)
                 .map(|i| {
                     let x = i % GRID_W;
-                    if ((x + k) / 4).is_multiple_of(2) { 0.4 } else { 0.03 }
+                    if ((x + k) / 4).is_multiple_of(2) {
+                        0.4
+                    } else {
+                        0.03
+                    }
                 })
                 .collect();
             g.update(&lum, &vec![0.0; n], 1.0 / 60.0);

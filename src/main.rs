@@ -14,7 +14,7 @@ use std::path::PathBuf;
 
 const USAGE: &str = "axross-files-matrix [OPTIONS] [--] [FOLDER ...]
        axross-files-matrix --dump-city FOLDER [--json] [--depth N]
-       axross-files-matrix --benchmark [FILES] [--frames N] [--size WxH] [--all] [--flat] [--no-msaa] [--json]
+       axross-files-matrix --benchmark [FILES] [--frames N] [--size WxH] [--all] [--flat] [--no-msaa] [--path P] [--json]
        axross-files-matrix --help | --version | --self-test
 
 Without folders every mountpoint the system shows is an island (pseudo file
@@ -37,10 +37,12 @@ a name that starts with a dash.
   --benchmark [N]   a city of N files (default 200000) flown through for
                     --frames frames (600) at --size (1920x1080), offscreen,
                     no vsync: the adapter, boxes and draw calls per frame,
-                    CPU and whole-frame times (median, p95, p99); --all
-                    draws every building (no level of detail), --flat
-                    puts the files in one folder, --no-msaa draws without
-                    smooth edges; --json
+                    CPU and whole-frame times (median, p95, p99) and
+                    where the CPU's time goes, the city's making, the peak
+                    memory; --all draws every building (no level of
+                    detail), --flat puts the files in one folder,
+                    --no-msaa draws without smooth edges, --path spiral|
+                    fly|orbit|teleport the camera's way; --json
 
 The GPU: a dedicated one by default (Settings > GPU); WGPU_ADAPTER_NAME
 picks one by a part of its name, WGPU_BACKEND the API (vulkan, metal,
@@ -111,6 +113,7 @@ fn main() -> eframe::Result {
             all: args.iter().any(|a| a == "--all"),
             flat: args.iter().any(|a| a == "--flat"),
             msaa: !args.iter().any(|a| a == "--no-msaa"),
+            path: value_after(&args, "--path").unwrap_or_else(|| "spiral".into()),
             preference: axross_files_matrix::gpu::Preference::from_key(
                 &axross_files_matrix::settings::load(&settings_path).0.gpu,
             ),
@@ -163,7 +166,7 @@ fn main() -> eframe::Result {
         }
         let s = a.to_string_lossy();
         match s.as_ref() {
-            "--frames" | "--size" | "--depth" => skip_next = true,
+            "--frames" | "--size" | "--depth" | "--path" => skip_next = true,
             "--all" | "--json" | "--flat" | "--no-msaa" => {}
             "--synthetic" => {
                 opts.synthetic = args.get(k + 1).and_then(|v| v.parse().ok());

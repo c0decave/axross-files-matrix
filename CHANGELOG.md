@@ -246,6 +246,15 @@ The first release: the MVP of the spec.
   from the nearest open folder above (a call a folder, not one per level
   above it); `--dump-city` says how far its walk got.
 - **Previews** of Latin-1 and UTF-16 text show the text, not hex.
+- **Performance, measured**: `--benchmark` says where the CPU's time goes
+  (level of detail, instances, encoding and upload), how the city was made
+  (walk, layout, picking boxes, instances), the peak memory, and takes
+  `--path spiral|fly|orbit|teleport`; `tests/perf.rs` guards the window's
+  work a frame and its parts, allocations, the first city cold and cached,
+  walks and the walk cache (docs/PERFORMANCE.md). The picking boxes'
+  hierarchy is built in half the time; the level of detail tests a
+  district's raised box only when it is needed and none below a district
+  wholly in view; picking under a still pointer and view is not cast again.
 - **The Matrix theme**, the theme system ready for more.
 - **A flash guard** as axross-amp's: the picture shown is measured on a
   grid on the GPU (each cell its area's mean, 256 taps) and read back;

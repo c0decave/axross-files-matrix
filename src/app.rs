@@ -495,6 +495,18 @@ struct PreviewView {
     texture: Option<egui::TextureHandle>,
 }
 
+/// What a pick under the pointer was made for: the pointer, the camera,
+/// the view's shape, and the world's version.
+type PickKey = ([f32; 8], u64);
+
+/// Where a frame's own work went (milliseconds; the last frame).
+#[derive(Clone, Copy, Debug, Default)]
+pub struct FrameParts {
+    pub pick_ms: f32,
+    pub lod_ms: f32,
+    pub labels_ms: f32,
+}
+
 /// Frame times (seconds), the last two hundred.
 #[derive(Default)]
 pub struct FrameTimes {
@@ -579,6 +591,11 @@ pub struct App {
     pub ask_mode_open: bool,
     toast: Option<(String, Instant)>,
     pub times: FrameTimes,
+    /// The last frame's parts (milliseconds): picking under the pointer,
+    /// the level of detail and the instances, the labels.
+    pub parts: FrameParts,
+    /// The last pick under the pointer and what it was made for.
+    last_pick: Option<(PickKey, Option<Hit>)>,
     render_stats: Option<Arc<Mutex<Stats>>>,
     has_gpu: bool,
     updater: Updater,
@@ -777,6 +794,8 @@ impl App {
             ask_mode_open: false,
             toast: None,
             times: FrameTimes::default(),
+            parts: FrameParts::default(),
+            last_pick: None,
             render_stats,
             has_gpu,
             updater,
@@ -3951,18 +3970,44 @@ impl App {
         self.view_aspect = aspect;
         // hover and click
         let pointer = response.hover_pos().filter(|_| !self.captured);
-        self.hover = pointer.and_then(|p| {
-            let ndc = [
-                (p.x - rect.left()) / rect.width() * 2.0 - 1.0,
-                1.0 - (p.y - rect.top()) / rect.height() * 2.0,
-            ];
-            let ray = self.camera.ray(ndc, aspect);
-            let cities = self.cities();
-            city::pick(&cities, &ray, &self.raise()).map(|h| Hit {
-                island: self.island_of_city(h.island).unwrap_or(0),
-                ..h
-            })
+        let t_pick = Instant::now();
+        // (the same pointer, view and world as the frame before: the same
+        // answer - no ray cast while nothing moves)
+        let pick_key = pointer.map(|p| {
+            (
+                [
+                    p.x,
+                    p.y,
+                    self.camera.pos.x,
+                    self.camera.pos.y,
+                    self.camera.pos.z,
+                    self.camera.yaw,
+                    self.camera.pitch,
+                    aspect,
+                ],
+                self.world_version,
+            )
         });
+        let cached = match (&self.last_pick, pick_key) {
+            (Some((k, h)), Some(now)) if *k == now => Some(*h),
+            _ => None,
+        };
+        self.hover = match cached {
+            Some(h) => h,
+            None => pointer.and_then(|p| {
+                let ndc = [
+                    (p.x - rect.left()) / rect.width() * 2.0 - 1.0,
+                    1.0 - (p.y - rect.top()) / rect.height() * 2.0,
+                ];
+                let ray = self.camera.ray(ndc, aspect);
+                let cities = self.cities();
+                city::pick(&cities, &ray, &self.raise()).map(|h| Hit {
+                    island: self.island_of_city(h.island).unwrap_or(0),
+                    ..h
+                })
+            }),
+        };
+        self.last_pick = pick_key.map(|k| (k, self.hover));
         if self
             .hover
             .is_some_and(|h| self.islands.get(h.island).is_none_or(|i| i.stale))
@@ -3983,7 +4028,10 @@ impl App {
         {
             self.fly_to(h.island, h.node);
         }
+        self.parts.pick_ms = t_pick.elapsed().as_secs_f32() * 1000.0;
+        let t_lod = Instant::now();
         let (_, globals) = self.update_frame_set(aspect);
+        self.parts.lod_ms = t_lod.elapsed().as_secs_f32() * 1000.0;
         let frame = Arc::new(FrameData {
             globals,
             instances: self.instances.clone(),
@@ -3999,7 +4047,9 @@ impl App {
         } else {
             ui.painter().rect_filled(rect, 0.0, Color32::BLACK);
         }
+        let t_labels = Instant::now();
         self.labels(ui, rect, aspect);
+        self.parts.labels_ms = t_labels.elapsed().as_secs_f32() * 1000.0;
         if self.legend_open {
             self.legend(ui, rect);
         }
@@ -4342,16 +4392,17 @@ impl App {
                 }
                 buildings += 1;
             }
-            // (behind a building: not shown - the islands' titles always are)
-            if c.kind != LabelKind::Island && city::occluded(&cities, eye, c.at) {
-                continue;
-            }
             let p = vp.transform([c.at.x, c.at.y, c.at.z, 1.0]);
             if p[3] <= 0.1 {
                 continue;
             }
             let (x, y) = (p[0] / p[3], p[1] / p[3]);
             if !(-1.1..=1.1).contains(&x) || !(-1.1..=1.1).contains(&y) {
+                continue;
+            }
+            // (behind a building: not shown - the islands' titles always
+            // are; a ray only for a candidate in the view)
+            if c.kind != LabelKind::Island && city::occluded(&cities, eye, c.at) {
                 continue;
             }
             let at = Pos2::new(
@@ -4464,6 +4515,7 @@ impl App {
             if taken.iter().any(|o| o.intersects(cover)) || !rect.contains_rect(cover) {
                 continue;
             }
+
             taken.push(cover);
             drawn.insert(key);
             if c.kind == LabelKind::Island {

@@ -33,6 +33,11 @@ pub struct BenchOptions {
     /// Smooth edges (four samples a pixel), as the window draws by default.
     pub msaa: bool,
     pub preference: Preference,
+    /// How the camera goes: "spiral" (the default: in from aside and above
+    /// to low over the middle), "fly" (low and straight across), "orbit"
+    /// (round the city from the first view's distance), "teleport" (a jump
+    /// every tenth of the frames).
+    pub path: String,
 }
 
 impl Default for BenchOptions {
@@ -45,6 +50,7 @@ impl Default for BenchOptions {
             flat: false,
             msaa: true,
             preference: Preference::Auto,
+            path: "spiral".into(),
         }
     }
 }
@@ -112,6 +118,32 @@ pub struct BenchReport {
     /// The whole frame, CPU and GPU, waited for (milliseconds).
     pub frame_ms: Spread,
     pub fps_median: f64,
+    /// Where the CPU side's time goes (milliseconds a frame): choosing
+    /// what is drawn (level of detail), handing the instances over,
+    /// encoding the passes and uploading the instances.
+    pub lod_ms: Spread,
+    pub hand_ms: Spread,
+    pub encode_ms: Spread,
+    /// The city's making (seconds): the walk, the layout, the picking
+    /// boxes and their hierarchy, the instances.
+    pub walk_seconds: f64,
+    pub layout_seconds: f64,
+    pub bvh_seconds: f64,
+    pub instances_seconds: f64,
+    /// The process's peak memory (MiB; Linux; 0 elsewhere).
+    pub peak_mib: u64,
+}
+
+/// The process's peak resident memory (MiB), where the system says it.
+pub fn peak_mib() -> u64 {
+    std::fs::read_to_string("/proc/self/status")
+        .ok()
+        .and_then(|s| {
+            s.lines()
+                .find(|l| l.starts_with("VmHWM:"))
+                .and_then(|l| l.split_whitespace().nth(1)?.parse::<u64>().ok())
+        })
+        .map_or(0, |kb| kb / 1024)
 }
 
 impl BenchReport {
@@ -139,8 +171,15 @@ impl BenchReport {
             s.push_str("note: a software renderer - these are no GPU numbers\n");
         }
         s.push_str(&format!(
-            "city: {} nodes, {} buildings, {} districts, built in {:.2} s\n",
-            self.nodes, self.buildings, self.districts, self.build_seconds
+            "city: {} nodes, {} buildings, {} districts, built in {:.2} s (walk {:.2}, layout {:.2}, picking boxes {:.2}, instances {:.2})\n",
+            self.nodes,
+            self.buildings,
+            self.districts,
+            self.build_seconds,
+            self.walk_seconds,
+            self.layout_seconds,
+            self.bvh_seconds,
+            self.instances_seconds
         ));
         s.push_str(&format!(
             "per frame: {} - {} boxes (median {}), of them {} - {} buildings; {} draw calls, {} of them instanced\n",
@@ -157,9 +196,21 @@ impl BenchReport {
             self.cpu_ms.median, self.cpu_ms.p95, self.cpu_ms.p99
         ));
         s.push_str(&format!(
+            "  of it (median, p95): level of detail {:.2}, {:.2}; instances handed over {:.2}, {:.2}; encoding and upload {:.2}, {:.2} ms\n",
+            self.lod_ms.median,
+            self.lod_ms.p95,
+            self.hand_ms.median,
+            self.hand_ms.p95,
+            self.encode_ms.median,
+            self.encode_ms.p95
+        ));
+        s.push_str(&format!(
             "frame (CPU and GPU, waited for): median {:.2} ms, p95 {:.2} ms, p99 {:.2} ms - {:.0} frames a second\n",
             self.frame_ms.median, self.frame_ms.p95, self.frame_ms.p99, self.fps_median
         ));
+        if self.peak_mib > 0 {
+            s.push_str(&format!("memory at its peak: {} MiB\n", self.peak_mib));
+        }
         s
     }
 }
@@ -190,6 +241,44 @@ pub fn flat_tree(files: usize) -> crate::tree::Tree {
 
 /// The camera at frame `k` of `n`: round the island, from high above down
 /// to the roofs.
+fn camera_on(path: &str, k: usize, n: usize, center: crate::math::Vec3, side: f32) -> Camera {
+    let s = k as f32 / n.max(1) as f32;
+    let at_eye = |eye: crate::math::Vec3, at: crate::math::Vec3| {
+        let (yaw, pitch) = look_angles(eye, at);
+        Camera {
+            pos: eye,
+            yaw,
+            pitch,
+            ..Default::default()
+        }
+    };
+    match path {
+        "fly" => {
+            // low and straight across, a little down
+            let x = -side * 0.5 + side * s;
+            let eye = center + vec3(x, 60.0, side * 0.05);
+            return at_eye(eye, eye + vec3(1.0, -0.15, 0.0));
+        }
+        "orbit" => {
+            let a = std::f32::consts::TAU * s;
+            let eye = center + vec3(a.cos() * side * 1.1, side * 0.3, a.sin() * side * 1.1);
+            return at_eye(eye, center);
+        }
+        "teleport" => {
+            let j = (k * 10 / n.max(1)) as f32;
+            let a = j * 2.4;
+            let r = side * (0.15 + 0.08 * j);
+            let eye = center + vec3(a.cos() * r, 40.0 + 15.0 * j, a.sin() * r);
+            return at_eye(
+                eye,
+                center + vec3(a.cos() * r * 0.5, 0.0, a.sin() * r * 0.5),
+            );
+        }
+        _ => {}
+    }
+    camera_at(k, n, center, side)
+}
+
 fn camera_at(k: usize, n: usize, center: crate::math::Vec3, side: f32) -> Camera {
     let s = k as f32 / n.max(1) as f32;
     let angle = std::f32::consts::TAU * s;
@@ -242,13 +331,20 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
         )
         .0
     };
+    let walk_seconds = t.elapsed().as_secs_f64();
+    let tl = Instant::now();
     let l = layout(&snapshot(&tree), &Params::default());
+    let layout_seconds = tl.elapsed().as_secs_f64();
+    let tb = Instant::now();
     let boxes = city::boxes_of(&l);
     let bvh = Bvh::build(&boxes);
+    let bvh_seconds = tb.elapsed().as_secs_f64();
     let (nodes, buildings, districts) = (tree.len(), l.buildings.len(), l.districts.len());
     let mut c = IslandCity::new(Ring::Local, Arc::new(l), Arc::new(bvh), Arc::new(boxes));
     let theme = &crate::theme::MATRIX;
+    let ti = Instant::now();
     c.rebuild(theme);
+    let instances_seconds = ti.elapsed().as_secs_f64();
     let build_seconds = t.elapsed().as_secs_f64();
     let format = wgpu::TextureFormat::Rgba8Unorm;
     let msaa_ok = crate::render::msaa_supported(&adapter);
@@ -293,12 +389,13 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
     let frames = opts.frames.max(1);
     let warm = 5.min(frames);
     let (mut cpu, mut total) = (Vec::new(), Vec::new());
+    let (mut lod_t, mut hand_t, mut enc_t) = (Vec::new(), Vec::new(), Vec::new());
     let (mut inst, mut blds) = (Vec::new(), Vec::new());
     let mut draws = (0, 0);
     let mut buffer: Option<Arc<Vec<city::Instance>>> = None;
     for k in 0..frames + warm {
         let t0 = Instant::now();
-        let cam = camera_at(k.saturating_sub(warm), frames, center, side);
+        let cam = camera_on(&opts.path, k.saturating_sub(warm), frames, center, side);
         let aspect = w as f32 / h as f32;
         let vp = cam.proj(aspect).mul(&cam.view());
         let frustum = Frustum::from_view_proj(&vp);
@@ -315,6 +412,7 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
             ..lod
         };
         city::select_within(&mut [&mut c], cam.pos, &frustum, &lod, budget, &mut set);
+        let t_lod = Instant::now();
         let opaque = set.opaque.len() as u32;
         let built = set
             .opaque
@@ -346,6 +444,7 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
             msaa: opts.msaa,
             cut: false,
         };
+        let t_hand = Instant::now();
         let mut enc = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("afm benchmark"),
         });
@@ -362,6 +461,9 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
         buffer = Some(instances);
         if k >= warm {
             cpu.push((t1 - t0).as_secs_f64() * 1000.0);
+            lod_t.push((t_lod - t0).as_secs_f64() * 1000.0);
+            hand_t.push((t_hand - t_lod).as_secs_f64() * 1000.0);
+            enc_t.push((t1 - t_hand).as_secs_f64() * 1000.0);
             total.push((t2 - t0).as_secs_f64() * 1000.0);
             inst.push(renderer.instance_count() as u64);
             blds.push(built as u64);
@@ -404,6 +506,14 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
             0.0
         },
         frame_ms,
+        lod_ms: Spread::of(&mut lod_t),
+        hand_ms: Spread::of(&mut hand_t),
+        encode_ms: Spread::of(&mut enc_t),
+        walk_seconds: (walk_seconds * 1000.0).round() / 1000.0,
+        layout_seconds: (layout_seconds * 1000.0).round() / 1000.0,
+        bvh_seconds: (bvh_seconds * 1000.0).round() / 1000.0,
+        instances_seconds: (instances_seconds * 1000.0).round() / 1000.0,
+        peak_mib: peak_mib(),
     })
 }
 

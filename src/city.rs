@@ -478,6 +478,9 @@ pub fn select(
         let layout = island.layout.clone();
         let ds = &layout.districts;
         let mut i = 0usize;
+        // (the end of the outermost district wholly in view: those below it
+        // need no test)
+        let mut inside_until = 0usize;
         while i < ds.len() {
             let dist = &ds[i];
             let r = dist.rect;
@@ -485,15 +488,23 @@ pub fn select(
                 min: vec3(ox + r.x0, 0.0, oz + r.z0),
                 max: vec3(ox + r.x1, dist.top.max(dist.floor + 0.2), oz + r.z1),
             };
-            let mut raised = b;
-            // (as high as the shader may draw its farthest corner)
-            let reach = distance_to(&b, eye) + r.w() + r.h();
-            raised.max.y *= crate::render::stretch_at(lod.raise.look, reach);
-            if !frustum.intersects(&raised) {
-                i = dist.end as usize;
-                continue;
-            }
             let near = distance_to(&b, eye).max(0.5);
+            // (in view as it is - most are - or as high as the shader may
+            // draw its farthest corner: the raise's cost only for the rest;
+            // inside a district wholly in view, no test at all)
+            let inside = i < inside_until;
+            if !inside && i > 0 && frustum.contains(&b) {
+                inside_until = dist.end as usize;
+            }
+            if !inside && !frustum.intersects(&b) {
+                let mut raised = b;
+                let reach = near + r.w() + r.h();
+                raised.max.y *= crate::render::stretch_at(lod.raise.look, reach);
+                if !frustum.intersects(&raised) {
+                    i = dist.end as usize;
+                    continue;
+                }
+            }
             let extent = r.w().max(r.h());
             let angle = extent / near;
             let has_content = dist.sub_end > dist.first || dist.end as usize > i + 1;
@@ -543,20 +554,23 @@ pub fn select(
                         min: vec3(ox + tr.x0, tile.base, oz + tr.z0),
                         max: vec3(ox + tr.x1, tile.top.max(tile.base + 0.2), oz + tr.z1),
                     };
-                    let mut raised = tb;
-                    let reach = distance_to(&tb, eye) + tr.w() + tr.h();
-                    raised.max.y *= crate::render::stretch_at(lod.raise.look, reach);
-                    if !frustum.intersects(&raised) {
-                        continue;
+                    let tnear = distance_to(&tb, eye).max(0.5);
+                    if !frustum.intersects(&tb) {
+                        let mut raised = tb;
+                        raised.max.y *=
+                            crate::render::stretch_at(lod.raise.look, tnear + tr.w() + tr.h());
+                        if !frustum.intersects(&raised) {
+                            continue;
+                        }
                     }
-                    let ta = tr.w().max(tr.h()) / distance_to(&tb, eye).max(0.5);
+                    let ta = tr.w().max(tr.h()) / tnear;
                     if ta < lod.collapse {
                         out.opaque.push(inst.tiles[t as usize]);
                         towers(
                             &layout,
                             &inst,
                             tile.tall,
-                            distance_to(&tb, eye).max(0.5),
+                            tnear,
                             ta < lod.collapse * 0.5,
                             &mut out.opaque,
                             &mut island.towers_drawn,

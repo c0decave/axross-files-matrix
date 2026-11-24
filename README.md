@@ -276,7 +276,9 @@ software renderer - Mesa's llvmpipe - needs 0.2 s for a 1080p frame).
 Rust 1.95 or later (what egui 0.37 and wgpu 30 need). Linux needs nothing beyond a C compiler (for `ring`);
 the tests render with any wgpu adapter (Mesa's lavapipe on CI).
 
-Releasing: [docs/RELEASING.md](docs/RELEASING.md).
+Releasing: [docs/RELEASING.md](docs/RELEASING.md). What the city costs
+and how it is measured (`--benchmark`, `tests/perf.rs`):
+[docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 ## Licence
 

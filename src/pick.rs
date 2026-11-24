@@ -30,6 +30,14 @@ impl Bvh {
             nodes: Vec::with_capacity(boxes.len() / 2 + 1),
             items: (0..boxes.len() as u32).collect(),
         };
+        // (each box's middle once: the splits compare them many times)
+        let mids: Vec<[f32; 3]> = boxes
+            .iter()
+            .map(|b| {
+                let c = b.center();
+                [c.x, c.y, c.z]
+            })
+            .collect();
         if !boxes.is_empty() {
             let mut stack = vec![(0usize, boxes.len(), usize::MAX)];
             // (iterative: a deep tree never overflows the stack)
@@ -41,9 +49,9 @@ impl Bvh {
                 let mut aabb = Aabb::EMPTY;
                 let mut centers = Aabb::EMPTY;
                 for &i in &bvh.items[start..end] {
-                    let b = boxes[i as usize];
-                    aabb = aabb.union(b);
-                    let c = b.center();
+                    aabb = aabb.union(boxes[i as usize]);
+                    let [x, y, z] = mids[i as usize];
+                    let c = crate::math::vec3(x, y, z);
                     centers = centers.union(Aabb { min: c, max: c });
                 }
                 if end - start <= LEAF {
@@ -63,10 +71,7 @@ impl Bvh {
                 } else {
                     2
                 };
-                let key = |i: &u32| {
-                    let c = boxes[*i as usize].center();
-                    [c.x, c.y, c.z][axis]
-                };
+                let key = |i: &u32| mids[*i as usize][axis];
                 let mid = (start + end) / 2;
                 bvh.items[start..end]
                     .select_nth_unstable_by(mid - start, |a, b| key(a).total_cmp(&key(b)));

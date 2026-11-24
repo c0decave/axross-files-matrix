@@ -274,6 +274,17 @@ impl Frustum {
         }
     }
 
+    /// Whether all of the box is inside (every corner in front of every
+    /// plane): what lies in it is inside too.
+    pub fn contains(&self, b: &Aabb) -> bool {
+        self.planes.iter().all(|p| {
+            let x = if p[0] >= 0.0 { b.min.x } else { b.max.x };
+            let y = if p[1] >= 0.0 { b.min.y } else { b.max.y };
+            let z = if p[2] >= 0.0 { b.min.z } else { b.max.z };
+            p[0] * x + p[1] * y + p[2] * z + p[3] >= 0.0
+        })
+    }
+
     /// Whether any of the box may be visible.
     pub fn intersects(&self, b: &Aabb) -> bool {
         self.planes.iter().all(|p| {
@@ -357,5 +368,13 @@ mod tests {
         assert!(f.intersects(&ahead));
         assert!(!f.intersects(&behind));
         assert!(f.intersects(&far_ahead));
+        // wholly inside: ahead and narrow; across an edge: not wholly
+        assert!(f.contains(&ahead));
+        assert!(!f.contains(&behind));
+        let across = Aabb {
+            min: vec3(-100.0, -1.0, -11.0),
+            max: vec3(1.0, 1.0, -9.0),
+        };
+        assert!(f.intersects(&across) && !f.contains(&across));
     }
 }
