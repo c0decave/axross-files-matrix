@@ -81,16 +81,17 @@ const CHUNK: usize = 64 * 1024;
 pub const NO_CHECK_ENV: &str = "AXROSS_FILES_MATRIX_NO_UPDATE_CHECK";
 const USER_AGENT: &str = concat!("axross-files-matrix/", env!("CARGO_PKG_VERSION"));
 
-/// PLACEHOLDER - the release-signing public key is not set yet.
-///
-/// The maintainer makes the Ed25519 key pair on their own machine
-/// (`scripts/sign_release.py keygen`, docs/RELEASING.md) and puts its raw
-/// 32-byte public half here, replacing the zeros, before the first release
-/// that is to update itself. Until then no release is ever put in place:
-/// an all-zero key verifies nothing ([`verify_signature`] skips it), so the
-/// updater says that updates are not signed yet and only points to the
-/// releases page.
-pub const UPDATE_PUBLIC_KEY: [u8; 32] = [0; 32];
+/// The release-signing public key (Ed25519, raw 32 bytes; base64
+/// `7Q1+QXpJXtHCjQa9yR65Ht9Bk/AURDLu7vfeJYN1kT4=`). The maintainer keeps
+/// its private half on their own machine and signs each release's
+/// `SHA256SUMS` with it (`scripts/sign_release.py`, docs/RELEASING.md).
+/// An all-zero key would verify nothing ([`verify_signature`] skips it):
+/// updates would then be off, the updater only pointing to the releases
+/// page.
+pub const UPDATE_PUBLIC_KEY: [u8; 32] = [
+    0xed, 0x0d, 0x7e, 0x41, 0x7a, 0x49, 0x5e, 0xd1, 0xc2, 0x8d, 0x06, 0xbd, 0xc9, 0x1e, 0xb9, 0x1e,
+    0xdf, 0x41, 0x93, 0xf0, 0x14, 0x44, 0x32, 0xee, 0xee, 0xf7, 0xde, 0x25, 0x83, 0x75, 0x91, 0x3e,
+];
 
 /// The public halves (raw 32 bytes) of the keys a `SHA256SUMS` may be
 /// signed with; one verifying is enough. More than one only while a key is

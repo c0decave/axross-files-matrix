@@ -125,6 +125,45 @@ impl Bvh {
         best
     }
 
+    /// [`Bvh::raycast`] against the boxes as drawn: `item(i)` gives box
+    /// `i` as the shader draws it (raised, widened), `grow(node)` a node's
+    /// box grown enough to hold its items so drawn.
+    pub fn raycast_drawn(
+        &self,
+        ray: &Ray,
+        max: f32,
+        grow: &dyn Fn(&Aabb) -> Aabb,
+        item: &dyn Fn(u32) -> Aabb,
+        keep: &dyn Fn(u32) -> bool,
+    ) -> Option<(u32, f32)> {
+        let mut best: Option<(u32, f32)> = None;
+        let mut limit = max;
+        let mut stack = Vec::with_capacity(64);
+        if !self.nodes.is_empty() {
+            stack.push(0usize);
+        }
+        while let Some(n) = stack.pop() {
+            let node = &self.nodes[n];
+            if ray.hit_aabb(&grow(&node.aabb), limit).is_none() {
+                continue;
+            }
+            if node.count > 0 {
+                for &i in &self.items[node.first as usize..(node.first + node.count) as usize] {
+                    if let Some(t) = ray.hit_aabb(&item(i), limit)
+                        && keep(i)
+                    {
+                        limit = t;
+                        best = Some((i, t));
+                    }
+                }
+            } else {
+                stack.push(node.right as usize);
+                stack.push(n + 1);
+            }
+        }
+        best
+    }
+
     /// Whether `p` lies in any box for which `keep` holds.
     pub fn contains(&self, p: Vec3, boxes: &[Aabb], keep: &dyn Fn(u32) -> bool) -> bool {
         let mut stack = Vec::with_capacity(64);

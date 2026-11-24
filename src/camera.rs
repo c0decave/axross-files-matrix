@@ -110,7 +110,7 @@ pub fn look_angles(from: Vec3, to: Vec3) -> (f32, f32) {
     )
 }
 
-fn wrap_angle(a: f32) -> f32 {
+pub fn wrap_angle(a: f32) -> f32 {
     let tau = std::f32::consts::TAU;
     (a + std::f32::consts::PI).rem_euclid(tau) - std::f32::consts::PI
 }
@@ -170,15 +170,23 @@ impl Camera {
             return;
         }
         if mode == Mode::Orbit {
-            // round the point on the ground ahead (or 120 m ahead)
+            // round the point on the ground ahead (as far as it is, up to
+            // a few world widths); looking level or up: the ground 120 m
+            // ahead, looked at - the pivot is never in the air
             let f = self.forward();
-            let d = if f.y < -0.05 {
-                (self.pos.y / -f.y).min(2000.0)
+            if f.y < -0.05 {
+                let far = (self.world * ORBIT_FAR).max(2000.0);
+                self.distance = (self.pos.y / -f.y).clamp(5.0, far);
+                self.target = self.pos + f * self.distance;
+                self.target.y = self.target.y.max(0.0);
             } else {
-                120.0
-            };
-            self.distance = d.max(5.0);
-            self.target = self.pos + f * self.distance;
+                let flat = vec3(f.x, 0.0, f.z).normalized();
+                self.target = vec3(self.pos.x, 0.0, self.pos.z) + flat * 120.0;
+                let (yaw, pitch) = look_angles(self.pos, self.target);
+                self.yaw = yaw;
+                self.pitch = pitch;
+                self.distance = (self.target - self.pos).length().max(5.0);
+            }
         }
         self.vel = Vec3::ZERO;
         self.mode = mode;
@@ -192,10 +200,39 @@ impl Camera {
         }
     }
 
+    /// Out of a building, if the eye is in one (a zoom into a roof, a
+    /// switch of mode, a layout grown round it): straight up to the roof
+    /// and a metre over it. Whether it had to move.
+    pub fn free(&mut self, solid: &dyn Fn(Vec3) -> bool) -> bool {
+        if !solid(self.pos) {
+            return false;
+        }
+        let mut lifted = 0.0;
+        while solid(self.pos) && lifted < 5000.0 {
+            self.pos.y += 1.0;
+            lifted += 1.0;
+        }
+        self.pos.y += 1.0;
+        self.vel = Vec3::ZERO;
+        if self.mode == Mode::Orbit {
+            // (still looking at its point, from above the roof)
+            let (yaw, pitch) = look_angles(self.pos, self.target);
+            self.yaw = yaw;
+            self.pitch = pitch;
+            self.distance = (self.target - self.pos).length().max(2.0);
+        }
+        true
+    }
+
     /// One frame of input; `solid` says whether a point is inside a
-    /// building (free flight slides along walls instead of entering).
+    /// building (free flight slides along walls instead of entering; an
+    /// eye inside one is lifted out first, and an orbit's eye never ends
+    /// inside one).
     pub fn update(&mut self, dt: f32, input: &Input, solid: &dyn Fn(Vec3) -> bool) {
         let dt = dt.clamp(0.0, 0.1);
+        if self.flight.is_none() {
+            self.free(solid);
+        }
         self.warp = (self.warp - dt).max(0.0);
         if let Some(f) = self.flight.as_mut() {
             // any steering ends a flight
@@ -205,7 +242,10 @@ impl Camera {
                 || input.pan != [0.0, 0.0];
             if !steer {
                 f.t = (f.t + dt / f.seconds).min(1.0);
-                self.pos = f.path.at(f.t);
+                // (eased: slow off and slow in - the last metres among the
+                // towers are where the picture changes most)
+                let e = f.t * f.t * f.t * (f.t * (f.t * 6.0 - 15.0) + 10.0);
+                self.pos = f.path.at(e);
                 let k = smoothstep((f.t * 1.4).min(1.0));
                 self.yaw = f.from.0 + wrap_angle(f.to.0 - f.from.0) * k;
                 self.pitch = f.from.1 + (f.to.1 - f.from.1) * k;
@@ -287,6 +327,7 @@ impl Camera {
                     self.target.y = self.target.y.max(0.0);
                 }
                 self.sync_orbit();
+                self.free(solid);
             }
         }
     }
@@ -294,7 +335,9 @@ impl Camera {
     /// Flies to look at a box (centre `c`, size `size`), along a path above
     /// the roofs (`ceiling(a, b)`: the highest roof under the line a-b).
     pub fn fly_to(&mut self, c: Vec3, size: f32, ceiling: &dyn Fn(Vec3, Vec3) -> f32, slow: bool) {
-        let dist = (size * 1.4).max(10.0);
+        // (never closer than about 60 m: a flight that ends down among the
+        // towers sweeps the picture hard in its last second)
+        let dist = (size * 1.4).max(60.0);
         let mut away = vec3(self.pos.x - c.x, 0.0, self.pos.z - c.z);
         if away.length() < 1e-3 {
             away = vec3(0.3, 0.0, 1.0);
@@ -768,6 +811,88 @@ mod tests {
             let horizon = LOW_PITCH.tan() / (fov * 0.5).tan();
             assert!((1.0 - horizon) / 2.0 < 0.34);
         }
+    }
+
+    #[test]
+    fn the_eye_is_never_shut_in_a_building() {
+        // a tower 0..10 x 0..60 x 0..10
+        let tower = |p: Vec3| p.x > 0.0 && p.x < 10.0 && p.z > 0.0 && p.z < 10.0 && p.y < 60.0;
+        // free flight from inside it: lifted out, and the keys move it
+        let mut cam = Camera {
+            mode: Mode::Fly,
+            pos: vec3(5.0, 20.0, 5.0),
+            world: 2500.0,
+            ..Default::default()
+        };
+        let go = Input {
+            move_dir: [0.0, 0.0, 1.0],
+            ..Default::default()
+        };
+        let at = cam.pos;
+        for _ in 0..30 {
+            cam.update(1.0 / 30.0, &go, &tower);
+        }
+        assert!(!tower(cam.pos), "{:?}", cam.pos);
+        assert!((cam.pos - at).length() > 5.0, "it moved: {:?}", cam.pos);
+        // orbit: zoomed into the roof, the eye stays out of it
+        let mut cam = Camera {
+            mode: Mode::Orbit,
+            target: vec3(5.0, 0.0, 5.0),
+            distance: 300.0,
+            pitch: -0.3,
+            world: 2500.0,
+            ..Default::default()
+        };
+        for _ in 0..200 {
+            cam.update(
+                1.0 / 30.0,
+                &Input {
+                    scroll: 3.0,
+                    ..Default::default()
+                },
+                &tower,
+            );
+            assert!(!tower(cam.pos), "{:?}", cam.pos);
+        }
+        // and switched to free flight there: the keys move it (sideways:
+        // ahead is the roof it looks down at)
+        cam.set_mode(Mode::Fly);
+        let at = cam.pos;
+        let side = Input {
+            move_dir: [1.0, 0.0, 0.0],
+            ..Default::default()
+        };
+        for _ in 0..30 {
+            cam.update(1.0 / 30.0, &side, &tower);
+        }
+        assert!((cam.pos - at).length() > 1.0);
+    }
+
+    #[test]
+    fn the_orbit_s_pivot_is_on_the_ground() {
+        // far up, looking down at 15 degrees: the ground point, however far
+        let mut cam = Camera {
+            mode: Mode::Fly,
+            pos: vec3(0.0, 2000.0, 0.0),
+            pitch: -LOW_PITCH,
+            world: 9000.0,
+            ..Default::default()
+        };
+        cam.set_mode(Mode::Orbit);
+        assert!(cam.target.y.abs() < 1.0, "{:?}", cam.target);
+        assert!(cam.distance > 7000.0);
+        // looking level: the ground ahead, looked at
+        let mut cam = Camera {
+            mode: Mode::Fly,
+            pos: vec3(0.0, 50.0, 0.0),
+            pitch: 0.1,
+            ..Default::default()
+        };
+        cam.set_mode(Mode::Orbit);
+        assert_eq!(cam.target.y, 0.0);
+        let f = cam.forward();
+        let to = (cam.target - cam.pos).normalized();
+        assert!(f.dot(to) > 0.999, "it looks at its pivot");
     }
 
     #[test]

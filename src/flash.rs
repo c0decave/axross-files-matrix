@@ -4,17 +4,21 @@
 //! second (WCAG 2.3.1: six transitions) nor flash in saturated red (2.3.2).
 //!
 //! The picture as shown is measured on the GPU on a grid of cells (each
-//! cell's mean relative luminance and saturated-red value, read back two
-//! frames later). Each cell's luminance is followed with hysteresis: a
-//! transition is a swing of 0.1 or more between two extremes whose darker
-//! end is below 0.8 (or 20 in the red value). A *field* - a third of the
-//! picture each way, a 10° view when the city fills the screen, at a
-//! twelfth's stride - transits when a quarter of its cells transit in one
-//! direction within 100 ms, alternating with its last. Where a field has
-//! transited four times in the last second, the guard lays a veil over its
-//! cells: the picture there is blended towards its own slow average
-//! (persistence), 85 % - 95 % once it reaches six - and the veil lifts a
-//! second after the danger has passed, slowly.
+//! cell's mean relative luminance over its area and its saturated-red
+//! value, read back two frames later). Each cell's luminance is followed
+//! with hysteresis: a transition is a swing of 0.1 or more between two
+//! extremes whose darker end is below 0.8 (or 20 in the red value). A
+//! *field* - a third of the picture each way, a 10° view when the city
+//! fills the screen, at a twelfth's stride - transits when a quarter of its
+//! cells, net, transit in one direction within 100 ms (more turning bright
+//! than dark by a quarter of the field: lit things moving across a field
+//! brighten some cells as they darken others, and are no flash),
+//! alternating with its last. Where a field has transited four times in
+//! the last second, the guard lays a veil over its cells, with soft edges:
+//! the picture there is blended towards its own slow average (a third of a
+//! second), 85 % - 95 % once it reaches six, dimmed by at most 40 % (never
+//! black) - and the veil lifts a second after the danger has passed,
+//! slowly.
 
 /// The grid's cells across and down (the luminance texture's size).
 pub const GRID_W: usize = 48;
@@ -98,6 +102,10 @@ struct Field {
     /// Its transitions' times in the last second, and the last direction.
     times: Vec<f32>,
     last_dir: i8,
+    /// Its mean luminance followed as a cell's is (with a quarter of the
+    /// step: a quarter of its area swinging by 0.1): a flash moves it, lit
+    /// things passing across hardly.
+    mean: Option<Track>,
     /// When it was last dangerous.
     danger_at: f32,
     level: f32,
@@ -176,8 +184,10 @@ impl FlashGuard {
         for (k, (x0, y0)) in field_origins().enumerate() {
             let mut up = [0usize; 2];
             let mut down = [0usize; 2];
+            let mut sum = 0.0f32;
             for y in y0..y0 + FIELD_H {
                 for x in x0..x0 + FIELD_W {
+                    sum += lum[y * GRID_W + x];
                     for (j, tracks) in [&self.lum, &self.red].into_iter().enumerate() {
                         let t = &tracks[y * GRID_W + x];
                         if now - t.when <= AT_ONCE {
@@ -193,17 +203,42 @@ impl FlashGuard {
             let cells = (FIELD_W * FIELD_H) as f32;
             let f = &mut self.fields[k];
             f.times.retain(|t| now - t <= 1.0);
+            let mean = sum / cells;
+            let track = f.mean.get_or_insert_with(|| Track::new(mean));
+            if let Some(d) = track.push(mean, STEP * AREA, true) {
+                track.when = now;
+                track.which = d;
+            }
+            let (mean_when, mean_which) = (track.when, track.which);
             for j in 0..2 {
-                let dir = if up[j] as f32 >= cells * AREA {
+                // (by the net share: lit things passing - motion - brighten
+                // as many cells as they darken, and the field as a whole
+                // does not flash; a flash turns its cells one way)
+                let net = up[j] as f32 - down[j] as f32;
+                let mut dir = if net >= cells * AREA {
                     1
-                } else if down[j] as f32 >= cells * AREA {
+                } else if -net >= cells * AREA {
                     -1
                 } else {
                     0
                 };
+                // (and the field's own mean swung that way too: a quarter of
+                // its area flashing by 0.1 moves it by 0.025 at least)
+                if j == 0 && dir != 0 && !(mean_which == dir && now - mean_when <= AT_ONCE * 2.0) {
+                    dir = 0;
+                }
                 if dir != 0 && dir != f.last_dir {
                     f.last_dir = dir;
                     f.times.push(now);
+                    if std::env::var_os("AFM_GUARD_TRACE").is_some() {
+                        eprintln!(
+                            "guard {now:.2}s field {k} ({x0},{y0}) {} up {} down {} of {cells}, mean {mean:.3}, count {}",
+                            if j == 0 { "lum" } else { "red" },
+                            up[j],
+                            down[j],
+                            f.times.len()
+                        );
+                    }
                 }
             }
             let count = f.times.len();
@@ -225,6 +260,9 @@ impl FlashGuard {
                 }
             }
         }
+        // (soft edges: the veil fades out over two cells round a field,
+        // and a little inside it - never a hard-edged block)
+        let target = soften(&target);
         // the veil comes at once and goes over about two seconds
         for (v, t) in self.veil.iter_mut().zip(target) {
             *v = if t > *v { t } else { (*v - dt * 0.5).max(t) };
@@ -239,6 +277,34 @@ impl FlashGuard {
             .map(|v| (v.clamp(0.0, 1.0) * 255.0) as u8)
             .collect()
     }
+}
+
+/// A veil's cells with soft edges: the larger of 80 % of a cell's own
+/// level and its neighbourhood's mean (five cells each way).
+fn soften(target: &[f32]) -> Vec<f32> {
+    let blur = |src: &[f32], dx: usize, dy: usize| -> Vec<f32> {
+        let mut out = vec![0.0f32; src.len()];
+        for y in 0..GRID_H {
+            for x in 0..GRID_W {
+                let (mut sum, mut n) = (0.0, 0.0);
+                for k in -2i32..=2 {
+                    let (xx, yy) = (x as i32 + k * dx as i32, y as i32 + k * dy as i32);
+                    if xx >= 0 && yy >= 0 && (xx as usize) < GRID_W && (yy as usize) < GRID_H {
+                        sum += src[yy as usize * GRID_W + xx as usize];
+                        n += 1.0;
+                    }
+                }
+                out[y * GRID_W + x] = sum / n;
+            }
+        }
+        out
+    };
+    let b = blur(&blur(target, 1, 0), 0, 1);
+    target
+        .iter()
+        .zip(b)
+        .map(|(t, m)| (t * 0.8).max(m))
+        .collect()
 }
 
 #[cfg(test)]
@@ -322,6 +388,25 @@ mod tests {
     }
 
     #[test]
+    fn lit_things_moving_across_are_no_flash() {
+        // bright bands sweeping across the picture a cell a frame: each
+        // cell lit and dark in turn, but as many brighten as darken
+        let mut g = FlashGuard::new();
+        let n = GRID_W * GRID_H;
+        for k in 0..120 {
+            let lum: Vec<f32> = (0..n)
+                .map(|i| {
+                    let x = i % GRID_W;
+                    if ((x + k) / 4).is_multiple_of(2) { 0.4 } else { 0.03 }
+                })
+                .collect();
+            g.update(&lum, &vec![0.0; n], 1.0 / 60.0);
+        }
+        assert!(!g.active(), "motion veiled");
+        assert_eq!(g.engaged, 0);
+    }
+
+    #[test]
     fn red_flashes_are_veiled_too() {
         let mut g = FlashGuard::new();
         let v = run(&mut g, 1.0, 60.0, |t| {
@@ -369,8 +454,14 @@ mod tests {
             }
             g.update(&lum, &vec![0.0; n], 1.0 / 60.0);
         }
-        assert!(g.veil[0] > 0.8);
+        assert!(g.veil[0] > 0.6);
         assert_eq!(g.veil[n - 1], 0.0);
+        // with soft edges: the veil's last cells in a row lighter than its
+        // middle, none further
+        let row = &g.veil[..GRID_W];
+        let last = row.iter().rposition(|v| *v > 0.0).unwrap();
+        assert!(last + 1 < GRID_W, "{row:?}");
+        assert!(row[last] < row[0] * 0.5, "a soft edge: {row:?}");
     }
 
     #[test]

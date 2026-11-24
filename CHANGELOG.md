@@ -93,8 +93,13 @@ The first release: the MVP of the spec.
   never asks for or stores a secret: a system that needs one says "needs
   unlocking in axross" and opens axross's connection manager.
 - **Systems can be closed** (the menu's *close*; it frees one of axross's
-  open sessions), and every failed, cancelled or timed-out connect is
-  closed on the server, a late success too. When axross's server holds as
+  open sessions). A connect that is cancelled or runs past its time limit
+  is given up on the server at that moment (`close_remote_profile`: with
+  axross 0.15.186 its slot is free at once, and a retry is not told it is
+  "being connected already"); a late success is closed again when it comes.
+  A server that ends is noticed: the window says so, keeps the systems'
+  last list marked as old, and starts the server again by itself (after 2,
+  4, 8 ... up to 60 seconds, five times; Sources' *try again* any time). When axross's server holds as
   many systems as it may (8), the window says which are open and offers
   to close the one visited longest ago. The Teleport menu costs well under
   2 ms a frame with thousands of systems and half a million hits: its
@@ -163,7 +168,12 @@ The first release: the MVP of the spec.
 - **Every script drawn**: fonts for Chinese, Japanese, Korean, Arabic,
   Hebrew, Indic scripts, Thai and symbols are found among the system's on
   a thread of its own (the window never waits for the scan) and added as
-  fallbacks; a character no font has is a box, never a stop.
+  fallbacks; a character no font has is a box, never a stop. Each font is
+  checked whole before the window gets it - read by egui's parser, laid
+  out, and every glyph drawn once (unhinted and hinted) within a time
+  budget, inside `catch_unwind`; one with a hole is left out and said. A
+  frame that still fails with a font drops the fonts found for egui's own,
+  says so and goes on.
 - **The far view**: the first view and Home look across the biggest city
   15 degrees down, the island whole in the window (2 million files too),
   the horizon and the rain in its upper third; the Overview button keeps
@@ -188,9 +198,13 @@ The first release: the MVP of the spec.
   that moves visibly, and not at all while it rests (hidden, unfocused,
   no frames while idle).
 - **Settings**: a value of the wrong type resets that value alone (inside
-  a nested object or a list too: `mcp.enabled`, `bookmarks[2]`), the file
-  as it was is kept as `settings.json.bak` and the window says so; the
-  file only the user can read (0600 in a 0700 folder).
+  a nested object or a list too: `mcp.enabled`, `bookmarks[2]`, an item of
+  a list of plain values), the file as it was is kept as
+  `settings.json.bak` (an earlier copy never written over) and the window
+  says so, naming a few; a byte order mark reads; a list is salvaged to
+  its first 64 items (a huge broken file costs no time); Settings measures
+  the walk cache when it opens; the file only the user can read (0600 in a
+  0700 folder).
 - **First start and empty states**: a one-line key hint until the first
   key moves the camera (closable; the Help window keeps it); Help and
   Settings open tall enough to read; with no folder at all the view says
@@ -203,12 +217,48 @@ The first release: the MVP of the spec.
   dot-dot or a control character are refused (and counted); the server is
   killed and reaped at the end with its process group, a call still
   waiting included (Linux: also when the program dies).
+- **What is drawn is what is picked**: the far roofs raised by the shader,
+  the towers over far blocks and the far towers widened to two pixels are
+  picked, highlighted and labelled as drawn (one function, shared by the
+  shader and the window, with a test over raised towers at 200 000 and 2
+  million files); a slim far tower is raised at most twelve of its widths.
+- **The camera is never shut in**: an eye inside a building is lifted out
+  over its roof (on a switch of mode, a zoom into a roof); the orbit's
+  pivot is always on the ground; keys that move nothing say why.
+- **Open, closer**: a folder that is a program (a macOS bundle, a Linux
+  AppDir, a Windows shortcut folder) always asks; a web page or Java Web
+  Start file under a name the desktop opens by content (`LICENSE`, `x.lst`,
+  XHTML in `.xml`), PostScript in a `.pdf`, and types that run (`xlsb`,
+  `pyc`, `ahk`, `rdp`, ...) always ask, never "trusted for good"; the file
+  is looked at again right before it is opened and not opened if it was
+  swapped (another file or a link in its place); a check that hangs on a
+  dead disk is said after a second and a half.
+- **Keyboard and windows**: T puts the keyboard in the Teleport filter (a
+  count of what matches beside it); Esc closes the menu, then Help,
+  Settings and Sources; Settings and Sources stay in the 3D view's area,
+  off the inspect panel; the wheel's speed is said in the view for a
+  moment; the first-start hint goes for a mouse user too.
+- **Sources**: folders are made whole (`~`, links, `..`) and compared so:
+  one island a folder, none inside another; a file is no island; added
+  folders are islands at every start until removed; removing an island
+  keeps the choice on another; thousands of systems cost no more than a
+  few (only the rows in sight). A chain of folders thousands deep is read
+  from the nearest open folder above (a call a folder, not one per level
+  above it); `--dump-city` says how far its walk got.
+- **Previews** of Latin-1 and UTF-16 text show the text, not hex.
 - **The Matrix theme**, the theme system ready for more.
 - **A flash guard** as axross-amp's: the picture shown is measured on a
-  grid on the GPU and read back; where a field would flash more than three
-  times a second it is veiled towards its own slow average, fading through black rather
-  than ghosting the view before. The frames are
-  held to an independent meter in the tests.
+  grid on the GPU (each cell its area's mean, 256 taps) and read back;
+  where a field flashes more than three times a second - by the net share
+  of its cells turning one way: lit things moving across a field brighten
+  as much as they darken and are no flash - it is veiled with soft edges
+  towards its own slow average, dimmed by at most 40 %, never black. While
+  the view moves fast, far window specks, edge glow, the rain and windows a
+  hand's breadth away are toned down, so ordinary flight never needs it:
+  flying, boosting, a street, a next-hit flight, teleports, orbit and Home
+  are held to no veiled frame at 30 and 60 frames a second at 20 000,
+  200 000 and 2 million files, and a strobe is still caught and veiled. The
+  frames are held to an independent meter in the tests.
 - **The GPU**: the dedicated one preferred (*Settings › GPU*: automatic,
   high performance, low power), never a software renderer while a GPU is
   there; `WGPU_ADAPTER_NAME`, `WGPU_BACKEND`, `WGPU_POWER_PREF` override
@@ -222,7 +272,10 @@ The first release: the MVP of the spec.
 - **Headless**: `--version`, `--self-test`, `--dump-city DIR [--json]`
   (names exact in JSON, with their bytes as base64 when they are no UTF-8).
   `--` ends the options: after it every argument is a folder.
-- **Signed updates** from the GitHub releases (as axross-amp's), off until
-  the maintainer pins the release key; CI with the supply-chain gate,
+- **Signed updates** from the GitHub releases (as axross-amp's), checked
+  against the pinned release key (`scripts/sign_release.py keygen` refuses
+  a path inside a checkout or a folder others may read; `*.pem` and
+  `*.key` are ignored by git); CI with the supply-chain gate and the
+  release binary's `--self-test`,
   tests and builds on Linux, macOS and Windows; releases with an AppImage,
   a DMG and a draft for signing.

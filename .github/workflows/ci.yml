@@ -125,6 +125,10 @@ jobs:
           EXE=target/release/axross-files-matrix
           [ -f "$EXE.exe" ] && EXE="$EXE.exe"
           "$EXE" --version
+          # (the window's libraries are there and the update's self-check
+          # answers: what an update runs before it puts a new binary in place)
+          "$EXE" --self-test | tee self-test.txt
+          grep -q ' ok$' self-test.txt
           "$EXE" --dump-city src --depth 1
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

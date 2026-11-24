@@ -1159,3 +1159,48 @@ fn the_first_start_of_a_program_put_in_place_is_watched() {
     assert_eq!(first_start(&target, Version(98, 0, 0)), FirstStart::None);
     assert!(!first_start_of(&target).exists());
 }
+
+#[test]
+fn the_release_key_is_pinned() {
+    // the maintainer's key (base64 7Q1+QXpJXtHCjQa9yR65Ht9Bk/AURDLu7vfeJYN1kT4=)
+    assert_eq!(
+        b64(&UPDATE_PUBLIC_KEY),
+        "7Q1+QXpJXtHCjQa9yR65Ht9Bk/AURDLu7vfeJYN1kT4="
+    );
+    assert!(TRUSTED_KEYS.contains(&UPDATE_PUBLIC_KEY));
+    assert!(signing_key_set());
+}
+
+#[test]
+fn an_all_zero_key_verifies_nothing() {
+    // (signed by any key at all: never accepted against the zero key -
+    // updates stay off, as with the placeholder)
+    let key = keypair();
+    let sig = key.sign(b"sums");
+    assert!(verify_signature(b"sums", sig.as_ref(), &[[0u8; 32]]).is_err());
+    assert!(verify_signature(b"sums", sig.as_ref(), &[public(&key)]).is_ok());
+}
+
+/// Standard base64 of `bytes` (the key's form in the docs).
+fn b64(bytes: &[u8]) -> String {
+    const T: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::new();
+    for c in bytes.chunks(3) {
+        let n = (c[0] as u32) << 16
+            | (*c.get(1).unwrap_or(&0) as u32) << 8
+            | *c.get(2).unwrap_or(&0) as u32;
+        out.push(T[(n >> 18) as usize & 63] as char);
+        out.push(T[(n >> 12) as usize & 63] as char);
+        out.push(if c.len() > 1 {
+            T[(n >> 6) as usize & 63] as char
+        } else {
+            '='
+        });
+        out.push(if c.len() > 2 {
+            T[n as usize & 63] as char
+        } else {
+            '='
+        });
+    }
+    out
+}

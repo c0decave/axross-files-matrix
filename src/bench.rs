@@ -281,7 +281,10 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
         } else {
             Lod::default().collapse
         },
-        look: crate::render::far_look(c.side(), c.layout.top),
+        raise: crate::render::Raise {
+            look: crate::render::far_look(c.side(), c.layout.top),
+            ..crate::render::Raise::NONE
+        },
         ..Lod::default()
     };
     let v4 = |c: [f32; 3], w: f32| [c[0], c[1], c[2], w];
@@ -302,6 +305,15 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
         if let Some(old) = buffer.take().and_then(|b| Arc::try_unwrap(b).ok()) {
             set.opaque = old;
         }
+        let lod = Lod {
+            raise: crate::render::Raise {
+                eye: cam.pos,
+                lens: 2.0 * (cam.fov_y * 0.5).tan(),
+                height: opts.size.1 as f32,
+                ..lod.raise
+            },
+            ..lod
+        };
         city::select_within(&mut [&mut c], cam.pos, &frustum, &lod, budget, &mut set);
         let opaque = set.opaque.len() as u32;
         let built = set

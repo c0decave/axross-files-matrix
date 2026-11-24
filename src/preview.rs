@@ -199,9 +199,54 @@ fn classify(bytes: &[u8], name: &str, total: u64) -> (Content, bool) {
     if looks_like_text(shown) {
         let (text, cut) = safe_text_lines(shown, TEXT_LINES);
         (Content::Text(text), truncated || cut)
+    } else if let Some(utf8) = other_text(shown) {
+        // (UTF-16 or Latin-1: shown as the text it is, not as hex)
+        let (text, cut) = safe_text_lines(utf8.as_bytes(), TEXT_LINES);
+        (Content::Text(text), truncated || cut)
     } else {
         (Content::Hex(hex_dump(shown, 4096)), truncated)
     }
+}
+
+/// Text that is no UTF-8: UTF-16 (by its byte order mark, or by every
+/// other byte zero) or Latin-1 (single bytes, some over 127, no NUL) - as
+/// UTF-8, if it reads as text.
+pub fn other_text(b: &[u8]) -> Option<String> {
+    let utf16 = |bytes: &[u8], le: bool| -> String {
+        let units = bytes.as_chunks::<2>().0.iter().map(|c| {
+            if le {
+                u16::from_le_bytes([c[0], c[1]])
+            } else {
+                u16::from_be_bytes([c[0], c[1]])
+            }
+        });
+        char::decode_utf16(units)
+            .map(|r| r.unwrap_or('\u{fffd}'))
+            .collect()
+    };
+    let reads = |t: &str| !t.is_empty() && looks_like_text(t.replace('\0', "\u{fffd}").as_bytes());
+    let candidate = if b.starts_with(&[0xff, 0xfe]) {
+        Some(utf16(&b[2..], true))
+    } else if b.starts_with(&[0xfe, 0xff]) {
+        Some(utf16(&b[2..], false))
+    } else if b.len() >= 4 {
+        // (no mark: the zero high bytes of ASCII text tell the order)
+        let pairs = b.len() / 2;
+        let odd_zero = b.iter().skip(1).step_by(2).filter(|x| **x == 0).count();
+        let even_zero = b.iter().step_by(2).filter(|x| **x == 0).count();
+        if odd_zero * 10 >= pairs * 6 && even_zero * 10 <= pairs {
+            Some(utf16(b, true))
+        } else if even_zero * 10 >= pairs * 6 && odd_zero * 10 <= pairs {
+            Some(utf16(b, false))
+        } else if !b.contains(&0) && std::str::from_utf8(b).is_err() {
+            Some(b.iter().map(|&x| x as char).collect())
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+    candidate.filter(|t| reads(t))
 }
 
 /// `rwxr-x---` and the like.
@@ -481,6 +526,39 @@ pub fn load(at: &Where, name: &str, size: u64, is_dir: bool) -> Preview {
 mod tests {
     use super::*;
     use crate::testdir::Scratch;
+
+    #[test]
+    fn latin1_and_utf16_text_is_shown_as_text() {
+        let latin1 = b"Gr\xfc\xdfe aus K\xf6ln, \xe0 bient\xf4t\n".to_vec();
+        assert_eq!(
+            other_text(&latin1).as_deref(),
+            Some("Grüße aus Köln, à bientôt\n")
+        );
+        let mut le = vec![0xff, 0xfe];
+        for u in "Hallo Welt\nzweite Zeile".encode_utf16() {
+            le.extend_from_slice(&u.to_le_bytes());
+        }
+        assert_eq!(other_text(&le).as_deref(), Some("Hallo Welt\nzweite Zeile"));
+        let be: Vec<u8> = "no mark here"
+            .encode_utf16()
+            .flat_map(|u| u.to_be_bytes())
+            .collect();
+        assert_eq!(other_text(&be).as_deref(), Some("no mark here"));
+        // through the preview: text, not hex
+        let (c, _) = classify(&latin1, "brief.txt", latin1.len() as u64);
+        assert!(
+            matches!(c, Content::Text(ref t) if t.contains("Köln")),
+            "{c:?}"
+        );
+        let (c, _) = classify(&le, "notes.txt", le.len() as u64);
+        assert!(
+            matches!(c, Content::Text(ref t) if t.contains("zweite")),
+            "{c:?}"
+        );
+        // a program stays hex
+        let elf = b"\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x3e\x00";
+        assert!(matches!(classify(elf, "a.out", 20).0, Content::Hex(_)));
+    }
 
     #[test]
     fn text_binary_and_odd_characters() {

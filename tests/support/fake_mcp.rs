@@ -29,6 +29,8 @@ pub struct Seen {
     pub limit: Option<usize>,
     pub extra: usize,
     pub big: Option<(usize, usize)>,
+    /// The server ends at the next message it is sent (its pipe closed).
+    pub die: bool,
 }
 
 /// The protocols of axross's registry (tests/fixtures/axross-protocols.json).
@@ -294,6 +296,10 @@ fn start_with(settings: Seen) -> (Arc<Client>, Arc<Mutex<Seen>>) {
     std::thread::spawn(move || {
         for line in BufReader::new(to_server_r).lines() {
             let Ok(line) = line else { return };
+            if s2.lock().unwrap().die {
+                // (gone: what it was sent is never answered, its pipe closes)
+                return;
+            }
             let Ok(m) = serde_json::from_str::<Value>(&line) else {
                 continue;
             };

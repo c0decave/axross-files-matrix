@@ -70,6 +70,81 @@ pub fn stretch_at(look: [f32; 4], d: f32) -> f32 {
     (1.0 + look[1] * 0.5 * (1.0 + x * x).ln()).min(look[0])
 }
 
+/// Where the shader draws a building or a block (city.wgsl's `vs_box`):
+/// far towers at least two pixels wide, far roofs raised by
+/// [`stretch_at`] (less when looked down on, a slim tower at most twelve
+/// of its widths high), far blocks standing back from their plates.
+/// Picking, the highlight and the labels use it: they follow what is seen.
+#[derive(Clone, Copy, Debug)]
+pub struct Raise {
+    pub look: [f32; 4],
+    /// 2 tan(fov / 2) and the view's height in pixels.
+    pub lens: f32,
+    pub height: f32,
+    pub eye: crate::math::Vec3,
+}
+
+impl Raise {
+    /// Nothing raised (tests, the machine's island).
+    pub const NONE: Raise = Raise {
+        look: [0.0; 4],
+        lens: 0.0,
+        height: 1.0,
+        eye: crate::math::Vec3::ZERO,
+    };
+
+    fn pixel_at(&self, d: f32) -> f32 {
+        d * self.lens / self.height.max(1.0)
+    }
+
+    /// The drawn corner and size of a box `shape` ([`crate::city::Shape`]:
+    /// 0 a building, 1 a block) at `min`, `size`.
+    pub fn apply(
+        &self,
+        shape: u32,
+        hardware: bool,
+        min: crate::math::Vec3,
+        size: crate::math::Vec3,
+    ) -> (crate::math::Vec3, crate::math::Vec3) {
+        use crate::math::vec3;
+        if shape > 1 || hardware {
+            return (min, size);
+        }
+        let (mut corner, mut size) = (min, size);
+        let d = ((min.x + size.x * 0.5 - self.eye.x).powi(2)
+            + (min.z + size.z * 0.5 - self.eye.z).powi(2))
+        .sqrt();
+        if shape == 0 {
+            let want = self.pixel_at(d) * 2.0;
+            let gx = (want - size.x).max(0.0);
+            let gz = (want - size.z).max(0.0);
+            corner = vec3(corner.x - gx * 0.5, corner.y, corner.z - gz * 0.5);
+            size = vec3(size.x + gx, size.y, size.z + gz);
+        }
+        let dy = self.eye.y - min.y;
+        let down = (dy / (d * d + dy * dy).sqrt().max(1e-3)).clamp(0.0, 1.0);
+        let k = 1.0 - crate::math::smoothstep((down - 0.55) / (0.92 - 0.55));
+        let mut f = 1.0 + (stretch_at(self.look, d) - 1.0) * k;
+        f = f.min((12.0 * size.x.min(size.z) / size.y.max(1e-3)).max(1.0));
+        size.y *= f;
+        if shape == 1 {
+            let inset = (self.pixel_at(d) * 0.9).min(size.x.min(size.z) * 0.22);
+            corner = vec3(corner.x + inset, corner.y, corner.z + inset);
+            size = vec3(size.x - inset * 2.0, size.y, size.z - inset * 2.0);
+        }
+        (corner, size)
+    }
+
+    /// [`Raise::apply`] for a box.
+    pub fn aabb(&self, shape: u32, hardware: bool, b: crate::math::Aabb) -> crate::math::Aabb {
+        let (min, size) = self.apply(shape, hardware, b.min, b.max - b.min);
+        crate::math::Aabb {
+            min,
+            max: min + size,
+        }
+    }
+}
+
 /// What one frame draws (shared with the paint callback).
 pub struct FrameData {
     pub globals: Globals,
@@ -143,7 +218,7 @@ struct Targets {
     up_bg: Vec<wgpu::BindGroup>,
     final_bg: [wgpu::BindGroup; 2],
     history_bg: [wgpu::BindGroup; 2],
-    luma_bg: wgpu::BindGroup,
+    luma_bg: [wgpu::BindGroup; 2],
     blit_bg: wgpu::BindGroup,
 }
 
@@ -315,8 +390,8 @@ impl Renderer {
                 resource: globals.as_entire_binding(),
             }],
         });
-        // (no filtering: some adapters cannot filter half floats -
-        // the shaders take their taps themselves; the shaders take their taps themselves)
+        // (no filtering: some adapters cannot filter half floats - the
+        // shaders take their taps themselves)
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("afm sampler"),
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -811,8 +886,12 @@ impl Renderer {
             self.group(device, [&history[0], &final_view, d, d]),
             self.group(device, [&history[1], &final_view, d, d]),
         ];
-        // (the raw picture: the scene and its bloom, before the veil)
-        let luma_bg = self.group(device, [&scene, &bloom[0], d, d]);
+        // (the raw picture: the scene and its bloom, before the veil - with
+        // the motion's blend of the slow average, as the final pass makes it)
+        let luma_bg = [
+            self.group(device, [&scene, &bloom[0], &history[0], d]),
+            self.group(device, [&scene, &bloom[0], &history[1], d]),
+        ];
         let blit_bg = self.group(device, [&final_view, d, d, d]);
         self.targets = Some(Targets {
             size,
@@ -922,8 +1001,15 @@ impl Renderer {
         ];
         g.params[0] = if self.linear_target { 1.0 } else { 0.0 };
         g.params[2] = if f.guard { 1.0 } else { 0.0 };
-        // the slow average: about a tenth of a second
-        g.params[3] = 1.0 - (-f.dt.max(0.001) / 0.12).exp();
+        // the slow average
+        // (a third of a second: the veil's ground holds a flicker of a few
+        // a second still)
+        g.params[3] = 1.0 - (-f.dt.max(0.001) / 0.3).exp();
+        if f.cut {
+            // (after a cut the ground is the new view at once: a veil
+            // never shows the place left, nor black for long)
+            g.params[3] = 1.0;
+        }
         queue.write_buffer(&self.globals, 0, bytemuck::bytes_of(&g));
         if f.version != self.version {
             let n = f.instances.len() as u64;
@@ -1082,7 +1168,7 @@ impl Renderer {
                 "afm luma",
                 &t.luma_view,
                 &self.luma,
-                &t.luma_bg,
+                &t.luma_bg[cur],
                 false,
             );
             if let Some(st) = self

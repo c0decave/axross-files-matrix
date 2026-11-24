@@ -133,6 +133,8 @@ pub struct Settings {
     pub open_types: Vec<String>,
     /// The first start's key hint was seen (closed, or a key moved).
     pub hint_seen: bool,
+    /// Folders added in Sources (islands at every start, until removed).
+    pub sources: Vec<String>,
 }
 
 impl Default for Settings {
@@ -170,6 +172,7 @@ impl Default for Settings {
             axross_probe: None,
             open_types: Vec::new(),
             hint_seen: false,
+            sources: Vec::new(),
         }
     }
 }
@@ -236,6 +239,10 @@ impl Settings {
         self.open_types.sort();
         self.open_types.dedup();
         self.open_types.truncate(256);
+        self.sources
+            .retain(|p| p.starts_with('/') || std::path::Path::new(p).is_absolute());
+        self.sources.dedup();
+        self.sources.truncate(256);
         self
     }
 }
@@ -272,7 +279,13 @@ pub fn load(path: &Path) -> (Settings, Loaded) {
     let bytes = if meta.len() > MAX_BYTES || !meta.is_file() {
         None
     } else {
-        std::fs::read(path).ok()
+        // (a byte order mark - some editors write one - is no corruption)
+        std::fs::read(path).ok().map(|mut b| {
+            if b.starts_with(&[0xef, 0xbb, 0xbf]) {
+                b.drain(..3);
+            }
+            b
+        })
     };
     if let Some(s) = bytes
         .as_ref()
@@ -293,8 +306,14 @@ pub fn load(path: &Path) -> (Settings, Loaded) {
             salvage(&mut good, &[Seg::Key(k)], v, &mut dropped);
         }
         if let Ok(s) = serde_json::from_value::<Settings>(good) {
-            // (the file as it was, kept beside: nothing the user wrote is lost)
-            let backup = path.with_extension("json.bak");
+            // (the file as it was, kept beside: nothing the user wrote is
+            // lost - an earlier copy is never written over)
+            let mut backup = path.with_extension("json.bak");
+            let mut k = 1;
+            while backup.exists() && k < 100 {
+                backup = path.with_extension(format!("json.bak{k}"));
+                k += 1;
+            }
             let backup = std::fs::copy(path, &backup).ok().map(|_| backup);
             return (
                 s.sanitized(),
@@ -350,6 +369,9 @@ fn shown(path: &[Seg]) -> String {
 /// Puts `v` at `path` in `good` when the settings still read so; else, an
 /// object or a list is tried part by part (two levels deep), and what
 /// still does not read keeps its default and is named in `dropped`.
+/// The items of a list salvaged one by one, at most.
+const SALVAGE_ITEMS: usize = 64;
+
 fn salvage(
     good: &mut serde_json::Value,
     path: &[Seg],
@@ -378,23 +400,43 @@ fn salvage(
                 }
                 return;
             }
-            (serde_json::Value::Array(items), serde_json::Value::Array(defaults)) => {
-                // the list as long as the file's; each item the file's when
-                // it reads, else the default's (or nothing)
+            (serde_json::Value::Array(items), serde_json::Value::Array(_)) => {
+                // item by item (the first 64: no list of the settings is
+                // longer, and a huge one costs no time): an item that reads
+                // is kept, one that does not is left out - or, where the
+                // list holds places (the spots), its place stays empty
                 let mut trial = good.clone();
                 if let Some(at) = slot(&mut trial, path) {
-                    *at = serde_json::Value::Array(
-                        (0..items.len())
-                            .map(|i| defaults.get(i).cloned().unwrap_or(serde_json::Value::Null))
-                            .collect(),
-                    );
+                    *at = serde_json::Value::Array(Vec::new());
                 }
                 if reads(&trial) {
                     *good = trial;
-                    for (i, x) in items.into_iter().enumerate() {
+                    let n = items.len();
+                    for (i, x) in items.into_iter().take(SALVAGE_ITEMS).enumerate() {
                         let mut p = path.to_vec();
                         p.push(Seg::Item(i));
-                        salvage(good, &p, x, dropped);
+                        let mut with = good.clone();
+                        let Some(serde_json::Value::Array(list)) = slot(&mut with, path) else {
+                            break;
+                        };
+                        list.push(x);
+                        if reads(&with) {
+                            *good = with;
+                            continue;
+                        }
+                        let mut empty = good.clone();
+                        if let Some(serde_json::Value::Array(list)) = slot(&mut empty, path) {
+                            list.push(serde_json::Value::Null);
+                        }
+                        if reads(&empty) {
+                            *good = empty;
+                        }
+                        dropped.push(shown(&p));
+                    }
+                    if n > SALVAGE_ITEMS {
+                        let mut p = path.to_vec();
+                        p.push(Seg::Item(SALVAGE_ITEMS));
+                        dropped.push(format!("{} and on", shown(&p)));
                     }
                     return;
                 }
@@ -533,6 +575,58 @@ mod tests {
         assert!(!s.labels);
         assert_eq!(s.fly_speed, 40.0);
         assert!(p.exists(), "not set aside");
+    }
+
+    #[test]
+    fn lists_keep_their_good_items_a_bom_reads_and_a_big_file_is_quick() {
+        let dir = Scratch::new("settings-lists");
+        let p = dir.path().join(FILE);
+        std::fs::write(
+            &p,
+            br#"{"open_types": ["zzq", 5, "abc"], "mcp": {"command": ["a", 7, "c"]}}"#,
+        )
+        .unwrap();
+        let (s, how) = load(&p);
+        assert!(matches!(how, Loaded::Salvaged { .. }), "{how:?}");
+        assert_eq!(s.open_types, vec!["abc".to_string(), "zzq".to_string()]);
+        assert_eq!(s.mcp.command, vec!["a".to_string(), "c".to_string()]);
+        // a second salvage keeps the first copy
+        let (_, how2) = load(&p);
+        let (
+            Loaded::Salvaged {
+                backup: Some(a), ..
+            },
+            Loaded::Salvaged {
+                backup: Some(b), ..
+            },
+        ) = (how, how2)
+        else {
+            panic!("copies")
+        };
+        assert_ne!(a, b);
+        assert!(a.exists() && b.exists());
+        // a byte order mark: read, not set aside
+        let mut bom = vec![0xef, 0xbb, 0xbf];
+        bom.extend_from_slice(br#"{"labels": false}"#);
+        std::fs::write(&p, bom).unwrap();
+        let (s, how) = load(&p);
+        assert_eq!(how, Loaded::Read);
+        assert!(!s.labels);
+        // 2000 bad spots: quick, and the window is not told all of them
+        let spots: Vec<String> = (0..2000).map(|_| r#"{"pos": "bad"}"#.to_string()).collect();
+        std::fs::write(&p, format!(r#"{{"bookmarks": [{}]}}"#, spots.join(","))).unwrap();
+        let t = std::time::Instant::now();
+        let (s, how) = load(&p);
+        assert!(
+            t.elapsed() < std::time::Duration::from_millis(1500),
+            "{:?}",
+            t.elapsed()
+        );
+        assert_eq!(s.bookmarks.len(), 9);
+        let Loaded::Salvaged { keys, .. } = how else {
+            panic!()
+        };
+        assert!(keys.len() <= 70, "{}", keys.len());
     }
 
     #[test]

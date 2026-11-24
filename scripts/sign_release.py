@@ -148,6 +148,27 @@ def release(tag: str, key, trusted: list[bytes], repo: str, publish: bool,
         print(f"{tag} published")
 
 
+def keygen_refusal(key: Path) -> str | None:
+    """Why a private key may not be written at *key* (None: it may): not
+    inside a git work tree (it could be committed and published), not in a
+    folder others may read or enter (RELEASING.md: a folder of mode 0700)."""
+    folder = key.expanduser().absolute().parent
+    probe = folder
+    while True:
+        if (probe / ".git").exists():
+            return (f"{key}: inside the git work tree {probe} - a private key never goes "
+                    "into a checkout; give a path outside every repository")
+        if probe.parent == probe:
+            break
+        probe = probe.parent
+    if not folder.is_dir():
+        return f"{folder}: no such folder (make it with mode 0700 first)"
+    if os.name == "posix" and folder.stat().st_mode & 0o077:
+        return (f"{folder}: others may read or enter this folder (mode "
+                f"{folder.stat().st_mode & 0o777:o}); keep the key in a folder of mode 0700")
+    return None
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -170,6 +191,9 @@ def main(argv=None) -> int:
                    help="sign without downloading every file to check its SHA-256")
     args = parser.parse_args(argv)
     if args.cmd == "keygen":
+        refusal = keygen_refusal(args.key)
+        if refusal:
+            sys.exit(refusal)
         serialization, private_type, _ = _crypto()
         if args.key.exists():
             sys.exit(f"{args.key} exists: not overwritten")

@@ -562,10 +562,15 @@ fn walks_stop_and_sources_come_and_go_without_a_restart() {
     h.state_mut().sources_open = true;
     h.run_steps(2);
     // add the second folder by its path
-    h.state_mut().add_source = b.to_string_lossy().into_owned();
+    h.state_mut().add_source_text = b.to_string_lossy().into_owned();
     h.run_steps(1);
     h.get_by_label("add").click();
     h.run_steps(2);
+    let start = Instant::now();
+    while h.state_mut().islands.len() < 2 && start.elapsed() < Duration::from_secs(10) {
+        h.state_mut().pump(Duration::from_millis(5));
+        std::thread::sleep(Duration::from_millis(10));
+    }
     assert!(h.state_mut().settle(Duration::from_secs(30)));
     assert_eq!(h.state_mut().islands.len(), 2, "added");
     assert!(h.state_mut().islands[1].tree.len() > 20, "walked");
@@ -574,9 +579,11 @@ fn walks_stop_and_sources_come_and_go_without_a_restart() {
     assert!(h.state_mut().add_source(PathBuf::from("rel/path")).is_err());
     // a walk under way can be stopped: what it found stays
     let before = h.state_mut().islands.len();
+    let third = s.0.join("third");
+    std::fs::create_dir_all(third.join("sub")).unwrap();
     {
         let app = h.state_mut();
-        let i = app.add_source(s.0.clone()).unwrap();
+        let i = app.add_source(third.clone()).unwrap();
         app.stop_walk(i);
         let isl = &app.islands[i];
         assert!(isl.walker.is_none());
@@ -717,4 +724,209 @@ fn teleport_and_sources_open_side_by_side_and_help_is_tall() {
         .next()
         .expect("the help window");
     assert!(help.height() > 600.0, "{help:?}");
+}
+
+#[test]
+fn a_font_that_fails_while_drawn_is_dropped_and_the_window_goes_on() {
+    let s = Scratch::new("font-fails");
+    let mut opts = options(&s);
+    opts.synthetic = Some(300);
+    let mut h = window(opts, egui::vec2(1200.0, 700.0));
+    // (as if fonts had been found and one failed in a frame)
+    h.state_mut().fonts_ready = true;
+    h.state_mut().test_font_failure = true;
+    h.run_steps(2);
+    assert!(h.state_mut().fonts_dropped);
+    assert!(!h.state_mut().fonts_ready);
+    h.get_by_label_contains("built-in fonts are used");
+    // and it goes on drawing
+    h.run_steps(3);
+    h.get_by_label("Sources");
+}
+
+#[cfg(unix)]
+#[test]
+fn a_file_swapped_for_a_link_after_the_question_is_not_opened() {
+    let mut o = opening("open-swap", "usage: axross [--profile NAME] [PATH ...]");
+    let target = o.files.join("evil.desktop");
+    let (i, n) = find(o.h.state_mut(), "evil.desktop");
+    o.h.state_mut().select(i, n);
+    o.h.state_mut().open_selected(OpenHow::DefaultProgram);
+    pump_a_while(&mut o.h);
+    assert!(matches!(
+        o.h.state_mut().open_ask,
+        Some(OpenAsk::Risky { .. })
+    ));
+    // between the question and the answer: another file in its place
+    std::fs::remove_file(&target).unwrap();
+    std::os::unix::fs::symlink("/etc/hostname", &target).unwrap();
+    o.h.get_by_label("Open it anyway").click();
+    o.h.run_steps(1);
+    pump_a_while(&mut o.h);
+    assert!(o.log.lock().unwrap().is_empty(), "not opened");
+    o.h.get_by_label_contains("changed since it was checked");
+}
+
+#[cfg(unix)]
+#[test]
+fn an_open_on_a_disk_that_does_not_answer_says_so() {
+    let s = Scratch::new("open-dead");
+    let files = s.0.join("files");
+    std::fs::create_dir_all(&files).unwrap();
+    std::fs::write(files.join("notes.txt"), "x").unwrap();
+    let log = Arc::new(Mutex::new(Vec::new()));
+    let mut opts = options(&s);
+    opts.paths = vec![files.clone()];
+    opts.opener = Some(s.0.join("opener"));
+    opts.launch_log = Some(log.clone());
+    opts.open_check_delay = Some(Duration::from_secs(4));
+    opts.step = None;
+    let mut h = window(opts, egui::vec2(1000.0, 650.0));
+    let (i, n) = find(h.state_mut(), "notes.txt");
+    h.state_mut().select(i, n);
+    h.state_mut().open_selected(OpenHow::DefaultProgram);
+    let start = Instant::now();
+    while start.elapsed() < Duration::from_secs(3) {
+        h.state_mut().pump(Duration::from_millis(5));
+        h.run_steps(1);
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    h.get_by_label_contains("No answer from the disk");
+    assert!(log.lock().unwrap().is_empty());
+}
+
+#[cfg(unix)]
+#[test]
+fn sources_are_one_island_a_folder_kept_and_said_why_not() {
+    let s = Scratch::new("sources-canon");
+    let a = s.0.join("a");
+    std::fs::create_dir_all(a.join("child")).unwrap();
+    std::fs::write(a.join("child/f.txt"), "x").unwrap();
+    std::fs::write(s.0.join("file.txt"), "x").unwrap();
+    std::os::unix::fs::symlink(&a, s.0.join("link")).unwrap();
+    let mut opts = options(&s);
+    opts.hardware = false;
+    let mut h = window(opts, egui::vec2(1000.0, 650.0));
+    let add = |h: &mut Harness<'static, App>, text: &str| {
+        h.state_mut().request_source(text);
+        for _ in 0..40 {
+            h.state_mut().pump(Duration::from_millis(5));
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        h.run_steps(2);
+    };
+    add(&mut h, &a.to_string_lossy());
+    assert_eq!(h.state_mut().islands.len(), 1);
+    // the same folder again: by `..`, by a link - one island
+    add(&mut h, &format!("{}/child/..", a.display()));
+    add(&mut h, &s.0.join("link").to_string_lossy());
+    assert_eq!(h.state_mut().islands.len(), 1, "one island a folder");
+    // a folder inside it, and a file: refused, said why
+    add(&mut h, &a.join("child").to_string_lossy());
+    assert_eq!(h.state_mut().islands.len(), 1);
+    assert!(h.get_all_by_label_contains("lies inside").next().is_some());
+    add(&mut h, &s.0.join("file.txt").to_string_lossy());
+    assert_eq!(h.state_mut().islands.len(), 1);
+    // kept for the next start
+    assert_eq!(
+        h.state_mut().settings.sources,
+        vec![a.to_string_lossy().into_owned()]
+    );
+    drop(h);
+    let mut opts = options(&s);
+    opts.hardware = false;
+    let mut h = window(opts, egui::vec2(1000.0, 650.0));
+    for _ in 0..60 {
+        h.state_mut().pump(Duration::from_millis(5));
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    assert!(h.state_mut().settle(Duration::from_secs(30)));
+    assert_eq!(
+        h.state_mut().islands.len(),
+        1,
+        "the added folder at the next start"
+    );
+    // a choice on another island stays when one is removed
+    let b = s.0.join("b");
+    std::fs::create_dir_all(&b).unwrap();
+    std::fs::write(b.join("g.txt"), "x").unwrap();
+    add(&mut h, &b.to_string_lossy());
+    assert!(h.state_mut().settle(Duration::from_secs(30)));
+    let (i, n) = find(h.state_mut(), "g.txt");
+    h.state_mut().select(i, n);
+    let other = if i == 0 { 1 } else { 0 };
+    h.state_mut().remove_island(other);
+    let (j, m) = h.state_mut().selected.expect("the choice stays");
+    assert_eq!(
+        h.state_mut().islands[j].tree.nodes[m as usize]
+            .name
+            .to_string_lossy(),
+        "g.txt"
+    );
+    assert!(
+        h.state_mut()
+            .settings
+            .sources
+            .iter()
+            .all(|p| !p.ends_with("/a")),
+        "taken out: not kept"
+    );
+}
+
+#[test]
+fn the_key_hint_goes_for_a_mouse_user_too() {
+    let s = Scratch::new("hint-mouse");
+    let mut opts = options(&s);
+    opts.synthetic = Some(500);
+    let mut h = window(opts, egui::vec2(1000.0, 650.0));
+    h.get_by_label(axross_files_matrix::app::KEY_HINT);
+    // the Teleport menu opened from the bar (no key that moves)
+    h.state_mut().teleport_open = true;
+    h.run_steps(2);
+    assert!(h.state_mut().settings.hint_seen);
+    assert!(
+        h.query_by_label(axross_files_matrix::app::KEY_HINT)
+            .is_none()
+    );
+}
+
+#[test]
+fn settings_show_the_cache_as_it_is_now() {
+    let s = Scratch::new("cache-size");
+    let mut opts = options(&s);
+    opts.synthetic = Some(300);
+    opts.use_cache = true;
+    let mut h = window(opts, egui::vec2(1400.0, 1400.0));
+    // a cache file written after the start (as the walks' are)
+    let dir = s.0.join("cache");
+    std::fs::create_dir_all(&dir).unwrap();
+    std::fs::write(dir.join("one.cache"), vec![1u8; 200_000]).unwrap();
+    h.state_mut().settings_open = true;
+    for _ in 0..30 {
+        h.state_mut().pump(Duration::from_millis(5));
+        h.run_steps(1);
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let (bytes, files) = h.state_mut().cache_usage().expect("measured");
+    assert!(
+        bytes >= 200_000 && files >= 1,
+        "measured when Settings opened: {bytes} in {files}"
+    );
+}
+
+#[test]
+fn sources_say_what_axross_is_here() {
+    let s = Scratch::new("sources-axross");
+    let mut opts = options(&s);
+    opts.synthetic = Some(300);
+    let mut h = window(opts, egui::vec2(1200.0, 800.0));
+    for _ in 0..30 {
+        h.state_mut().pump(Duration::from_millis(5));
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    h.state_mut().sources_open = true;
+    h.run_steps(3);
+    // (this test's axross does not exist)
+    h.get_by_label_contains("axross not found");
+    h.get_by_label_contains("0.15.186 or later");
 }

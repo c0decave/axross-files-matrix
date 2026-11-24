@@ -245,11 +245,24 @@ fn a_slow_connect_can_be_cancelled_and_a_hung_one_times_out() {
         h.state_mut().system_state("slow"),
         SysState::Failed("cancelled".into())
     );
-    // its late answer is dropped, the connection it made closed
-    wait(&mut h, "the late answer", |_| {
+    // given up on the server at once - not only when a late answer comes
+    let at = Instant::now();
+    wait(&mut h, "the close at the cancel", |_| {
         !seen.lock().unwrap().closed.is_empty()
     });
+    assert!(
+        at.elapsed() < fake_mcp::SLOW,
+        "closed at the cancel, before the connect ended"
+    );
     assert_eq!(seen.lock().unwrap().closed, ["profile:slow"]);
+    // its late answer is dropped, the connection it made closed (again)
+    wait(&mut h, "the late answer", |_| {
+        seen.lock().unwrap().closed.len() >= 2
+    });
+    assert_eq!(
+        seen.lock().unwrap().closed,
+        ["profile:slow", "profile:slow"]
+    );
     assert_eq!(
         h.state_mut().system_state("slow"),
         SysState::Failed("cancelled".into())
@@ -267,6 +280,14 @@ fn a_slow_connect_can_be_cancelled_and_a_hung_one_times_out() {
         unreachable!()
     };
     assert!(why.contains("no answer within 2 s"), "{why}");
+    // and given up on the server at its time limit
+    wait(&mut h, "the close at the limit", |_| {
+        seen.lock()
+            .unwrap()
+            .closed
+            .iter()
+            .any(|c| c == "profile:hung")
+    });
 }
 
 #[test]
@@ -685,5 +706,47 @@ fn a_system_that_grows_after_its_connect_is_framed_again() {
         b,
         app.camera.mode,
         app.camera.flying()
+    );
+}
+
+#[test]
+fn a_server_that_ends_is_noticed_and_started_again() {
+    let s = Scratch::new("systems-server-dies");
+    let (o, seen) = opts(&s);
+    let mut h = window(o);
+    h.state_mut().teleport_open = true;
+    h.run_steps(2);
+    let before = h.state_mut().system_profiles().len();
+    assert!(before > 3);
+    // the server ends (the next message it is sent is never answered)
+    seen.lock().unwrap().die = true;
+    h.state_mut().teleport_system("sftp-box", Vec::new());
+    wait(&mut h, "the end noticed", |a| {
+        matches!(a.mcp, axross_files_matrix::app::McpState::Failed(_))
+    });
+    h.run_steps(3);
+    // said, the last list kept and marked as old
+    assert!(
+        h.get_all_by_label_contains("axross's server ended")
+            .next()
+            .is_some()
+    );
+    let rows = h.state_mut().teleport_rows();
+    assert_eq!(rows.len(), before, "the last known list");
+    assert!(
+        rows.iter()
+            .all(|(_, st)| matches!(st, SysState::Unavailable(_)))
+    );
+    // started again by itself (here: a new server is at hand)
+    let (client, _) = fake_mcp::start();
+    h.state_mut().opts.mcp_client = Some(client);
+    wait(&mut h, "started again", |a| {
+        matches!(a.mcp, axross_files_matrix::app::McpState::Connected { .. })
+    });
+    let rows = h.state_mut().teleport_rows();
+    assert!(
+        rows.iter()
+            .all(|(_, st)| !matches!(st, SysState::Unavailable(_))),
+        "{rows:?}"
     );
 }

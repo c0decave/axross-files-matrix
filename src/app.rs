@@ -68,6 +68,8 @@ pub struct StartOptions {
     pub probe: Option<Arc<dyn world::Probe>>,
     /// Launches are written here instead of started (tests).
     pub launch_log: Option<Arc<Mutex<Vec<Launch>>>>,
+    /// An Open's check takes this long (tests: a disk that does not answer).
+    pub open_check_delay: Option<Duration>,
     /// This axross program instead of the one on the PATH (tests).
     pub axross: Option<PathBuf>,
     /// This program opens files and folders instead of the system's
@@ -105,6 +107,7 @@ impl Default for StartOptions {
             flash_guard: true,
             probe: None,
             launch_log: None,
+            open_check_delay: None,
             axross: None,
             opener: None,
             mcp_client: None,
@@ -148,6 +151,13 @@ enum Bg {
     Startup(Box<world::Startup>),
     Axross(Axross, Option<settings::AxrossProbe>),
     OpenChecked(Box<OpenCheck>),
+    /// A folder to add, made whole and looked at (or why not).
+    SourceChecked(Result<PathBuf, String>),
+    /// The walk cache's size, measured again (Settings shows it).
+    CacheUsage((u64, usize)),
+    /// The file looked at again right before it is opened: still the one
+    /// that was checked (or asked about)?
+    OpenRechecked(PathBuf, bool),
     CachePruned(cache::Pruned, (u64, usize)),
     /// A system's connect came back (its attempt: a cancelled one's late
     /// answer is dropped).
@@ -266,10 +276,79 @@ pub fn title_text(caption: &str) -> String {
         .replacen("  · cached (", "\ncached (", 1)
 }
 
+/// How fast the view moves, eased (0 still .. 1 fast): its turn (radians
+/// a second) and its travel against how near things are (`clearance`:
+/// the height over the roofs and the ground, or a few metres among walls -
+/// what sweeps across the picture), from 0.25 to 1.5 a second; eased (a
+/// quarter of a second up, half a second down); a cut is no motion.
+pub fn view_motion(
+    before: f32,
+    last: Option<(Vec3, f32, f32)>,
+    cam: &crate::camera::Camera,
+    clearance: f32,
+    dt: f32,
+    cut: bool,
+) -> f32 {
+    let Some((pos, yaw, pitch)) = last else {
+        return 0.0;
+    };
+    if cut || dt <= 0.0 {
+        return before;
+    }
+    let turn = crate::camera::wrap_angle(cam.yaw - yaw).abs() + (cam.pitch - pitch).abs();
+    let travel = (cam.pos - pos).length() / clearance.min(cam.pos.y).max(3.0);
+    if travel > 2.0 {
+        // (a jump - a teleport - is no motion either)
+        return before;
+    }
+    let rate = (turn + travel) / dt;
+    let now = crate::math::smoothstep((rate - 0.25) / 1.25);
+    // (eased both ways - over a quarter of a second up, half a second
+    // down: what the motion tones down changes slowly itself, never a
+    // flicker of its own when a flight starts, stops or stutters)
+    let tau = if now >= before { 0.25 } else { 0.5 };
+    before + (now - before) * (1.0 - (-dt / tau).exp())
+}
+
+/// How often an ended server is started again by itself.
+pub const SERVER_RESTARTS: u32 = 5;
+
+/// How long before the `n`th start again (1 first): 2, 4, 8 ... 60 s.
+pub fn server_backoff(n: u32) -> Duration {
+    Duration::from_secs((1u64 << n.clamp(1, 6)).min(60))
+}
+
+/// The first `n` of a list, and how many more ("a, b, c and 7 more").
+pub fn shortlist(items: &[String], n: usize) -> String {
+    let mut s = items.iter().take(n).cloned().collect::<Vec<_>>().join(", ");
+    if items.len() > n {
+        s.push_str(&format!(" and {} more", items.len() - n));
+    }
+    s
+}
+
+/// `~` and `~/x` as the home folder and below it (else as given).
+pub fn expand_home(text: &str, home: Option<&std::path::Path>) -> PathBuf {
+    match (text, home) {
+        ("~", Some(h)) => h.to_path_buf(),
+        (t, Some(h)) if t.starts_with("~/") => h.join(&t[2..]),
+        (t, _) => PathBuf::from(t),
+    }
+}
+
+/// The axross this program works with best: it opens paths and saved
+/// connections from the command line, and its MCP server lists every
+/// protocol and frees a given-up connect's slot at once.
+pub const AXROSS_VERSION: &str = "0.15.186";
+
 /// "1 island", "2 islands", "0 islands".
 pub fn count(n: u64, one: &str, many: &str) -> String {
     format!("{n} {}", if n == 1 { one } else { many })
 }
+
+/// How long an Open's check may take before the window says the disk
+/// does not answer.
+pub const OPEN_PATIENCE: Duration = Duration::from_millis(1500);
 
 /// How the chosen thing is to be opened.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -285,6 +364,8 @@ pub enum OpenHow {
 pub struct OpenCheck {
     pub path: PathBuf,
     pub risk: Option<open::Risk>,
+    /// What it was when checked.
+    pub id: Option<open::Identity>,
 }
 
 /// The question before opening (shown as a dialog).
@@ -297,6 +378,8 @@ pub enum OpenAsk {
         /// A type this program does not know: "do not ask again" may be
         /// ticked for it.
         unknown: Option<String>,
+        /// What it was when asked about (opened only if it still is).
+        id: Option<open::Identity>,
     },
     /// axross cannot open it: why, and the local path the default
     /// program could open instead (if there is one).
@@ -483,6 +566,8 @@ pub struct App {
     pub search_text: String,
     search_index: usize,
     focus_search: bool,
+    /// The Teleport menu's filter takes the keyboard next frame (T).
+    focus_filter: bool,
     preview: Option<PreviewView>,
     pub mcp: McpState,
     machine: Option<Machine>,
@@ -528,15 +613,28 @@ pub struct App {
     frame_on: Option<u64>,
     /// The 3D view's width / height (last frame).
     view_aspect: f32,
+    /// How fast the view moves (0 still .. 1 fast; eased), and where the
+    /// camera was the frame before.
+    pub motion: f32,
+    last_cam: Option<(Vec3, f32, f32)>,
+    /// How long the movement keys have moved nothing, and whether that
+    /// was said.
+    stuck_for: f32,
+    stuck_said: bool,
+    /// When the wheel last changed the flight's speed (said for a moment).
+    pub speed_said: Option<Instant>,
     /// Where the islands' titles stand on the screen (the hover's tip
     /// keeps off them).
     title_rects: Vec<Rect>,
     /// The open question, if one is shown.
     pub open_ask: Option<OpenAsk>,
+    /// An Open's check under way: since when, and whether its slowness was
+    /// said (a disk that does not answer).
+    open_waiting: Option<(Instant, bool)>,
     /// Its "do not ask again for this type" box.
     pub trust_type: bool,
     /// The Sources window's "add a folder" field.
-    pub add_source: String,
+    pub add_source_text: String,
     /// The window has the keyboard (None: not known).
     focused: bool,
     /// Minimised or hidden.
@@ -554,6 +652,12 @@ pub struct App {
     pub teleport_filter: String,
     /// The systems being opened or opened, by profile name.
     pub live: std::collections::HashMap<String, crate::systems::Live>,
+    /// The systems' list as last known from a server that ended (shown,
+    /// marked as old, until it is back), how often it was started again,
+    /// and when it is next.
+    stale_systems: Option<mcp::Systems>,
+    server_restarts: u32,
+    server_restart_at: Option<Instant>,
     attempts: u64,
     /// A flight waiting for its target.
     pub pending_fly: Option<PendingFly>,
@@ -565,8 +669,14 @@ pub struct App {
     egui_ctx: egui::Context,
     /// The fallback fonts are in (tests wait for them).
     pub fonts_ready: bool,
+    /// The fonts found were given up after a frame failed with them.
+    pub fonts_dropped: bool,
+    /// The next frame fails as a damaged font would (tests).
+    pub test_font_failure: bool,
     /// The cache folder's size and files (once pruned).
     cache_usage: Option<(u64, usize)>,
+    /// Settings was open last frame (its opening measures the cache).
+    settings_shown: bool,
     cache_clearing: bool,
 }
 
@@ -655,6 +765,7 @@ impl App {
             search_text: String::new(),
             search_index: 0,
             focus_search: false,
+            focus_filter: false,
             preview: None,
             mcp: McpState::Off,
             machine: None,
@@ -689,10 +800,16 @@ impl App {
             framed: None,
             frame_on: None,
             view_aspect: 1.6,
+            motion: 0.0,
+            last_cam: None,
+            stuck_for: 0.0,
+            stuck_said: false,
+            speed_said: None,
             title_rects: Vec::new(),
             open_ask: None,
+            open_waiting: None,
             trust_type: false,
-            add_source: String::new(),
+            add_source_text: String::new(),
             focused: true,
             hidden: false,
             legend_open: true,
@@ -702,13 +819,19 @@ impl App {
             systems_version: 0,
             teleport_filter: String::new(),
             live: std::collections::HashMap::new(),
+            stale_systems: None,
+            server_restarts: 0,
+            server_restart_at: None,
             attempts: 0,
             pending_fly: None,
             axross_manager: false,
             retry_after_refresh: None,
             egui_ctx: ctx.clone(),
             fonts_ready: false,
+            fonts_dropped: false,
+            test_font_failure: false,
             cache_usage: None,
+            settings_shown: false,
             cache_clearing: false,
             opts,
         };
@@ -718,7 +841,7 @@ impl App {
             });
             app.toast(format!(
                 "Some settings were not understood and have their defaults: {}{kept}",
-                keys.join(", ")
+                shortlist(keys, 6)
             ));
         }
         if let settings::Loaded::SetAside(p) = loaded {
@@ -867,6 +990,13 @@ impl App {
             self.islands[i].sensitive = sensitive;
             self.start_walk(i, &local.skip);
         }
+        // the folders added in Sources before (not with folders given on
+        // the command line: those alone, then)
+        if self.opts.paths.is_empty() {
+            for p in self.settings.sources.clone() {
+                self.request_source(&p);
+            }
+        }
     }
 
     /// Islands were put before others: every search hit's island index
@@ -943,6 +1073,43 @@ impl App {
             self.walk_tx.clone(),
             self.wake.clone(),
         ));
+    }
+
+    /// axross's server, watched: one that ended (its process gone, its
+    /// pipe closed) is said, its systems marked, its last list kept marked
+    /// as old - and it is started again by itself, after 2, 4, 8 ... up to
+    /// 60 seconds (five times; Sources' "try again" any time).
+    fn watch_server(&mut self) {
+        if let McpState::Connected {
+            client, systems, ..
+        } = &self.mcp
+            && !client.is_alive()
+        {
+            self.stale_systems = systems.as_ref().ok().cloned();
+            self.mcp = McpState::Failed("axross's server ended".into());
+            self.systems_version += 1;
+            for l in self.live.values_mut() {
+                if matches!(
+                    l.state,
+                    SysState::Connecting | SysState::Open | SysState::Walking
+                ) {
+                    l.state = SysState::Failed("axross's server ended".into());
+                    l.since = None;
+                }
+            }
+            self.server_restarts += 1;
+            self.server_restart_at = Some(Instant::now() + server_backoff(self.server_restarts));
+            self.toast("axross's server ended: it is started again in a moment".into());
+        }
+        if let Some(at) = self.server_restart_at
+            && Instant::now() >= at
+            && matches!(self.mcp, McpState::Failed(_))
+        {
+            self.server_restart_at = None;
+            if self.server_restarts <= SERVER_RESTARTS {
+                self.connect_mcp();
+            }
+        }
     }
 
     fn connect_mcp(&mut self) {
@@ -1404,18 +1571,39 @@ impl App {
     /// Adds a folder as an island and walks it (Sources). Err: why not.
     pub fn add_source(&mut self, root: PathBuf) -> Result<usize, String> {
         if !root.is_absolute() {
-            return Err(format!("{}: give the whole path (from /)", root.display()));
+            return Err(format!(
+                "{}: give the whole path (from / or ~)",
+                root.display()
+            ));
         }
-        let taken = self
-            .islands
-            .iter()
-            .any(|i| matches!(&i.source, IslandSource::Local { root: r, .. } if *r == root));
-        if taken {
-            return Err(format!("{} is an island already", root.display()));
+        // one island per folder: not the same again, not one inside
+        // another (its files counted twice), nor one holding another
+        for isl in &self.islands {
+            let IslandSource::Local { root: r, .. } = &isl.source else {
+                continue;
+            };
+            if *r == root {
+                return Err(format!("{} is an island already", root.display()));
+            }
+            if root.starts_with(r) {
+                return Err(format!(
+                    "{} lies inside the island {}: it is shown there already",
+                    root.display(),
+                    isl.title
+                ));
+            }
+            if r.starts_with(&root) {
+                return Err(format!(
+                    "the island {} lies inside {}: take that island out first",
+                    isl.title,
+                    root.display()
+                ));
+            }
         }
         // (whether it can be read is the walk's to find out - off the
         // window's thread: a dead mount never holds the window)
         let title = root.to_string_lossy().into_owned();
+        let key = title.clone();
         let i = self.add_island(
             IslandSource::Local { root, mount: None },
             title,
@@ -1425,12 +1613,51 @@ impl App {
         self.placed_sides.clear();
         self.beams_dirty = true;
         self.world_version += 1;
+        // (kept: it is an island at the next start too)
+        if !self.settings.sources.contains(&key) {
+            self.settings.sources.push(key);
+            let _ = settings::save(&self.settings_path, &self.settings);
+        }
         Ok(i)
+    }
+
+    /// Adds a folder as Sources' field names it: `~` is the home folder;
+    /// the path is made whole (links and `..` resolved) and looked at on a
+    /// thread - a dead mount never holds the window; then
+    /// [`App::add_source`].
+    pub fn request_source(&mut self, text: &str) {
+        let text = text.trim().to_string();
+        let path = expand_home(&text, dirs::home_dir().as_deref());
+        if !path.is_absolute() {
+            self.toast(format!("{text}: give the whole path (from / or ~)"));
+            return;
+        }
+        let tx = self.bg_tx.clone();
+        let wake = self.wake.clone();
+        let _ = std::thread::Builder::new()
+            .name("afm-source-check".into())
+            .spawn(move || {
+                let r = match std::fs::canonicalize(&path) {
+                    Ok(p) if p.is_dir() => Ok(p),
+                    Ok(p) => Err(format!("{}: no folder (a file is no island)", p.display())),
+                    Err(e) => Err(format!("{}: {e}", path.display())),
+                };
+                let _ = tx.send(Bg::SourceChecked(r));
+                wake();
+            });
     }
 
     /// Takes island `i` out of the world (what pointed into it is let go).
     pub fn remove_island(&mut self, i: usize) {
         let isl = self.islands.remove(i);
+        // (a folder added in Sources: not again at the next start)
+        if let IslandSource::Local { root, .. } = &isl.source {
+            let key = root.to_string_lossy().into_owned();
+            if let Some(k) = self.settings.sources.iter().position(|s| *s == key) {
+                self.settings.sources.remove(k);
+                let _ = settings::save(&self.settings_path, &self.settings);
+            }
+        }
         if self
             .pending_fly
             .as_ref()
@@ -1439,8 +1666,23 @@ impl App {
             self.pending_fly = None;
         }
         world::drop_later(isl);
-        // (indices moved: the search starts over, the choice goes)
+        // (indices moved: the search starts over; a choice on another
+        // island stays, its index moved with it)
+        let keep = self
+            .selected
+            .filter(|(k, _)| *k != i)
+            .map(|(k, n)| (if k > i { k - 1 } else { k }, n));
+        let preview = if keep.is_some() {
+            self.preview.take()
+        } else {
+            None
+        };
         self.search_reset_all();
+        if let Some((k, n)) = keep {
+            self.selected = Some((k, n));
+            self.sel_box = self.node_box(k, n);
+            self.preview = preview;
+        }
         self.placed_sides.clear();
         self.beams_dirty = true;
         self.world_version += 1;
@@ -1485,10 +1727,12 @@ impl App {
         }
         live.state = SysState::Failed(why.into());
         live.since = None;
-        if let Some(i) = live
-            .island
-            .and_then(|id| self.islands.iter().position(|x| x.id == id))
-        {
+        let island = live.island;
+        // given up on the server at once too (its slot freed now - a retry
+        // is never told "being connected already"); a late answer is
+        // closed again when it comes
+        self.close_on_server(&format!("profile:{name}"));
+        if let Some(i) = island.and_then(|id| self.islands.iter().position(|x| x.id == id)) {
             let isl = &mut self.islands[i];
             isl.status.error = Some(why.into());
             isl.status.done = true;
@@ -1816,6 +2060,9 @@ impl App {
             match bg {
                 Bg::Mcp(Ok((client, label, command, backends, systems))) => {
                     self.systems_version += 1;
+                    self.stale_systems = None;
+                    self.server_restarts = 0;
+                    self.server_restart_at = None;
                     self.mcp = McpState::Connected {
                         label,
                         command,
@@ -1835,8 +2082,11 @@ impl App {
                     result,
                 } => self.system_opened(&name, attempt, result),
                 Bg::Fonts(fonts) => {
-                    self.egui_ctx.set_fonts(crate::fonts::definitions(fonts));
-                    self.fonts_ready = true;
+                    // (once given up after a failure, not again this run)
+                    if !self.fonts_dropped {
+                        self.egui_ctx.set_fonts(crate::fonts::definitions(fonts));
+                        self.fonts_ready = true;
+                    }
                 }
                 Bg::Systems(systems) => {
                     self.systems_version += 1;
@@ -1851,7 +2101,15 @@ impl App {
                     }
                 }
                 Bg::Mcp(Err(None)) => self.mcp = McpState::NotFound,
-                Bg::Mcp(Err(Some(e))) => self.mcp = McpState::Failed(e),
+                Bg::Mcp(Err(Some(e))) => {
+                    self.mcp = McpState::Failed(e);
+                    if self.stale_systems.is_some() {
+                        // (a start again after the server ended: once more, later)
+                        self.server_restarts += 1;
+                        self.server_restart_at =
+                            Some(Instant::now() + server_backoff(self.server_restarts));
+                    }
+                }
                 Bg::Preview(island, node, p) => {
                     if let Some(v) = self.preview.as_mut()
                         && v.island == island
@@ -1873,6 +2131,11 @@ impl App {
                         let _ = settings::save(&self.settings_path, &self.settings);
                     }
                 }
+                Bg::CacheUsage(usage) => self.cache_usage = Some(usage),
+                Bg::SourceChecked(r) => match r.and_then(|p| self.add_source(p)) {
+                    Ok(_) => self.add_source_text.clear(),
+                    Err(e) => self.toast(e),
+                },
                 Bg::CachePruned(pruned, usage) => {
                     self.cache_usage = Some(usage);
                     if pruned.files > 0 && self.cache_clearing {
@@ -1885,6 +2148,7 @@ impl App {
                     self.cache_clearing = false;
                 }
                 Bg::OpenChecked(check) => self.open_checked(*check),
+                Bg::OpenRechecked(path, same) => self.open_rechecked(path, same),
             }
         }
         lap.push(("sampler", start.elapsed()));
@@ -1902,6 +2166,18 @@ impl App {
         self.mark_island_states();
         self.frame_first_view();
         self.connect_deadlines();
+        self.watch_server();
+        if let Some((since, said)) = self.open_waiting
+            && !said
+            && since.elapsed() > OPEN_PATIENCE
+        {
+            // (a check that hangs - a dead mount - is said, never waited for)
+            self.open_waiting = Some((since, true));
+            self.toast(
+                "No answer from the disk it lies on: not opened (it opens if the disk answers)"
+                    .into(),
+            );
+        }
         self.pending_flight();
         if self.opts.frame_stats && start.elapsed() > Duration::from_millis(20) {
             lap.push(("end", start.elapsed()));
@@ -1984,6 +2260,25 @@ impl App {
 
     /// Prunes the cache folder (at the start, and "clear" in the
     /// settings: everything) - on a thread.
+    /// The walk cache's size and files, as last measured.
+    pub fn cache_usage(&self) -> Option<(u64, usize)> {
+        self.cache_usage
+    }
+
+    /// Measures the walk cache again (on a thread): Settings shows it as it
+    /// is, not as it was at the start.
+    fn measure_cache(&mut self) {
+        let Some(dir) = self.cache_dir() else { return };
+        let tx = self.bg_tx.clone();
+        let wake = self.wake.clone();
+        let _ = std::thread::Builder::new()
+            .name("afm-cache-usage".into())
+            .spawn(move || {
+                let _ = tx.send(Bg::CacheUsage(cache::usage(&dir)));
+                wake();
+            });
+    }
+
     fn prune_cache(&mut self, everything: bool) {
         let Some(dir) = self.cache_dir() else { return };
         let (max_bytes, max_age) = if everything {
@@ -2236,7 +2531,19 @@ impl App {
         }
         let first = self.framed.is_none() || self.frame_on.is_none();
         self.framed = Some((id, side, at));
-        let (pos, target) = self.island_view(k);
+        // (only small cities - empty or missing folders - beside the
+        // machine's island: the world whole, never half the machine)
+        let machine = self
+            .islands
+            .iter()
+            .filter(|i| i.hw.is_some())
+            .filter_map(|i| i.city.as_ref().map(|c| c.side()))
+            .fold(0.0f32, f32::max);
+        let (pos, target) = if self.frame_on.is_none() && side < machine {
+            self.box_view(self.world_box().expect("a city"))
+        } else {
+            self.island_view(k)
+        };
         let (yaw, pitch) = look_angles(pos, target);
         if first {
             self.camera.flight = None;
@@ -2264,8 +2571,13 @@ impl App {
         let Some(c) = self.islands.get(i).and_then(|x| x.city.as_ref()) else {
             return (self.camera.pos, self.camera.target);
         };
-        let b = c.aabb();
-        let grow = ((160.0 - c.side()) * 0.5).max(0.0);
+        self.box_view(c.aabb())
+    }
+
+    /// The low view of a box (an island's, the world's).
+    fn box_view(&self, b: Aabb) -> (Vec3, Vec3) {
+        let side = (b.max.x - b.min.x).max(b.max.z - b.min.z);
+        let grow = ((160.0 - side) * 0.5).max(0.0);
         let min = vec3(b.min.x - grow, 0.0, b.min.z - grow);
         let max = vec3(b.max.x + grow, b.max.y.max(1.0), b.max.z + grow);
         let eye = crate::camera::frame_box(
@@ -2376,6 +2688,17 @@ impl App {
         (1.4 / (extent * 1.6).max(2500.0)).min(0.00056)
     }
 
+    /// How the shader draws far buildings this frame (picking, labels and
+    /// the level of detail follow it).
+    pub fn raise(&self) -> render::Raise {
+        render::Raise {
+            look: self.far_look(),
+            lens: 2.0 * (self.camera.fov_y * 0.5).tan(),
+            height: self.view_rect.height().max(1.0),
+            eye: self.camera.pos,
+        }
+    }
+
     /// The far view's knobs for the world as it is ([`render::far_look`]).
     fn far_look(&self) -> [f32; 4] {
         let (width, top) = self.world_box().map_or((1000.0, 30.0), |b| {
@@ -2414,12 +2737,45 @@ impl App {
         }
     }
 
+    /// What the pointer would pick at a point of the view (-1..1 each way,
+    /// y up): as drawn, raised far roofs and widened far towers included.
+    pub fn pick_ndc(&self, ndc: [f32; 2]) -> Option<(usize, NodeId)> {
+        let ray = self.camera.ray(ndc, self.view_aspect);
+        let cities = self.cities();
+        city::pick(&cities, &ray, &self.raise())
+            .map(|h| (self.island_of_city(h.island).unwrap_or(0), h.node))
+    }
+
+    /// Where a world point is in the view (-1..1 each way, y up), if in
+    /// front of the camera.
+    pub fn to_ndc(&self, p: Vec3) -> Option<[f32; 2]> {
+        let vp = self.camera.proj(self.view_aspect).mul(&self.camera.view());
+        let c = vp.transform([p.x, p.y, p.z, 1.0]);
+        (c[3] > 0.0).then(|| [c[0] / c[3], c[1] / c[3]])
+    }
+
     /// Whether a world point is inside the 3D view as the camera stands
     /// (tests: the first view frames the whole city).
     pub fn in_view(&self, p: Vec3) -> bool {
         let vp = self.camera.proj(self.view_aspect).mul(&self.camera.view());
         let c = vp.transform([p.x, p.y, p.z, 1.0]);
         c[3] > 0.0 && (c[0] / c[3]).abs() <= 1.0 && (c[1] / c[3]).abs() <= 1.0
+    }
+
+    /// Whether the flash guard veils any part of the picture now, and how
+    /// many times it began to (tests, the status line).
+    pub fn guard_veiling(&self) -> bool {
+        self.render_stats
+            .as_ref()
+            .and_then(|s| s.lock().ok().map(|s| s.veil))
+            .unwrap_or(false)
+    }
+
+    pub fn guard_engaged(&self) -> u64 {
+        self.render_stats
+            .as_ref()
+            .and_then(|s| s.lock().ok().map(|s| s.engaged))
+            .unwrap_or(0)
     }
 
     /// Places the camera (tests, screenshots).
@@ -2689,7 +3045,7 @@ impl App {
             self.seen = (self.world_version, key);
             let eye = self.camera.pos;
             let lod = city::Lod {
-                look: self.far_look(),
+                raise: self.raise(),
                 ..self.lod
             };
             // (last frame's buffer, once the renderer let go of it: no new
@@ -2795,7 +3151,7 @@ impl App {
             params: [0.0, 1.35, 0.0, 0.0],
             debug: [self.test_signal, 0.0, 0.0, 0.0],
             look: self.far_look(),
-            lens: [2.0 * (self.camera.fov_y * 0.5).tan(), 0.0, 0.0, 0.0],
+            lens: [2.0 * (self.camera.fov_y * 0.5).tan(), self.motion, 0.0, 0.0],
         };
         (frustum, g)
     }
@@ -2921,7 +3277,10 @@ impl App {
                     self.camera.set_mode(m);
                 }
                 Key::Slash => self.focus_search = true,
-                Key::T => self.teleport_open = !self.teleport_open,
+                Key::T => {
+                    self.teleport_open = !self.teleport_open;
+                    self.focus_filter = self.teleport_open;
+                }
                 Key::Home => self.home(),
                 Key::Z => {
                     // the chosen thing's island (or the one under the pointer)
@@ -2947,6 +3306,15 @@ impl App {
                     } else if self.teleport_open {
                         // (the menu closes first)
                         self.teleport_open = false;
+                    } else if self.help_open || self.settings_open || self.sources_open {
+                        // (then the other windows, one each time)
+                        if self.help_open {
+                            self.help_open = false;
+                        } else if self.settings_open {
+                            self.settings_open = false;
+                        } else {
+                            self.sources_open = false;
+                        }
                     } else if let Some(f) = self.pending_fly.take() {
                         // (the flight that waits - and only the connect it
                         // waits for - given up)
@@ -3201,33 +3569,65 @@ impl App {
                 let trusted = self.settings.open_types.clone();
                 let tx = self.bg_tx.clone();
                 let wake = self.wake.clone();
+                let delay = self.opts.open_check_delay;
                 let _ = std::thread::Builder::new()
                     .name("afm-open-check".into())
                     .spawn(move || {
+                        if let Some(d) = delay {
+                            // (the tests' stand-in for a disk that does not answer)
+                            std::thread::sleep(d);
+                        }
+                        let id = open::identity(&path);
                         let risk = open::risk_of(&path, untrusted, &trusted);
-                        let _ = tx.send(Bg::OpenChecked(Box::new(OpenCheck { path, risk })));
+                        let _ = tx.send(Bg::OpenChecked(Box::new(OpenCheck { path, risk, id })));
                         wake();
                     });
+                self.open_waiting = Some((Instant::now(), false));
             }
         }
     }
 
     /// The default program's check came back: opened, or asked first.
     fn open_checked(&mut self, check: OpenCheck) {
+        self.open_waiting = None;
         match check.risk {
-            None => self.open_default(&check.path),
+            None => self.open_default(&check.path, check.id),
             Some(risk) => {
                 self.open_ask = Some(OpenAsk::Risky {
                     path: check.path,
                     why: risk.why,
                     unknown: risk.unknown,
+                    id: check.id,
                 })
             }
         }
     }
 
-    fn open_default(&mut self, path: &std::path::Path) {
-        match open::system_via(self.opts.opener.as_deref(), path) {
+    /// Opens with the default program - once the file is looked at again
+    /// (on a thread) and is still what was checked: the same file, not a
+    /// link put in its place since.
+    fn open_default(&mut self, path: &std::path::Path, id: Option<open::Identity>) {
+        let path = path.to_path_buf();
+        let tx = self.bg_tx.clone();
+        let wake = self.wake.clone();
+        let _ = std::thread::Builder::new()
+            .name("afm-open-recheck".into())
+            .spawn(move || {
+                let same = id.is_some() && open::identity(&path) == id;
+                let _ = tx.send(Bg::OpenRechecked(path, same));
+                wake();
+            });
+    }
+
+    fn open_rechecked(&mut self, path: PathBuf, same: bool) {
+        if !same {
+            self.toast(format!(
+                "{} changed since it was checked (another file or a link in its place): not opened",
+                crate::tree::display_text(path.as_os_str())
+            ));
+            return;
+        }
+        match open::system_via(self.opts.opener.as_deref(), &path) {
             Some(l) => self.launch(l),
             None => self.toast("No program to open it with was found".into()),
         }
@@ -3258,7 +3658,7 @@ impl App {
         };
         let t = self.theme;
         let mut answer: Option<Option<OpenHow>> = None;
-        let mut risky_path: Option<PathBuf> = None;
+        let mut risky_path: Option<(PathBuf, Option<open::Identity>)> = None;
         let mut trust: Option<String> = None;
         let mut unlock: Option<(String, bool)> = None;
         let mut swap: Option<(String, String)> = None;
@@ -3269,7 +3669,12 @@ impl App {
         let modal = egui::Modal::new(egui::Id::unique("afm-open-ask")).show(ctx, |ui| {
             ui.set_max_width(460.0);
             match &ask {
-                OpenAsk::Risky { path, why, unknown } => {
+                OpenAsk::Risky {
+                    path,
+                    why,
+                    unknown,
+                    id,
+                } => {
                     ui.label(
                         RichText::new("Open this with the default program?")
                             .strong()
@@ -3305,7 +3710,7 @@ impl App {
                         }
                         if ui.button("Open it anyway").clicked() {
                             answer = Some(Some(OpenHow::DefaultProgram));
-                            risky_path = Some(path.clone());
+                            risky_path = Some((path.clone(), *id));
                             if self.trust_type
                                 && let Some(ext) = unknown
                             {
@@ -3444,7 +3849,7 @@ impl App {
         }
         match (answer, risky_path) {
             // (asked and answered: no second question)
-            (Some(OpenHow::DefaultProgram), Some(p)) => self.open_default(&p),
+            (Some(OpenHow::DefaultProgram), Some((p, id))) => self.open_default(&p, id),
             (Some(how), _) => self.open_selected(how),
             (None, _) => {}
         }
@@ -3478,9 +3883,55 @@ impl App {
             let cities = self.cities();
             let solid = |p: Vec3| city::solid(&cities, p);
             let mut cam = self.camera.clone();
+            let before = cam.pos;
             cam.update(dt, &input, &solid);
+            // (the keys always do something - or say why not)
+            let pressed = input.move_dir != [0.0; 3] && cam.mode == Mode::Fly && !cam.flying();
+            if pressed && (cam.pos - before).length() < 1e-4 {
+                self.stuck_for += dt;
+                if self.stuck_for > 0.4 && !self.stuck_said {
+                    self.stuck_said = true;
+                    self.toast(
+                        "A wall or the ground is in the way: turn, rise with E, or Home".into(),
+                    );
+                }
+            } else {
+                self.stuck_for = 0.0;
+                if !pressed {
+                    self.stuck_said = false;
+                }
+            }
             self.camera = cam;
         }
+        let clearance = {
+            // (how near the nearest roofs and walls are: a flight along a
+            // wall sweeps the picture as fast as one low over the ground)
+            let cities = self.cities();
+            let p = self.camera.pos;
+            let mut roof = 0f32;
+            for d in [
+                vec3(15.0, 0.0, 0.0),
+                vec3(-15.0, 0.0, 0.0),
+                vec3(0.0, 0.0, 15.0),
+                vec3(0.0, 0.0, -15.0),
+            ] {
+                roof = roof.max(city::ceiling(&cities, p, p + d));
+            }
+            if roof >= p.y {
+                3.0
+            } else {
+                (p.y - roof).max(3.0)
+            }
+        };
+        self.motion = view_motion(
+            self.motion,
+            self.last_cam,
+            &self.camera,
+            clearance,
+            dt,
+            self.cut,
+        );
+        self.last_cam = Some((self.camera.pos, self.camera.yaw, self.camera.pitch));
         if let Some((p, y, pi)) = self.queued_teleport
             && self.time() - self.last_teleport >= TELEPORT_GAP
         {
@@ -3507,7 +3958,7 @@ impl App {
             ];
             let ray = self.camera.ray(ndc, aspect);
             let cities = self.cities();
-            city::pick(&cities, &ray).map(|h| Hit {
+            city::pick(&cities, &ray, &self.raise()).map(|h| Hit {
                 island: self.island_of_city(h.island).unwrap_or(0),
                 ..h
             })
@@ -3562,6 +4013,35 @@ impl App {
                 .line_segment([c - vec2(0.0, 6.0), c + vec2(0.0, 6.0)], (1.0, col));
         }
         self.key_hint(ui, rect, &input);
+        if input.scroll != 0.0 && self.camera.mode == Mode::Fly {
+            self.speed_said = Some(Instant::now());
+        }
+        if let Some(at) = self.speed_said {
+            if at.elapsed() < Duration::from_millis(1500) {
+                // (the wheel's speed, said where it is looked at - not only
+                // in the status line)
+                let text = format!(
+                    "speed ×{:.1} · {:.0} m/s here",
+                    self.camera.speed / 25.0,
+                    self.camera.flight_speed()
+                );
+                let painter = ui.painter_at(rect);
+                let galley = painter.layout_no_wrap(
+                    text,
+                    egui::FontId::proportional(15.0),
+                    self.theme.strong,
+                );
+                let r = Rect::from_center_size(
+                    Pos2::new(rect.center().x, rect.top() + 40.0),
+                    galley.size() + vec2(16.0, 8.0),
+                );
+                painter.rect_filled(r, 4.0, self.theme.surface.gamma_multiply(0.9));
+                painter.galley(r.min + vec2(8.0, 4.0), galley, self.theme.strong);
+                ui.ctx().request_repaint_after(Duration::from_millis(100));
+            } else {
+                self.speed_said = None;
+            }
+        }
         self.empty_state(ui, rect);
         if let Some(h) = self.hover
             && !response.dragged()
@@ -3813,7 +4293,6 @@ impl App {
             taken.push(l);
         }
         let painter = ui.painter_at(rect);
-        self.plot_tags(&painter, rect, &vp);
         let t = self.theme;
         let cities = self.cities();
         let eye = self.camera.pos;
@@ -4012,6 +4491,8 @@ impl App {
             painter.galley(r.min + vec2(3.0, 1.0), galley, color);
         }
         drop(cities);
+        // (the plots' protocol signs after the titles: kept clear of them)
+        self.plot_tags(&painter, rect, &vp, &titles);
         self.title_rects = titles;
     }
 
@@ -4060,7 +4541,18 @@ impl App {
         if self.settings.hint_seen {
             return;
         }
-        if input.move_dir != [0.0; 3] || input.look != [0.0; 2] || self.help_open {
+        // (gone with the first key that moves, and for a mouse user with the
+        // first drag or wheel turn; T, / and Home too)
+        let used = input.move_dir != [0.0; 3]
+            || input.look != [0.0; 2]
+            || input.orbit != [0.0; 2]
+            || input.pan != [0.0; 2]
+            || input.scroll != 0.0
+            || self.help_open
+            || self.teleport_open
+            || self.camera.flying()
+            || ui.ctx().text_edit_focused();
+        if used {
             self.settings.hint_seen = true;
             let _ = settings::save(&self.settings_path, &self.settings);
             return;
@@ -4100,7 +4592,13 @@ impl App {
     /// A system's island with nothing on it yet (connecting, failed,
     /// empty): its protocol written large on its plot, in its family's
     /// colour.
-    fn plot_tags(&self, painter: &egui::Painter, rect: Rect, vp: &crate::math::Mat4) {
+    fn plot_tags(
+        &self,
+        painter: &egui::Painter,
+        rect: Rect,
+        vp: &crate::math::Mat4,
+        titles: &[Rect],
+    ) {
         for isl in &self.islands {
             let (IslandSource::Mcp { backend, .. }, Some(c)) = (&isl.source, isl.city.as_ref())
             else {
@@ -4128,13 +4626,20 @@ impl App {
             // (as large as the plot looks, within reason)
             let size = (c.side() / p[3] * rect.height() * 0.25).clamp(18.0, 64.0);
             let text: String = proto.to_uppercase().chars().take(10).collect();
-            painter.text(
-                pos,
-                egui::Align2::CENTER_CENTER,
+            let galley = painter.layout(
                 format!("{text}\n{}", fam.label()),
                 egui::FontId::monospace(size * 0.55),
                 Color32::from_rgba_unmultiplied(r, g, b, 150),
+                rect.width() * 0.5,
             );
+            let mut at = Rect::from_center_size(pos, galley.size());
+            // (a title over it: the sign moves above the title)
+            for t in titles {
+                if t.intersects(at) {
+                    at = at.translate(vec2(0.0, t.top() - at.bottom() - 6.0));
+                }
+            }
+            painter.galley(at.min, galley, Color32::WHITE);
         }
     }
 
@@ -4594,12 +5099,34 @@ impl App {
         Rect::from_min_max(Pos2::new(screen.left(), self.view_rect.top()), screen.max)
     }
 
+    /// Where Settings and Sources may stand: the 3D view's area - never
+    /// over the inspect panel at the right, the bar or the status line.
+    fn view_area(&self) -> Rect {
+        self.view_rect
+    }
+
+    /// The Teleport menu's systems rows as they stand: name and state
+    /// (tests).
+    pub fn teleport_rows(&mut self) -> Vec<(String, SysState)> {
+        self.system_rows()
+            .map(|r| {
+                r.iter()
+                    .map(|r| (r.name.clone(), r.state.clone()))
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
     /// The Teleport menu's systems rows, made again only when the list,
     /// the filter or (four times a second at most) a state changed; sorted
     /// by name - a row never moves under the mouse.
     fn system_rows(&mut self) -> Result<std::rc::Rc<Vec<SysRow>>, String> {
+        // (the server ended: its last list, marked, while it starts again)
+        let stale = matches!(self.mcp, McpState::Looking | McpState::Failed(_))
+            && self.stale_systems.is_some();
         let profiles = match &self.mcp {
             McpState::Connected { systems: Ok(s), .. } => &s.profiles,
+            _ if stale => &self.stale_systems.as_ref().expect("stale").profiles,
             McpState::Connected {
                 systems: Err(e), ..
             } => return Err(e.clone()),
@@ -4641,7 +5168,14 @@ impl App {
                 .clone()
                 .unwrap_or_else(|| p.protocol.clone());
             let host = p.host.clone().unwrap_or_default();
-            let state = self.system_state_with(&p.name, island_of.get(p.name.as_str()).copied(), p);
+            let state = if stale {
+                SysState::Unavailable(
+                    "axross's server ended: the list as it was last known; it is being started again"
+                        .into(),
+                )
+            } else {
+                self.system_state_with(&p.name, island_of.get(p.name.as_str()).copied(), p)
+            };
             let label = state.label();
             if !crate::systems::matches(
                 &q,
@@ -4719,6 +5253,8 @@ impl App {
         let mut sys_cancel: Option<String> = None;
         let mut sys_close: Option<String> = None;
         let mut filter = self.teleport_filter.clone();
+        let focus_filter = std::mem::take(&mut self.focus_filter);
+        let total_systems = self.system_profiles().len();
         let t = self.theme;
         let screen = ctx.content_rect();
         let systems = self.system_rows();
@@ -4746,12 +5282,27 @@ impl App {
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.label(RichText::new("filter").color(t.muted));
-                    ui.add(
+                    let field = ui.add(
                         egui::TextEdit::singleline(&mut filter)
                             .hint_text("name, protocol, host, …")
                             .desired_width(ui.available_width() - 8.0),
                     );
+                    if focus_filter {
+                        // (T: typing goes into the filter at once)
+                        field.request_focus();
+                    }
                 });
+                if let Ok(rows) = &systems {
+                    ui.label(
+                        RichText::new(if q.trim().is_empty() {
+                            count(total_systems as u64, "saved connection", "saved connections")
+                        } else {
+                            format!("{} of {total_systems} saved connections match", rows.len())
+                        })
+                        .color(t.muted)
+                        .size(12.0),
+                    );
+                }
                 egui::CollapsingHeader::new(RichText::new("Systems (axross's connection manager)").strong())
                     .id_salt("tp-systems")
                     .default_open(true)
@@ -4771,7 +5322,7 @@ impl App {
                             // (only the rows in sight are laid out)
                             egui::ScrollArea::vertical()
                                 .id_salt("tp-system-rows")
-                                .max_height(row_h * 10.0)
+                                .max_height((ui.available_height() * 0.6).max(row_h * 10.0))
                                 .auto_shrink([false, true])
                                 .show_rows(ui, row_h, rows.len(), |ui, range| {
                                     for r in &rows[range] {
@@ -4985,13 +5536,13 @@ impl App {
         let mut rescan: Option<usize> = None;
         let mut stop: Option<usize> = None;
         let mut remove: Option<usize> = None;
-        let mut add: Option<PathBuf> = None;
+        let mut add: Option<String> = None;
         let mut reconnect = false;
         let width = 420.0_f32.min(ctx.content_rect().width() - 24.0);
         egui::Window::new("Sources")
             .open(&mut open)
             .default_pos(self.right_of_bar(width, 0.0))
-            .constrain_to(self.below_bar_rect(ctx))
+            .constrain_to(self.view_area())
             .default_width(width)
             .max_height(ctx.content_rect().height() - 80.0)
             .vscroll(true)
@@ -5040,17 +5591,33 @@ impl App {
             ui.horizontal(|ui| {
                 ui.label("Add a folder:");
                 let field = ui.add(
-                    egui::TextEdit::singleline(&mut self.add_source)
+                    egui::TextEdit::singleline(&mut self.add_source_text)
                         .hint_text("/path/to/folder")
                         .desired_width(220.0),
                 );
                 let enter = field.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter));
-                if (ui.button("add").clicked() || enter) && !self.add_source.trim().is_empty() {
-                    add = Some(PathBuf::from(self.add_source.trim()));
+                if (ui.button("add").clicked() || enter) && !self.add_source_text.trim().is_empty() {
+                    add = Some(self.add_source_text.trim().to_string());
                 }
             });
             ui.separator();
             ui.label(RichText::new("axross").strong());
+            // the program (Open in axross, its connection manager)
+            ui.label(match &self.axross {
+                Axross::Ready(p) => format!(
+                    "axross: {} - opens paths and saved connections ({} or later)",
+                    crate::tree::display_text(p.as_os_str()),
+                    AXROSS_VERSION
+                ),
+                Axross::TooOld(p) => format!(
+                    "axross: {} is too old to open a path; {AXROSS_VERSION} or later can",
+                    crate::tree::display_text(p.as_os_str())
+                ),
+                Axross::Missing => format!(
+                    "axross not found: install it ({AXROSS_VERSION} or later: pip install axross, or the releases page) for Open in axross and its connection manager; local folders and mounts work without it"
+                ),
+                Axross::Looking => "axross: looking for it…".into(),
+            });
             match &self.mcp {
                 McpState::Off => {
                     ui.label("Off (Settings).");
@@ -5059,8 +5626,12 @@ impl App {
                     ui.label("Looking for axross-headless-mcp…");
                 }
                 McpState::NotFound => {
-                    ui.label("No axross found: local disks and mounts only.");
-                    ui.label(RichText::new("Install axross-headless-mcp (pip or uvx) or axross for remote backends:").color(t.muted));
+                    ui.label("axross's MCP server not found: local folders and mounts work without it.");
+                    ui.label(RichText::new(format!(
+                        "For other systems (axross's saved connections), install axross {AXROSS_VERSION} or later \
+                         (its server runs as axross --mcp-server), or axross-headless-mcp (pip install \
+                         axross-headless-mcp, or uvx), or give its command in Settings."
+                    )).color(t.muted));
                     ui.hyperlink_to("github.com/c0decave/axross", "https://github.com/c0decave/axross");
                 }
                 McpState::Failed(e) => {
@@ -5070,7 +5641,7 @@ impl App {
                     }
                 }
                 McpState::Connected { label, command, client, systems } => {
-                    ui.label(format!("{label} ({} {}), {} tools", client.server, client.version, client.tools.len()));
+                    ui.label(format!("MCP server: {label} ({} {}), {} tools", client.server, client.version, client.tools.len()));
                     ui.label(RichText::new(format!("started as: {command}")).monospace().size(11.0).color(t.muted));
                     match systems {
                         Err(e) => {
@@ -5082,17 +5653,27 @@ impl App {
                                 sys.profiles.len(),
                                 sys.protocols.len()
                             )).color(t.muted));
-                            for p in &sys.profiles {
-                                ui.horizontal(|ui| {
-                                    let fam = crate::systems::Family::of(&p.protocol);
-                                    let [r, g, b] = fam.color();
-                                    ui.label(RichText::new(fam.sign()).monospace().color(Color32::from_rgb(r, g, b)));
-                                    ui.label(RichText::new(&p.name).monospace());
-                                    if ui.small_button("teleport").clicked() {
-                                        open_profile = Some((client.clone(), p.name.clone()));
+                            // (only the rows in sight are laid out: thousands
+                            // of systems cost no more than a few)
+                            let row_h = 22.0;
+                            egui::ScrollArea::vertical()
+                                .id_salt("src-system-rows")
+                                .max_height(row_h * 12.0)
+                                .auto_shrink([false, true])
+                                .show_rows(ui, row_h, sys.profiles.len(), |ui, range| {
+                                    for p in &sys.profiles[range] {
+                                        ui.horizontal(|ui| {
+                                            ui.set_height(row_h - 4.0);
+                                            let fam = crate::systems::Family::of(&p.protocol);
+                                            let [r, g, b] = fam.color();
+                                            ui.label(RichText::new(fam.sign()).monospace().color(Color32::from_rgb(r, g, b)));
+                                            ui.label(RichText::new(&p.name).monospace());
+                                            if ui.small_button("teleport").clicked() {
+                                                open_profile = Some((client.clone(), p.name.clone()));
+                                            }
+                                        });
                                     }
                                 });
-                            }
                         }
                     }
                 }
@@ -5110,11 +5691,8 @@ impl App {
             self.remove_island(i);
             self.toast(format!("{title}: taken out of the city"));
         }
-        if let Some(p) = add {
-            match self.add_source(p) {
-                Ok(_) => self.add_source.clear(),
-                Err(e) => self.toast(e),
-            }
+        if let Some(text) = add {
+            self.request_source(&text);
         }
         if let Some(i) = rescan {
             let all = mounts::system_mounts();
@@ -5133,7 +5711,12 @@ impl App {
 
     fn settings_window(&mut self, ctx: &egui::Context) {
         if !self.settings_open {
+            self.settings_shown = false;
             return;
+        }
+        if !self.settings_shown {
+            self.settings_shown = true;
+            self.measure_cache();
         }
         let mut open = true;
         let t = self.theme;
@@ -5145,7 +5728,7 @@ impl App {
         egui::Window::new("Settings")
             .open(&mut open)
             .default_pos(self.right_of_bar(width, 24.0))
-            .constrain_to(self.below_bar_rect(ctx))
+            .constrain_to(self.view_area())
             .default_width(width)
             .default_height(self.tall(ctx))
             .max_height(ctx.content_rect().height() - 80.0)
@@ -5666,7 +6249,7 @@ pub const HELP: &[(&str, &str)] = &[
     ("L", "the colour legend"),
     (
         "Esc",
-        "let the mouse go, give a connect up, then clear the choice",
+        "let the mouse go, close the menu and windows, give a connect up, then clear the choice",
     ),
     ("H / F1", "this help"),
 ];
@@ -5711,7 +6294,44 @@ fn invert(m: &crate::math::Mat4) -> [[f32; 4]; 4] {
 }
 
 impl eframe::App for App {
-    fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut Ui, frame: &mut eframe::Frame) {
+        // (a font the checks let through that still fails while a glyph is
+        // drawn: the frame is caught, the fonts found are dropped for the
+        // built-in ones, said so, and the window goes on)
+        let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| self.frame_ui(ui, frame)));
+        if let Err(e) = r {
+            if !self.fonts_ready {
+                std::panic::resume_unwind(e);
+            }
+            self.drop_fonts(ui.ctx());
+        }
+    }
+
+    fn on_exit(&mut self) {
+        self.save_all();
+    }
+}
+
+impl App {
+    /// The fonts found are given up for egui's own (a frame failed while
+    /// they were in use).
+    pub fn drop_fonts(&mut self, ctx: &egui::Context) {
+        ctx.set_fonts(egui::FontDefinitions::default());
+        self.fonts_ready = false;
+        self.fonts_dropped = true;
+        self.toast(
+            "A font of this system could not be drawn: the built-in fonts are used (some scripts show as boxes)"
+                .into(),
+        );
+        eprintln!("axross-files-matrix: a font failed while drawing; the built-in fonts are used");
+        ctx.request_repaint();
+    }
+
+    fn frame_ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
+        if std::mem::take(&mut self.test_font_failure) {
+            // (the tests' stand-in for a glyph that fails while drawn)
+            panic!("a font failed while drawing (test)");
+        }
         let t0 = Instant::now();
         if let Some(r) = ui.ctx().input(|i| i.viewport().inner_rect) {
             self.window_size = Some([r.width(), r.height()]);
@@ -5841,10 +6461,6 @@ impl eframe::App for App {
             // (no repaint asked for here: the frames measured are the ones
             // the window draws anyway - an idle window stays idle)
         }
-    }
-
-    fn on_exit(&mut self) {
-        self.save_all();
     }
 }
 
@@ -5980,6 +6596,66 @@ mod tests {
             "sftp-box\nfailed: no route to host"
         );
         assert_eq!(title_text("home  · 1200 …"), "home  · 1200 …");
+    }
+
+    #[test]
+    fn the_view_s_motion_rises_at_once_and_settles() {
+        let cam = crate::camera::Camera {
+            pos: vec3(0.0, 100.0, 0.0),
+            ..Default::default()
+        };
+        let still = (cam.pos, cam.yaw, cam.pitch);
+        assert_eq!(
+            view_motion(0.0, Some(still), &cam, 100.0, 1.0 / 30.0, false),
+            0.0
+        );
+        // 120 m/s at 100 m: fast
+        let mut moved = cam.clone();
+        moved.pos.z -= 6.0;
+        // (eased: a quarter of a second to come)
+        let mut m = 0.0;
+        for _ in 0..15 {
+            m = view_motion(m, Some(still), &moved, 100.0, 1.0 / 30.0, false);
+        }
+        assert!(m > 0.8, "{m}");
+        let first = view_motion(0.0, Some(still), &moved, 100.0, 1.0 / 30.0, false);
+        assert!(first < 0.2, "never at once: {first}");
+        // along a wall (19 m/s, things 3 m away): fast too
+        let mut along = cam.clone();
+        along.pos.z -= 19.0 / 30.0;
+        let mut m = 0.0;
+        for _ in 0..15 {
+            m = view_motion(m, Some(still), &along, 3.0, 1.0 / 30.0, false);
+        }
+        assert!(m > 0.8, "{m}");
+        // a slow turn (10 degrees a second): barely
+        let mut turned = cam.clone();
+        turned.yaw += 10f32.to_radians() / 30.0;
+        assert!(view_motion(0.0, Some(still), &turned, 100.0, 1.0 / 30.0, false) < 0.05);
+        // it settles over half a second, not at once
+        let after = view_motion(1.0, Some(still), &cam, 100.0, 1.0 / 30.0, false);
+        assert!(after > 0.9 && after < 1.0, "{after}");
+        // a teleport's jump is no motion
+        let mut jumped = cam.clone();
+        jumped.pos.x += 5000.0;
+        assert_eq!(
+            view_motion(0.2, Some(still), &jumped, 100.0, 1.0 / 30.0, false),
+            0.2
+        );
+        assert_eq!(
+            view_motion(0.2, Some(still), &moved, 100.0, 1.0 / 30.0, true),
+            0.2
+        );
+    }
+
+    #[test]
+    fn a_tilde_is_the_home_folder() {
+        let home = std::path::Path::new("/u/me");
+        assert_eq!(expand_home("~", Some(home)), PathBuf::from("/u/me"));
+        assert_eq!(expand_home("~/x/y", Some(home)), PathBuf::from("/u/me/x/y"));
+        assert_eq!(expand_home("/abs", Some(home)), PathBuf::from("/abs"));
+        assert_eq!(expand_home("~other", Some(home)), PathBuf::from("~other"));
+        assert_eq!(expand_home("~", None), PathBuf::from("~"));
     }
 
     #[test]

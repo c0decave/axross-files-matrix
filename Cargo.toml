@@ -23,6 +23,9 @@ pollster = "1.0"
 # SHA-256, the cache's checksum - src/update.rs, src/cache.rs)
 ring = "0.17.14"
 serde = { version = "1.0.229", features = ["derive"] }
+# (already in the lock through egui's text: every glyph of a font found is
+# drawn once on the fonts' thread before the window gets it - src/fonts.rs)
+skrifa = "0.44.0"
 serde_json = { version = "1.0.154", features = ["raw_value"] }
 ureq = { version = "3.5.1", default-features = false, features = ["rustls"] }
 

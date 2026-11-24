@@ -186,3 +186,50 @@ fn the_release_container_is_pinned_or_says_how_to_pin_it() {
         );
     }
 }
+
+#[cfg(unix)]
+#[test]
+fn keygen_never_writes_a_private_key_into_a_checkout_or_an_open_folder() {
+    use std::os::unix::fs::PermissionsExt;
+    let Ok(python) = which_python() else {
+        eprintln!("SKIPPED: no python3");
+        return;
+    };
+    let script = concat!(env!("CARGO_MANIFEST_DIR"), "/scripts/sign_release.py");
+    let inside = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("zz-test-key.pem");
+    let out = Command::new(&python)
+        .args([script, "keygen", "--key"])
+        .arg(&inside)
+        .output()
+        .unwrap();
+    assert!(!out.status.success());
+    assert!(String::from_utf8_lossy(&out.stderr).contains("git work tree"));
+    assert!(!inside.exists(), "nothing written into the checkout");
+    // a folder others may read: refused too
+    let open = std::env::temp_dir().join(format!("afm-keygen-{}", std::process::id()));
+    std::fs::create_dir_all(&open).unwrap();
+    std::fs::set_permissions(&open, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let out = Command::new(&python)
+        .args([script, "keygen", "--key"])
+        .arg(open.join("k.pem"))
+        .output()
+        .unwrap();
+    assert!(!out.status.success());
+    assert!(String::from_utf8_lossy(&out.stderr).contains("0700"));
+    assert!(!open.join("k.pem").exists());
+    let _ = std::fs::remove_dir_all(&open);
+    // and .gitignore keeps keys out
+    let ignore =
+        std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/.gitignore")).unwrap();
+    assert!(ignore.lines().any(|l| l == "*.pem") && ignore.lines().any(|l| l == "*.key"));
+}
+
+#[cfg(unix)]
+fn which_python() -> Result<std::path::PathBuf, ()> {
+    for p in ["/usr/bin/python3", "/usr/local/bin/python3"] {
+        if std::path::Path::new(p).exists() {
+            return Ok(p.into());
+        }
+    }
+    Err(())
+}

@@ -463,24 +463,72 @@ mod deep {
         std::io::Error::last_os_error()
     }
 
-    /// `path`'s folder opened one name at a time, no link followed.
+    thread_local! {
+        /// The deep folders this thread opened last (a duplicate of each
+        /// descriptor): the next one below is opened from the nearest of
+        /// them - a chain thousands of folders deep costs a call a folder,
+        /// not one per level above it.
+        static OPEN: std::cell::RefCell<Vec<(std::path::PathBuf, Fd)>> =
+            const { std::cell::RefCell::new(Vec::new()) };
+    }
+
+    /// How many open folders a thread keeps.
+    const KEEP: usize = 32;
+
+    /// Folders opened one by one, in all (the tests count them).
+    pub static OPENED: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+
+    fn dup(fd: &Fd) -> Option<Fd> {
+        // SAFETY: an open descriptor this owns
+        let d = unsafe { libc::fcntl(fd.0, libc::F_DUPFD_CLOEXEC, 0) };
+        (d >= 0).then_some(Fd(d))
+    }
+
+    /// `path`'s folder opened one name at a time, no link followed - from
+    /// the nearest folder above it this thread has open.
     fn open_dir(path: &Path) -> std::io::Result<Fd> {
         let flags = libc::O_RDONLY | libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC;
-        let start = if path.is_absolute() { c"/" } else { c"." };
-        // SAFETY: a NUL-ended path
-        let mut fd = Fd(unsafe { libc::open(start.as_ptr(), flags) });
-        if fd.0 < 0 {
-            return Err(last_error());
-        }
-        for c in path.components() {
-            let Component::Normal(name) = c else { continue };
-            let name = CString::new(name.as_bytes()).map_err(std::io::Error::other)?;
-            // SAFETY: an open folder and a NUL-ended name
-            let next = Fd(unsafe { libc::openat(fd.0, name.as_ptr(), flags) });
-            if next.0 < 0 {
-                return Err(last_error());
+        let near = OPEN.with(|o| {
+            o.borrow()
+                .iter()
+                .filter(|(p, _)| path.starts_with(p))
+                .max_by_key(|(p, _)| p.as_os_str().len())
+                .and_then(|(p, fd)| dup(fd).map(|d| (p.components().count(), d)))
+        });
+        let (skip, mut fd) = match near {
+            Some((n, d)) => (n, d),
+            None => {
+                let start = if path.is_absolute() { c"/" } else { c"." };
+                // SAFETY: a NUL-ended path
+                let fd = Fd(unsafe { libc::open(start.as_ptr(), flags) });
+                if fd.0 < 0 {
+                    return Err(last_error());
+                }
+                (0, fd)
             }
-            fd = next;
+        };
+        let fd = {
+            for c in path.components().skip(skip) {
+                let Component::Normal(name) = c else { continue };
+                let name = CString::new(name.as_bytes()).map_err(std::io::Error::other)?;
+                // SAFETY: an open folder and a NUL-ended name
+                let next = Fd(unsafe { libc::openat(fd.0, name.as_ptr(), flags) });
+                OPENED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                if next.0 < 0 {
+                    return Err(last_error());
+                }
+                fd = next;
+            }
+            fd
+        };
+        if let Some(d) = dup(&fd) {
+            OPEN.with(|o| {
+                let mut o = o.borrow_mut();
+                if o.len() >= KEEP {
+                    o.remove(0);
+                }
+                o.push((path.to_path_buf(), d));
+            });
         }
         Ok(fd)
     }
@@ -1223,6 +1271,17 @@ pub fn walk_blocking(
     limits: Limits,
     root_name: &std::ffi::OsStr,
 ) -> (crate::tree::Tree, Status) {
+    walk_blocking_with(source, limits, root_name, &mut |_| {})
+}
+
+/// [`walk_blocking`], telling `progress` the walk's status as it comes
+/// (`--dump-city` says how far it got).
+pub fn walk_blocking_with(
+    source: Source,
+    limits: Limits,
+    root_name: &std::ffi::OsStr,
+    progress: &mut dyn FnMut(&Status),
+) -> (crate::tree::Tree, Status) {
     let (tx, rx) = channel();
     let walker = Walker::start(1, 1, source, limits, tx, Arc::new(|| {}));
     let mut tree = crate::tree::Tree::new(root_name, 0);
@@ -1240,6 +1299,7 @@ pub fn walk_blocking(
                 ..
             }) => {
                 let done = s.done;
+                progress(&s);
                 status = s;
                 if done {
                     break;
@@ -1518,6 +1578,34 @@ mod tests {
             t.nodes
                 .iter()
                 .all(|n| n.kind != Kind::Dir || n.listing == Listing::Listed)
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_chain_thousands_deep_costs_a_call_a_folder() {
+        // (2500 levels, far past the length of a path: read from the
+        // nearest open folder above, never all the names from / again - not
+        // quadratic)
+        let dir = Scratch::new("deep-chain");
+        let made = make_deep(dir.path(), 2500);
+        let before = deep::OPENED.load(std::sync::atomic::Ordering::Relaxed);
+        let t0 = std::time::Instant::now();
+        let (t, status) = walk_blocking(local(dir.path()), Limits::default(), OsStr::new("r"));
+        assert!(status.error.is_none(), "{status:?}");
+        assert!(
+            t.nodes
+                .iter()
+                .any(|n| n.name.as_ref() == OsStr::new("bottom.txt"))
+        );
+        let opened = deep::OPENED.load(std::sync::atomic::Ordering::Relaxed) - before;
+        // (a few calls a deep folder - its own name, the readers taking
+        // turns, a start from / for each - never one per level above it:
+        // the former way took millions here)
+        assert!(opened < made * 8, "{opened} calls for {made} levels");
+        eprintln!(
+            "{made} levels in {:?}, {opened} folders opened one by one",
+            t0.elapsed()
         );
     }
 

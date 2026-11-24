@@ -37,6 +37,23 @@ fn keys_switch_the_camera_and_open_the_menus() {
     h.run_steps(2);
     assert!(h.state_mut().teleport_open);
     h.get_by_label("Islands");
+    // T puts the keyboard in the menu's filter: typed letters filter
+    h.event(egui::Event::Text("sql".into()));
+    h.run_steps(2);
+    assert_eq!(h.state_mut().teleport_filter, "sql");
+    assert!(!h.state_mut().help_open, "letters typed are no shortcuts");
+    // Esc lets the filter go, Esc again closes the menu
+    h.key_press(Key::Escape);
+    h.run_steps(1);
+    h.key_press(Key::Escape);
+    h.run_steps(2);
+    assert!(!h.state_mut().teleport_open);
+    // Esc closes Settings, Sources and Help too
+    h.state_mut().settings_open = true;
+    h.run_steps(1);
+    h.key_press(Key::Escape);
+    h.run_steps(1);
+    assert!(!h.state_mut().settings_open);
     h.key_press(Key::H);
     h.run_steps(2);
     h.get_by_label_contains("capture the mouse");
@@ -198,4 +215,105 @@ fn home_z_and_the_frame_button_see_an_island_whole() {
     assert!(corners_in_view(h.state_mut(), city), "Home");
     let pitch = -h.state_mut().camera.pitch.to_degrees();
     assert!((14.0..=16.0).contains(&pitch), "Home is low: {pitch}");
+}
+
+/// Far towers drawn higher than they are: the pointer on the raised part
+/// picks the tower (or something drawn in front of it) - never nothing.
+fn raised_towers_are_picked(files: usize) {
+    use axross_files_matrix::math::vec3;
+    let s = Scratch::new(&format!("pick-raised-{files}"));
+    let mut o = options(&s);
+    o.synthetic = Some(files);
+    o.hardware = false;
+    o.fixed_lod = false;
+    let mut h = Harness::builder()
+        .allow_missing_glyphs()
+        .with_size(egui::vec2(1280.0, 800.0))
+        .with_max_steps(32)
+        .build_eframe(move |cc| App::new(cc, o));
+    assert!(h.state_mut().settle(Duration::from_secs(300)));
+    let (c, side) = {
+        let city = h.state_mut().islands[0].city.as_ref().unwrap();
+        (city.center(), city.side())
+    };
+    h.state_mut()
+        .look_from(c + vec3(side * 1.15, side * 0.3, side * 0.35), c);
+    h.run_steps(3);
+    let app = h.state_mut();
+    let raise = app.raise();
+    let city = app.islands[0].city.as_ref().unwrap();
+    let off = vec3(city.offset[0], 0.0, city.offset[1]);
+    // the far buildings drawn: towers over far blocks and opened far ones
+    let mut far: Vec<u32> = city.towers_drawn.clone();
+    far.sort_by(|a, b| {
+        let ha = city.boxes[*a as usize].max.y - city.boxes[*a as usize].min.y;
+        let hb = city.boxes[*b as usize].max.y - city.boxes[*b as usize].min.y;
+        hb.total_cmp(&ha)
+    });
+    let px = |ndc: [f32; 2]| ndc[1] * 0.5 * 739.0;
+    let (mut tried, mut tower, mut nothing) = (0, 0, 0);
+    for &b in far.iter().take(400) {
+        let mut real = city.boxes[b as usize];
+        real.min += off;
+        real.max += off;
+        let drawn = raise.aabb(0, false, real);
+        let top_mid = |y: f32| {
+            vec3(
+                (drawn.min.x + drawn.max.x) * 0.5,
+                y,
+                (drawn.min.z + drawn.max.z) * 0.5,
+            )
+        };
+        let (Some(drawn_top), Some(real_top)) = (
+            app.to_ndc(top_mid(drawn.max.y)),
+            app.to_ndc(top_mid(real.max.y)),
+        ) else {
+            continue;
+        };
+        // (only where the drawn top stands 6 pixels or more over the real one)
+        if px(drawn_top) - px(real_top) < 6.0
+            || drawn_top[0].abs() > 0.95
+            || drawn_top[1].abs() > 0.95
+        {
+            continue;
+        }
+        // a point on the raised part, a little under the drawn top
+        let y = drawn.max.y - (drawn.max.y - real.max.y) * 0.25;
+        let Some(at) = app.to_ndc(top_mid(y)) else {
+            continue;
+        };
+        tried += 1;
+        match app.pick_ndc(at) {
+            Some((_, n)) if n == city.layout.buildings[b as usize].node => tower += 1,
+            Some(_) => {}
+            None => nothing += 1,
+        }
+        if tried >= 150 {
+            break;
+        }
+    }
+    eprintln!("{files}: {tried} raised towers tried: {tower} picked themselves, {nothing} nothing");
+    assert!(tried >= 20, "{tried}");
+    assert_eq!(
+        nothing, 0,
+        "the pointer on a drawn tower always picks something"
+    );
+    assert!(
+        tower * 2 >= tried,
+        "most pick the tower itself: {tower} of {tried}"
+    );
+}
+
+#[test]
+fn raised_far_towers_are_picked_200k() {
+    raised_towers_are_picked(200_000);
+}
+
+#[test]
+fn raised_far_towers_are_picked_2m() {
+    if std::env::var_os("AFM_BIG").is_none() {
+        eprintln!("SKIPPED: AFM_BIG=1 picks the towers of two million files");
+        return;
+    }
+    raised_towers_are_picked(2_000_000);
 }

@@ -232,6 +232,9 @@ pub struct IslandCity {
     /// index; their building ranges are hidden) and tiles.
     pub collapsed: Vec<u32>,
     pub collapsed_tiles: Vec<u32>,
+    /// The towers drawn over this frame's blocks (building indices):
+    /// picked as they are drawn.
+    pub towers_drawn: Vec<u32>,
     tile_hidden: Vec<bool>,
     /// Where the island is to stand (instances for it asked of the layout
     /// thread; None: where it stands).
@@ -271,6 +274,7 @@ impl IslandCity {
             inst: Arc::new(IslandInstances::default()),
             collapsed: Vec::new(),
             collapsed_tiles: Vec::new(),
+            towers_drawn: Vec::new(),
             tile_hidden: vec![false; tiles],
             target: None,
             shown: true,
@@ -381,9 +385,10 @@ pub struct Lod {
     /// Labels: districts and buildings larger than these.
     pub label_district: f32,
     pub label_building: f32,
-    /// How the shader raises far roofs ([`crate::render::far_look`]; all
-    /// zero: not at all): what is culled is that high.
-    pub look: [f32; 4],
+    /// How the shader raises far roofs and widens far towers
+    /// ([`crate::render::Raise`]; NONE: not at all): what is culled is
+    /// that high, the labels stand on the roofs drawn.
+    pub raise: crate::render::Raise,
 }
 
 impl Default for Lod {
@@ -395,7 +400,7 @@ impl Default for Lod {
             open: 0.12,
             label_district: 0.2,
             label_building: 0.08,
-            look: [0.0; 4],
+            raise: crate::render::Raise::NONE,
         }
     }
 }
@@ -424,6 +429,7 @@ pub fn select(
     out.collapsed = 0;
     for (k, island) in islands.iter_mut().enumerate() {
         island.collapsed.clear();
+        island.towers_drawn.clear();
         for &t in &island.collapsed_tiles {
             if let Some(h) = island.tile_hidden.get_mut(t as usize) {
                 *h = false;
@@ -437,7 +443,7 @@ pub fn select(
         // size on the screen as it is - the level of detail unchanged)
         let ab = island.aabb();
         let mut raised = ab;
-        raised.max.y *= crate::render::stretch_at(lod.look, f32::MAX);
+        raised.max.y *= crate::render::stretch_at(lod.raise.look, f32::MAX);
         if !island.shown || !frustum.intersects(&raised) {
             continue;
         }
@@ -482,7 +488,7 @@ pub fn select(
             let mut raised = b;
             // (as high as the shader may draw its farthest corner)
             let reach = distance_to(&b, eye) + r.w() + r.h();
-            raised.max.y *= crate::render::stretch_at(lod.look, reach);
+            raised.max.y *= crate::render::stretch_at(lod.raise.look, reach);
             if !frustum.intersects(&raised) {
                 i = dist.end as usize;
                 continue;
@@ -500,11 +506,13 @@ pub fn select(
                 out.opaque.push(inst.blocks[i]);
                 // its tallest buildings still stand over the block
                 towers(
+                    &layout,
                     &inst,
                     dist.tall,
                     near,
                     angle < lod.collapse * 0.5,
                     &mut out.opaque,
+                    &mut island.towers_drawn,
                 );
                 island.collapsed.push(i as u32);
                 out.collapsed += 1;
@@ -537,7 +545,7 @@ pub fn select(
                     };
                     let mut raised = tb;
                     let reach = distance_to(&tb, eye) + tr.w() + tr.h();
-                    raised.max.y *= crate::render::stretch_at(lod.look, reach);
+                    raised.max.y *= crate::render::stretch_at(lod.raise.look, reach);
                     if !frustum.intersects(&raised) {
                         continue;
                     }
@@ -545,11 +553,13 @@ pub fn select(
                     if ta < lod.collapse {
                         out.opaque.push(inst.tiles[t as usize]);
                         towers(
+                            &layout,
                             &inst,
                             tile.tall,
                             distance_to(&tb, eye).max(0.5),
                             ta < lod.collapse * 0.5,
                             &mut out.opaque,
+                            &mut island.towers_drawn,
                         );
                         island.collapsed_tiles.push(t);
                         island.tile_hidden[t as usize] = true;
@@ -571,7 +581,14 @@ pub fn select(
                         continue;
                     }
                     let (cx, cz) = b.rect.center();
-                    let top = vec3(ox + cx, b.base + b.height, oz + cz);
+                    // (on the roof as drawn: raised far away)
+                    let (rmin, rsize) = lod.raise.apply(
+                        0,
+                        island.ring == Ring::Hardware,
+                        vec3(ox + b.rect.x0, b.base, oz + b.rect.z0),
+                        vec3(b.rect.w().max(0.0), b.height, b.rect.h().max(0.0)),
+                    );
+                    let top = vec3(ox + cx, rmin.y + rsize.y, oz + cz);
                     let s = b.rect.w().max(b.rect.h()).max(b.height * 0.5);
                     let a = s / (top - eye).length().max(0.5);
                     if a > lod.label_building {
@@ -599,22 +616,28 @@ const TOWER_SEEN: f32 = 0.0045;
 /// the size that collapses (`small`) keeps only its tallest - the skyline
 /// at the price of a few boxes.
 fn towers(
+    layout: &CityLayout,
     inst: &IslandInstances,
     tall: (u32, u32),
     near: f32,
     small: bool,
     out: &mut Vec<Instance>,
+    drawn: &mut Vec<u32>,
 ) {
     let seen = TOWER_SEEN * near;
-    let all = inst
-        .towers
-        .get(tall.0 as usize..tall.1 as usize)
-        .unwrap_or(&[]);
-    for i in all.iter().take(if small { 1 } else { all.len() }) {
+    let range = tall.0 as usize..tall.1 as usize;
+    let all = inst.towers.get(range.clone()).unwrap_or(&[]);
+    let which = layout.tall.get(range).unwrap_or(&[]);
+    for (i, b) in all
+        .iter()
+        .zip(which)
+        .take(if small { 1 } else { all.len() })
+    {
         if i.size[1] <= seen {
             break;
         }
         out.push(*i);
+        drawn.push(*b);
     }
 }
 
@@ -662,38 +685,79 @@ pub struct Hit {
     pub aabb: Aabb,
 }
 
-/// The first building, collapsed block or district floor along `ray`.
-pub fn pick(islands: &[&IslandCity], ray: &Ray) -> Option<Hit> {
+/// The first building, collapsed block or district floor along `ray` -
+/// as drawn (`raise`: far roofs raised, far towers widened, as the shader
+/// does; the hit's box is the thing's own, for the highlight).
+pub fn pick(islands: &[&IslandCity], ray: &Ray, raise: &crate::render::Raise) -> Option<Hit> {
     let mut best: Option<Hit> = None;
+    let most = raise.look[0].max(1.0);
     for (k, island) in islands.iter().enumerate() {
-        if !island.shown || ray.hit_aabb(&island.aabb(), f32::MAX).is_none() {
+        let hw = island.ring == Ring::Hardware;
+        let mut ab = island.aabb();
+        ab.max.y *= if hw { 1.0 } else { most };
+        if !island.shown || ray.hit_aabb(&ab, f32::MAX).is_none() {
             continue;
         }
         let [ox, oz] = island.offset;
+        let off = vec3(ox, 0.0, oz);
         let local = Ray {
-            origin: ray.origin - vec3(ox, 0.0, oz),
+            origin: ray.origin - off,
             dir: ray.dir,
+        };
+        let here = crate::render::Raise {
+            eye: raise.eye - off,
+            ..*raise
         };
         let limit = best.map_or(f32::MAX, |h| h.t);
         let keep = |b: u32| !island.hidden(b);
-        if let Some((b, t)) = island.bvh.raycast(&local, &island.boxes, limit, &keep) {
+        let item = |b: u32| here.aabb(0, hw, island.boxes[b as usize]);
+        // (a node grown as its items may be: higher, and wider by a pixel
+        // at its far side)
+        let grow = |n: &Aabb| {
+            if hw {
+                return *n;
+            }
+            let c = n.center();
+            let far = ((c.x - here.eye.x).powi(2) + (c.z - here.eye.z).powi(2)).sqrt()
+                + (n.max.x - n.min.x).max(n.max.z - n.min.z);
+            let px = far * here.lens / here.height.max(1.0);
+            Aabb {
+                min: vec3(n.min.x - px, n.min.y, n.min.z - px),
+                max: vec3(n.max.x + px, n.max.y.max(0.0) * most + 0.01, n.max.z + px),
+            }
+        };
+        let found = |b: u32, t: f32, best: &mut Option<Hit>| {
             let bld = &island.layout.buildings[b as usize];
             let mut aabb = island.boxes[b as usize];
-            aabb.min += vec3(ox, 0.0, oz);
-            aabb.max += vec3(ox, 0.0, oz);
-            best = Some(Hit {
+            aabb.min += off;
+            aabb.max += off;
+            *best = Some(Hit {
                 island: k,
                 node: bld.node,
                 t,
                 aabb,
             });
+        };
+        if let Some((b, t)) = island.bvh.raycast_drawn(&local, limit, &grow, &item, &keep) {
+            found(b, t, &mut best);
+        }
+        // the towers standing over far blocks, as drawn
+        for &b in &island.towers_drawn {
+            let Some(bx) = island.boxes.get(b as usize) else {
+                continue;
+            };
+            if let Some(t) = local.hit_aabb(&here.aabb(0, hw, *bx), best.map_or(f32::MAX, |h| h.t))
+            {
+                found(b, t, &mut best);
+            }
         }
         for &t in &island.collapsed_tiles {
             let Some(inst) = island.inst.tiles.get(t as usize) else {
                 continue;
             };
             let aabb = inst.aabb();
-            if let Some(tt) = ray.hit_aabb(&aabb, best.map_or(f32::MAX, |h| h.t)) {
+            if let Some(tt) = ray.hit_aabb(&raise.aabb(1, hw, aabb), best.map_or(f32::MAX, |h| h.t))
+            {
                 let tile = &island.layout.tiles[t as usize];
                 best = Some(Hit {
                     island: k,
@@ -708,7 +772,8 @@ pub fn pick(islands: &[&IslandCity], ray: &Ray) -> Option<Hit> {
                 continue;
             };
             let aabb = inst.aabb();
-            if let Some(t) = ray.hit_aabb(&aabb, best.map_or(f32::MAX, |h| h.t)) {
+            if let Some(t) = ray.hit_aabb(&raise.aabb(1, hw, aabb), best.map_or(f32::MAX, |h| h.t))
+            {
                 best = Some(Hit {
                     island: k,
                     node: island.layout.districts[d as usize].node,
@@ -1044,7 +1109,11 @@ mod tests {
         // raised roofs (the shader's stretch): the same choice of what is
         // a block and what opens - only the culling is taller
         let raised = Lod {
-            look: crate::render::far_look(c.side(), c.layout.top),
+            raise: crate::render::Raise {
+                look: crate::render::far_look(c.side(), c.layout.top),
+                eye,
+                ..crate::render::Raise::NONE
+            },
             ..lod
         };
         let mut tall = FrameSet::default();
@@ -1157,7 +1226,7 @@ mod tests {
             origin: top,
             dir: vec3(0.0, -1.0, 0.0),
         };
-        let hit = pick(&[&c], &ray).unwrap();
+        let hit = pick(&[&c], &ray, &crate::render::Raise::NONE).unwrap();
         assert_eq!(hit.node, b.node);
         assert!((hit.t - 50.0).abs() < 1e-2);
         assert!(t.get(hit.node).is_some());
@@ -1174,7 +1243,7 @@ mod tests {
             origin: vec3(-100.0, 10.0, -100.0),
             dir: vec3(0.0, -1.0, 0.0),
         };
-        assert!(pick(&[&c], &miss).is_none());
+        assert!(pick(&[&c], &miss, &crate::render::Raise::NONE).is_none());
     }
 
     #[test]

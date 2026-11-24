@@ -140,7 +140,14 @@ fn veil_at(uv: vec2<f32>) -> f32 {
 // sRGB-encoded (and the tests' signal) - what the flash guard measures
 fn raw_at(uv: vec2<f32>) -> vec3<f32> {
     let c = textureSampleLevel(t0, s, uv, 0.0).rgb + textureSampleLevel(t1, s, uv, 0.0).rgb * g.rain.w;
-    let o = to_srgb(1.0 - exp(-c * g.params.y));
+    var o = to_srgb(1.0 - exp(-c * g.params.y));
+    // (while the view moves fast, a little of the picture's slow average:
+    // a motion blur - what sweeps past is softened in time, never a
+    // flicker; still, none)
+    let m = g.lens.y * 0.5;
+    if (m > 0.001) {
+        o = mix(o, textureSampleLevel(t2, s, uv, 0.0).rgb, m);
+    }
     // (the tests' signal: the whole picture flashing - for the guard)
     return mix(o, vec3<f32>(0.85, 0.9, 0.85), g.debug.x);
 }
@@ -168,13 +175,13 @@ fn fs_final(in: FullOut) -> @location(0) vec4<f32> {
     // vignette
     let q = in.uv * 2.0 - 1.0;
     o *= mix(1.0, smoothstep(1.6, 0.35, length(q)), 0.4);
-    // the flash guard's veil: towards the picture's own slow average,
-    // darkened as the veil deepens - a fade through black, not a ghost of
-    // the view before
+    // the flash guard's veil: towards the picture's own slow average
+    // (a third of a second: what flickers is held still), dimmed by at
+    // most 40 % - never black: the city stays in sight where it is calmed
     if (g.params.z > 0.5) {
         let v = clamp(veil_at(in.uv), 0.0, 0.95);
         let slow = textureSampleLevel(t2, s, in.uv, 0.0).rgb;
-        let ground = slow * mix(1.0, 0.2, v);
+        let ground = slow * mix(1.0, 0.6, v);
         o = mix(o, ground, v);
     }
     return vec4<f32>(clamp(o, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0);
@@ -188,19 +195,25 @@ fn fs_history(in: FullOut) -> @location(0) vec4<f32> {
     return vec4<f32>(mix(prev, now, g.params.w), 1.0);
 }
 
-// a cell's mean relative luminance and saturated red (WCAG), from 4 x 4
-// taps of the picture as the city makes it (before the veil: the guard
-// keeps seeing the danger it veils)
+// a cell's mean relative luminance and saturated red (WCAG), over its
+// area - 16 x 16 taps, an area's mean: a thin lit line moving a pixel
+// changes it by little, as it changes what an eye sees by little (a few
+// point taps would swing with every edge that crosses one) - of the
+// picture as the city makes it (before the veil: the guard keeps seeing
+// the danger it veils)
+const LUMA_TAPS: i32 = 16;
+
 @fragment
 fn fs_luma(in: FullOut) -> @location(0) vec4<f32> {
     // (the grid's size: crate::flash::GRID_W x GRID_H)
     let cells = vec2<f32>(48.0, 27.0);
     let base = floor(in.pos.xy) / cells;
+    let n = f32(LUMA_TAPS);
     var l = 0.0;
     var red = 0.0;
-    for (var y = 0; y < 4; y++) {
-        for (var x = 0; x < 4; x++) {
-            let uv = base + (vec2<f32>(f32(x), f32(y)) + 0.5) / (4.0 * cells);
+    for (var y = 0; y < LUMA_TAPS; y++) {
+        for (var x = 0; x < LUMA_TAPS; x++) {
+            let uv = base + (vec2<f32>(f32(x), f32(y)) + 0.5) / (n * cells);
             let c = from_srgb(raw_at(uv));
             l += luma(c);
             let sum = c.r + c.g + c.b;
@@ -210,7 +223,8 @@ fn fs_luma(in: FullOut) -> @location(0) vec4<f32> {
         }
     }
     // (8 bits each: the red value over its largest, 320)
-    return vec4<f32>(l / 16.0, red / 16.0 / 320.0, 0.0, 1.0);
+    let taps = n * n;
+    return vec4<f32>(l / taps, red / taps / 320.0, 0.0, 1.0);
 }
 
 // into egui's frame (its own encoding)

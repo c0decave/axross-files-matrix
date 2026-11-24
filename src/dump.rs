@@ -5,7 +5,7 @@
 
 use crate::layout::{CityLayout, Params, Placed, layout, snapshot};
 use crate::tree::{Kind, NodeId, Tree, display_name};
-use crate::walk::{Limits, Source, Status, walk_blocking};
+use crate::walk::{Limits, Source, Status, walk_blocking_with};
 use serde_json::{Value, json};
 use std::path::Path;
 
@@ -45,7 +45,17 @@ pub fn city_of(root: &Path, synthetic: Option<usize>) -> (Tree, CityLayout, Stat
     } else {
         root.as_os_str().to_os_string()
     };
-    let (tree, status) = walk_blocking(source, Limits::default(), &name);
+    // (a long walk says how far it got, on stderr, once a second)
+    let mut said = std::time::Instant::now();
+    let (tree, status) = walk_blocking_with(source, Limits::default(), &name, &mut |s| {
+        if said.elapsed() >= std::time::Duration::from_secs(1) && !s.done {
+            said = std::time::Instant::now();
+            eprintln!(
+                "axross-files-matrix: walking: {} entries, {} folders to go",
+                s.entries, s.folders_left
+            );
+        }
+    });
     let walked = t0.elapsed().as_secs_f64();
     let t1 = std::time::Instant::now();
     let l = layout(&snapshot(&tree), &Params::default());

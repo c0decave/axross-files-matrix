@@ -8,31 +8,28 @@ goes to CI, into a repository or into a package. The program's update
 `SHA256SUMS` by the key pinned in the program (`UPDATE_PUBLIC_KEY`, in
 `TRUSTED_KEYS`).
 
-## Before the first release: the key
+## The key
 
-`UPDATE_PUBLIC_KEY` in `src/update.rs` is a **placeholder** (32 zero bytes)
-until the maintainer pins the real key. While it is, the program checks for
-no update at all and the Updates window only points to the releases page;
-`scripts/sign_release.py` refuses to sign (no key is pinned).
+The release key is pinned: `UPDATE_PUBLIC_KEY` in `src/update.rs` holds
+its Ed25519 public half (base64
+`7Q1+QXpJXtHCjQa9yR65Ht9Bk/AURDLu7vfeJYN1kT4=`), and `TRUSTED_KEYS` lists
+it. Its private half stays on the maintainer's machine, outside every
+checkout, in a folder of mode 0700; CI never sees it. A test checks the
+pinned key; another that an all-zero key verifies nothing (the program
+then checks for no update and only points to the releases page).
 
-1. On the maintainer's machine, outside every checkout (a folder of mode
-   0700):
-
-   ```sh
-   scripts/sign_release.py keygen --key PATH/afm-update-signing.pem
-   ```
-
-   It writes the Ed25519 private key (PEM, PKCS#8, mode 0600) and prints the
-   public half as base64 and as Rust bytes. Back the private key up
-   offline: without it no release can be signed for the copies installed.
-2. Put the printed Rust bytes into `UPDATE_PUBLIC_KEY` in `src/update.rs`
-   (replacing the zeros), with a comment naming the key and the release it
-   is pinned from. `scripts/sign_release.py pubkey --key KEY` prints them
-   again.
-3. Rotating later: pin the new key beside the old one in `TRUSTED_KEYS` and
-   release with the old one; from the release after that, sign with the new
-   key; drop the old one once the releases still pinning only it are no
-   longer in use.
+- A new key (only to replace or rotate this one) is made on the
+  maintainer's machine: `scripts/sign_release.py keygen --key
+  PATH/afm-update-signing.pem`. It refuses a path inside a git work tree
+  and a folder others may read; it writes the private key (PEM, PKCS#8,
+  mode 0600) and prints the public half as base64 and as Rust bytes
+  (`scripts/sign_release.py pubkey --key KEY` prints them again). Back the
+  private key up offline: without it no release can be signed for the
+  copies installed.
+- Rotating: pin the new key beside the old one in `TRUSTED_KEYS` and
+  release with the old one; from the release after that, sign with the new
+  key; drop the old one once the releases still pinning only it are no
+  longer in use.
 
 ## Steps
 

@@ -587,6 +587,88 @@ const RUNS: &[&str] = &[
     "shb",
     "shs",
     "ws",
+    "xlsb",
+    "xla",
+    "xlt",
+    "dot",
+    "pps",
+    "pot",
+    "pyc",
+    "pyo",
+    "pyzw",
+    "ahk",
+    "au3",
+    "rdp",
+    "wsb",
+    "msu",
+    "cab",
+    "vsto",
+    "xbap",
+    "fileloc",
+    "scptd",
+    "prefpane",
+    "saver",
+    "qlgenerator",
+    "osax",
+    "wdgt",
+    "appex",
+    "xpc",
+    "mdimporter",
+    "plugin",
+    "service",
+    "jse",
+    "lnk",
+    "ps2",
+    "mof",
+    "hlp",
+    "grp",
+    "cpx",
+    "sys",
+];
+
+/// Folders that are programs: a macOS bundle by its type (`Evil.app`, an
+/// Automator workflow, a preference pane ...). Opened with the default
+/// program they run: always asked about.
+const BUNDLES: &[&str] = &[
+    "app",
+    "workflow",
+    "action",
+    "prefpane",
+    "saver",
+    "qlgenerator",
+    "kext",
+    "pkg",
+    "mpkg",
+    "scptd",
+    "terminal",
+    "wdgt",
+    "osax",
+    "appex",
+    "xpc",
+    "plugin",
+    "bundle",
+    "mdimporter",
+    "service",
+    "systemextension",
+    "dext",
+];
+
+/// Names without a type, and text types, that a desktop opens by their
+/// content: a web page or a Java Web Start file in one opens in a browser
+/// (or Java) and runs its scripts.
+const SNIFFED_TEXT: &[&str] = &[
+    "",
+    "xml",
+    "xsl",
+    "xslt",
+    "xsd",
+    "dtd",
+    "lst",
+    "lock",
+    "env",
+    "nfo",
+    "plist",
+    "properties",
 ];
 
 /// The family of a lower-case extension (None: not an everyday type).
@@ -632,6 +714,30 @@ pub fn sniff_mismatch(family: Family, ext: &str, head: &[u8]) -> Option<String> 
         || start.starts_with(b"<html")
         || start.starts_with(b"<script")
         || start.starts_with(b"<svg") && family != Family::Text;
+    // (a text that is a web page - XHTML too, or a Java Web Start file -
+    // under a name the desktop opens by its content)
+    let web = html
+        || start.starts_with(b"<svg")
+        || start.starts_with(b"<jnlp")
+        || (start.starts_with(b"<?xml")
+            && head.windows(5).take(1024).any(|w| {
+                w.eq_ignore_ascii_case(b"<html")
+                    || w.eq_ignore_ascii_case(b"<jnlp")
+                    || w.eq_ignore_ascii_case(b"<svg ")
+            }));
+    if family == Family::Text && web && SNIFFED_TEXT.contains(&ext) {
+        return Some(
+            "its content is a web page or a Java Web Start file (it may open in a browser and \
+             run its scripts)"
+                .into(),
+        );
+    }
+    // (PostScript in a PDF's name: a program for the viewer)
+    if family == Family::Pdf && head.starts_with(b"%!") {
+        return Some(format!(
+            "its content is PostScript (a program), not what a .{ext} file holds"
+        ));
+    }
     let zip = head.starts_with(b"PK\x03\x04") || head.starts_with(b"PK\x05\x06");
     let ole2 = head.starts_with(&[0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
     let content = if html && family != Family::Text {
@@ -646,6 +752,75 @@ pub fn sniff_mismatch(family: Family, ext: &str, head: &[u8]) -> Option<String> 
     Some(format!(
         "its content is {content}, not what a .{ext} file holds"
     ))
+}
+
+/// Why a folder is a program when opened with the default program: a
+/// macOS bundle (by its type, or `Contents/Info.plist` in it), a Linux
+/// AppDir (`AppRun` in it), a Windows folder made into a shortcut or a
+/// control (`desktop.ini`, a `{CLSID}` name).
+pub fn folder_runs(path: &Path) -> Option<&'static str> {
+    let name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_ascii_lowercase())
+        .unwrap_or_default();
+    let ext = name.rsplit_once('.').map(|(_, e)| e).unwrap_or("");
+    if BUNDLES.contains(&ext) || path.join("Contents").join("Info.plist").exists() {
+        return Some("it is an application bundle: opening it runs it");
+    }
+    if path.join("AppRun").exists() {
+        return Some("it is an application folder (AppRun): opening it can run it");
+    }
+    if path.join("desktop.ini").exists() || (name.contains(".{") && name.ends_with('}')) {
+        return Some("it is a folder Windows may treat as a program or a shortcut");
+    }
+    None
+}
+
+/// What a path is, to see that it has not changed between the check and
+/// the opening: its device and inode (elsewhere its length and time), and
+/// whether it is a link, a folder or a plain file.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Identity {
+    pub dev: u64,
+    pub ino: u64,
+    /// 0 a file, 1 a folder, 2 a link, 3 anything else.
+    pub kind: u8,
+}
+
+pub fn identity(path: &Path) -> Option<Identity> {
+    let m = std::fs::symlink_metadata(path).ok()?;
+    let ft = m.file_type();
+    let kind = if ft.is_symlink() {
+        2
+    } else if ft.is_dir() {
+        1
+    } else if ft.is_file() {
+        0
+    } else {
+        3
+    };
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        Some(Identity {
+            dev: m.dev(),
+            ino: m.ino(),
+            kind,
+        })
+    }
+    #[cfg(not(unix))]
+    {
+        let t = m
+            .modified()
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map_or(0, |d| d.as_nanos() as u64);
+        Some(Identity {
+            dev: m.len(),
+            ino: t,
+            kind,
+        })
+    }
 }
 
 /// Why opening a file with the default program needs a question first.
@@ -674,6 +849,9 @@ impl Risk {
 pub fn risk_of(path: &Path, untrusted: Option<&str>, trusted: &[String]) -> Option<Risk> {
     let meta = std::fs::symlink_metadata(path).ok();
     if meta.as_ref().is_some_and(|m| m.is_dir()) {
+        if let Some(why) = folder_runs(path) {
+            return Some(Risk::always(why));
+        }
         // (a folder opens in the file manager)
         return untrusted.map(|u| Risk::always(format!("it lies on {u}")));
     }
@@ -1094,6 +1272,89 @@ mod tests {
             ),
             None
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn bundles_web_pages_under_text_names_and_types_that_run_ask() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = crate::testdir::Scratch::new("risk-bundles");
+        let d = dir.path();
+        // macOS bundles, a Linux AppDir, a Windows shortcut folder
+        for name in [
+            "Evil.app",
+            "Auto.workflow",
+            "X.prefPane",
+            "Y.kext",
+            "Z.saver",
+        ] {
+            std::fs::create_dir_all(d.join(name)).unwrap();
+            let r = risk_of(&d.join(name), None, &[]).unwrap_or_else(|| panic!("{name}"));
+            assert!(r.why.contains("bundle"), "{name}: {}", r.why);
+            assert_eq!(r.unknown, None);
+        }
+        std::fs::create_dir_all(d.join("Plain/Contents")).unwrap();
+        std::fs::write(d.join("Plain/Contents/Info.plist"), "<plist/>").unwrap();
+        assert!(
+            risk_of(&d.join("Plain"), None, &[]).is_some(),
+            "a bundle by its content"
+        );
+        std::fs::create_dir_all(d.join("tool.AppDir")).unwrap();
+        std::fs::write(d.join("tool.AppDir/AppRun"), "x").unwrap();
+        assert!(risk_of(&d.join("tool.AppDir"), None, &[]).is_some());
+        std::fs::create_dir_all(d.join("odd")).unwrap();
+        std::fs::write(d.join("odd/desktop.ini"), "[.ShellClassInfo]").unwrap();
+        assert!(risk_of(&d.join("odd"), None, &[]).is_some());
+        std::fs::create_dir_all(d.join("plain folder")).unwrap();
+        assert_eq!(risk_of(&d.join("plain folder"), None, &[]), None);
+        let file = |name: &str, body: &[u8]| {
+            let p = d.join(name);
+            std::fs::write(&p, body).unwrap();
+            std::fs::set_permissions(&p, std::fs::Permissions::from_mode(0o644)).unwrap();
+            p
+        };
+        // a web page with a script under names a desktop opens by content
+        let page = b"<!DOCTYPE html><script>steal()</script>";
+        for name in ["LICENSE", "VERSION", "TODO", "x.lst", "x.lock", "x.env"] {
+            let r = risk_of(&file(name, page), None, &[]).unwrap_or_else(|| panic!("{name}"));
+            assert!(r.why.contains("web page"), "{name}: {}", r.why);
+        }
+        let xhtml =
+            b"<?xml version=\"1.0\"?><html xmlns=\"http://www.w3.org/1999/xhtml\"><script/></html>";
+        assert!(risk_of(&file("x.xml", xhtml), None, &[]).is_some());
+        assert!(risk_of(&file("x.xsl", xhtml), None, &[]).is_some());
+        assert!(risk_of(&file("launch.lst", b"<jnlp spec=\"1.0\">"), None, &[]).is_some());
+        // plain text under those names: opened
+        assert_eq!(risk_of(&file("README", b"just words"), None, &[]), None);
+        assert_eq!(
+            risk_of(&file("y.xml", b"<?xml version=\"1.0\"?><a/>"), None, &[]),
+            None
+        );
+        // PostScript in a .pdf
+        assert!(risk_of(&file("p.pdf", b"%!PS-Adobe-3.0"), None, &[]).is_some());
+        // types that run: asked, and never to be trusted away
+        for ext in [
+            "xlsb", "xla", "xlt", "pps", "pyc", "pyzw", "ahk", "au3", "rdp", "wsb", "msu", "cab",
+            "vsto", "xbap", "fileloc",
+        ] {
+            let r = risk_of(&file(&format!("f.{ext}"), b"x"), None, &[ext.to_string()])
+                .unwrap_or_else(|| panic!("{ext}"));
+            assert_eq!(r.unknown, None, "{ext} can never be trusted for good");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn the_identity_sees_a_file_swapped_for_a_link() {
+        let dir = crate::testdir::Scratch::new("identity");
+        let p = dir.path().join("a.txt");
+        std::fs::write(&p, "x").unwrap();
+        let before = identity(&p).unwrap();
+        assert_eq!(identity(&p), Some(before));
+        std::fs::remove_file(&p).unwrap();
+        std::os::unix::fs::symlink("/etc/hostname", &p).unwrap();
+        assert_ne!(identity(&p), Some(before));
+        assert_eq!(identity(&p).unwrap().kind, 2);
     }
 
     #[cfg(unix)]

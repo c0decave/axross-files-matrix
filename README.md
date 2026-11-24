@@ -87,10 +87,29 @@ Or with cargo: `cargo install axross-files-matrix`.
 It needs a GPU that Vulkan, Metal, DirectX 12 or OpenGL can reach (a
 software renderer works, slowly).
 
-For remote backends install axross's MCP server -
-`pip install axross-headless-mcp` (or run it once with
-`uvx axross-headless-mcp`) - or axross itself; the city finds it on the
-PATH. Without it: local disks and mounts only.
+For other systems install axross (see *With axross* below). Without it:
+local folders and mounts only - everything else works.
+
+## With axross
+
+[axross](https://github.com/c0decave/axross) is the file manager this city
+belongs to. With **axross 0.15.186 or later** the city does more:
+
+| What | How | Needs |
+|---|---|---|
+| Other systems as islands | axross's MCP server lists its backends and the saved connections of its connection manager; Teleport (T) opens them (read-only, no secret ever asked for or kept) | the MCP server |
+| *Open in axross* (O) | `axross -- PATH`, and for a system `axross --profile=NAME -- PATH` | axross 0.15.186+ on the PATH |
+| Unlocking a system that needs a password | `axross --connection-manager=NAME` opens axross's connection manager, where it is stored | axross 0.15.186+ |
+
+The MCP server is found in this order: the command in *Settings › Server
+command*; `axross-headless-mcp` on the PATH (`pip install
+axross-headless-mcp`); `axross --mcp-server` (axross itself); `uvx
+--offline axross-headless-mcp` (a package uv already has - Settings can let
+uv fetch it). Nothing goes through a shell. *Sources* says what was found:
+the axross program and whether it can open paths, the MCP server's name,
+version, tool count and the command it was started with - or that it was
+not found, and how to install it. A server that ends is noticed and started
+again.
 
 ## GPU
 
@@ -129,6 +148,14 @@ axross-files-matrix -- -odd-name    # after `--` every argument is a folder
 `--help` lists every option. Started from a terminal it goes to the
 background (`--foreground` keeps it there).
 
+**Sources** (the bar's button) lists the islands with what their walks
+found. A folder is added there by its path (`~` is the home folder): it is
+walked at once and is an island again at every start until it is taken
+out with *remove*. One island a folder: the same folder again (through a
+link or `..` too), a folder inside an island and one that holds an island
+are refused with the reason. A walk under way can be stopped (*stop*: what
+it found stays) and read again (*walk again*).
+
 ### Controls
 
 | Key / mouse | |
@@ -139,13 +166,13 @@ background (`--foreground` keeps it there).
 | wheel | flight speed factor; in orbit: zoom |
 | right drag | look around (fly) / turn (orbit) |
 | M | capture the mouse to look (Esc lets go) |
-| Esc | let the mouse go, give a connect up, clear the choice |
+| Esc | let the mouse go, close the Teleport menu, Help, Settings, Sources, give a connect up, clear the choice |
 | F | free flight / orbit and map |
 | drag, Shift+drag | orbit: turn, pan |
 | click | choose (orbit: and fly there); double-click: fly there |
 | / or Ctrl+F | search (text, or a glob like `*.iso`) |
 | N / Enter | fly to the next hit (Shift: teleport) |
-| T | teleport menu: other systems, islands, districts, spots, hits |
+| T | teleport menu (typing filters it): other systems, islands, districts, spots, hits |
 | 1 - 9, Ctrl+1 - 9 | jump to a saved spot, save one |
 | Home | back to the first view (the biggest city, low) |
 | Z | frame the chosen island whole (kept while it grows) |

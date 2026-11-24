@@ -22,7 +22,7 @@ struct Globals {
     params: vec4<f32>,       // x: write linear, y: exposure, z: veil on, w: frame dt
     debug: vec4<f32>,       // x: the tests' flashing signal
     look: vec4<f32>,        // x: most a far roof is raised (0: never), y: how fast, z: the haze's height (m), w: most fog a box gets
-    lens: vec4<f32>,        // x: 2 tan(fov / 2) (metres a pixel = distance * x / height)
+    lens: vec4<f32>,        // x: 2 tan(fov / 2) (metres a pixel = distance * x / height), y: how fast the view moves (0 still .. 1 fast)
 };
 
 @group(0) @binding(0) var<uniform> g: Globals;
@@ -128,7 +128,8 @@ fn sky(dir: vec3<f32>) -> vec3<f32> {
         let r = rain_at(around, elev, g.eye.w);
         // thinner towards the zenith, gone below the horizon
         let fade = smoothstep(-0.02, 0.08, dir.y) * (1.0 - smoothstep(0.9, 1.45, elev));
-        c += g.rain.rgb * r * 0.55 * fade * g.sky_top.w;
+        // (calmer while the view turns: the drops' heads sweep less)
+        c += g.rain.rgb * r * 0.55 * fade * g.sky_top.w * (1.0 - 0.5 * g.lens.y);
     }
     return c;
 }
@@ -159,11 +160,11 @@ fn fs_sea(in: FullOut) -> SeaOut {
     let q = p.xz / 20.0;
     let w = fwidth(q);
     let gl = abs(fract(q - 0.5) - 0.5) / max(w, vec2<f32>(1e-4));
-    let line = 1.0 - min(min(gl.x, gl.y), 1.0);
+    let line = 1.0 - smoothstep(0.0, 1.5, min(gl.x, gl.y));
     let q2 = p.xz / 100.0;
     let w2 = fwidth(q2);
     let gl2 = abs(fract(q2 - 0.5) - 0.5) / max(w2, vec2<f32>(1e-4));
-    let line2 = 1.0 - min(min(gl2.x, gl2.y), 1.0);
+    let line2 = 1.0 - smoothstep(0.0, 1.5, min(gl2.x, gl2.y));
     let fade = exp(-t * 0.0012);
     // the lines fade where they are finer than a pixel (no moire, no
     // scribbles at a grazing angle): by the larger of the two derivatives
@@ -266,13 +267,26 @@ fn vs_box(@builtin(vertex_index) vi: u32, inst: Inst) -> BoxOut {
     var corner = inst.pos;
     let d = length(inst.pos.xz + inst.size.xz * 0.5 - g.eye.xz);
     if (shape <= 1u && (inst.info & 64u) == 0u) {
+        // (the same as crate::render::Raise::apply: picking, the highlight
+        // and the labels follow what is drawn)
+        if (shape == 0u) {
+            // a far tower: never thinner than two pixels (no needles)
+            let want = pixel_at(d) * 2.0;
+            let gx = max(want - size.x, 0.0);
+            let gz = max(want - size.z, 0.0);
+            corner = vec3<f32>(corner.x - gx * 0.5, corner.y, corner.z - gz * 0.5);
+            size = vec3<f32>(size.x + gx, size.y, size.z + gz);
+        }
         // far roofs raised a little (never the machine's parts) - seen
         // from aside; looked down on from above, as they are (no towers
-        // leaning out of the map)
+        // leaning out of the map); a slim tower at most twelve of its
+        // widths high
         let rel = vec3<f32>(d, g.eye.y - inst.pos.y, 0.0);
         let down = clamp(rel.y / max(length(rel), 1e-3), 0.0, 1.0);
         let k = 1.0 - smoothstep(0.55, 0.92, down);
-        size.y *= 1.0 + (stretch_at(d) - 1.0) * k;
+        var f = 1.0 + (stretch_at(d) - 1.0) * k;
+        f = min(f, max(1.0, 12.0 * min(size.x, size.z) / max(size.y, 1e-3)));
+        size.y *= f;
         if (shape == 1u) {
             // a far block stands back from its plate's edge by at least
             // a pixel and a half: the streets stay lit lines
@@ -282,7 +296,7 @@ fn vs_box(@builtin(vertex_index) vi: u32, inst: Inst) -> BoxOut {
         }
     } else if (shape == 5u || shape == 6u) {
         // a pillar and its ring: never thinner than a few pixels
-        let want = pixel_at(d) * select(5.0, 14.0, shape == 6u);
+        let want = pixel_at(d) * select(3.0, 14.0, shape == 6u);
         let grow = max(want - inst.size.x, 0.0);
         corner = vec3<f32>(corner.x - grow * 0.5, corner.y, corner.z - grow * 0.5);
         size = vec3<f32>(size.x + grow, size.y, size.z + grow);
@@ -410,7 +424,9 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
     // edge - the street - stays a line)
     var small = clamp((across_face - 2.0) / 10.0, 0.0, 1.0);
     if (shape == 2u) {
-        small = max(small, 0.45);
+        // (a floor of a few pixels: its outline fades to the floor's glow
+        // - tiny districts' lines would shimmer as the view moves)
+        small = max(small, 0.45 * smoothstep(3.0, 9.0, across_face));
     }
     let lit = 0.35 + 0.65 * max(dot(n, normalize(vec3<f32>(0.35, 0.9, 0.25))), 0.0);
     var c = vec3<f32>(0.0);
@@ -434,8 +450,18 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
                 let win = on * step(0.3, f.x) * step(f.x, 0.7) * step(0.34, f.y) * step(f.y, 0.66);
                 // too small to see: lit specks (the far city's windows)
                 let fine = smoothstep(0.35, 0.9, max(fwidth(across) / cw, fwidth(h) / ch));
-                let far_lit = speckle(across, h, in.seed, p_on * 0.55) * 0.7;
-                let w = mix(win, far_lit, fine);
+                // (fainter while the view moves fast: specks sweeping past
+                // are no flicker)
+                let far_lit = speckle(across, h, in.seed, p_on * 0.55) * 0.7 * (1.0 - 0.65 * g.lens.y);
+                var w = mix(win, far_lit, fine);
+                // windows passing while the view moves: their mean light - a
+                // wall flown along is no strobe
+                // (and while the view moves fast, every window of more than
+                // a few pixels: lit squares sweeping by are what the eye
+                // takes as flicker - back the moment the view rests)
+                let px = min(fwidth(across) / cw, fwidth(h) / ch);
+                let big = 1.0 - smoothstep(0.06, 0.2, px);
+                w = mix(w, p_on * 0.15, big * g.lens.y);
                 c += base * w * (0.22 + 0.55 * glow);
                 // darker towards the street, lighter up high: depth
                 c *= 0.55 + 0.6 * in.local.y;
@@ -444,7 +470,7 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
                     let col = floor(across / 0.55);
                     let speed = 1.2 + hash11(col + in.seed * 50.0) * 2.0;
                     let head = fract(-(h / in.size.y) + t * speed * 0.03 * g.grid.w + hash11(col * 1.7 + in.seed));
-                    let tr = pow(head, 10.0) * (1.0 - fine);
+                    let tr = pow(head, 10.0) * (1.0 - fine) * (1.0 - g.lens.y);
                     c += base * tr * 0.45 * (0.3 + glow);
                 }
             } else {
@@ -454,7 +480,7 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
                 c = base * select(0.025 + 0.05 * glow, 0.09 + 0.12 * glow, block);
                 if (block) {
                     let q = in.local.xz * in.size.xz;
-                    c += base * speckle(q.x, q.y, in.seed + 0.5, 0.18 + 0.3 * glow) * (0.25 + 0.4 * glow);
+                    c += base * speckle(q.x, q.y, in.seed + 0.5, 0.18 + 0.3 * glow) * (0.25 + 0.4 * glow) * (1.0 - 0.65 * g.lens.y);
                 }
             }
             edge_gain = select(1.0, 0.75, block) * (0.55 + 1.6 * glow);
@@ -493,7 +519,7 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
                 let q = (in.local.xz * in.size.xz) / 10.0;
                 let w = fwidth(q);
                 let gl = abs(fract(q - 0.5) - 0.5) / max(w, vec2<f32>(1e-4));
-                let line = 1.0 - min(min(gl.x, gl.y), 1.0);
+                let line = 1.0 - smoothstep(0.0, 1.5, min(gl.x, gl.y));
                 // (thinned with distance, gone below half a pixel)
                 let fine = 1.0 - smoothstep(0.15, 0.45, max(w.x, w.y));
                 c += g.grid.rgb * line * 0.05 * fine;
@@ -527,8 +553,9 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
             let breathe = 0.85 + 0.15 * sin(t * 2.0 * g.grid.w);
             let across = select(in.local.x, in.local.z, abs(n.x) > 0.5);
             let side = 1.0 - abs(across - 0.5) * 2.0;
-            // (close by it fades: a beam, never a white wall)
-            let near = clamp(length(in.world - g.eye.xyz) / 80.0, 0.12, 1.0);
+            // (close by it fades: a beam, never a white wall; fainter while
+            // the view moves fast - beams sweeping past are no flicker)
+            let near = clamp(length(in.world - g.eye.xyz) / 250.0, 0.05, 1.0) * (1.0 - 0.85 * g.lens.y);
             // tinted by what was found, its core a little whiter
             let tint = mix(g.highlight.rgb, base, 0.75 - 0.35 * side * side);
             return vec4<f32>(tint * k * breathe * 0.6 * near * (0.25 + 0.75 * side), 1.0);
@@ -566,7 +593,10 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
         gain = 2.6 + 0.4 * sin(t * 2.6);
         c += g.highlight.rgb * 0.05;
     }
-    c += edge_color * (edge * gain * 1.3 + halo * gain * 0.25) * small;
+    // (the edges' glow a little softer while the view moves fast: lit lines
+    // sweeping across the picture, not flashing)
+    let calm = 1.0 - 0.35 * g.lens.y;
+    c += edge_color * (edge * gain * 1.3 + halo * gain * 0.25) * small * calm;
     // (what the edges give a face too small to draw them: their average)
     c += edge_color * gain * 0.08 * (1.0 - small);
     // far away, bright points are pressed down (no blown-out specks for the
