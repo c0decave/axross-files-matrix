@@ -65,9 +65,15 @@ The first release: the MVP of the spec.
   once on the next start while the new walk runs - and stays, marked, when
   its folder cannot be read any more.
 - **Flight**: free flight (WASD, Q/E, mouse look on the right button or
-  captured with M, Shift faster, the wheel sets the speed), orbit and map
+  captured with M, Shift faster, the wheel a speed factor), orbit and map
   (drag, pan, zoom, click a district to fly there), flights along paths
-  that keep above every roof, walls you slide along.
+  that keep above every roof, walls you slide along. The speed grows with
+  the height over the ground and the world's size (slow in a street, a
+  third of the world a second high up); it eases in and out (no dead stop)
+  and moves in steps of at most 2 m, so a fast flight never passes through
+  a wall or the ground; orbit zooms out to three world widths. Home flies
+  back to the first view; Z (or the inspect panel's *Frame island*) shows
+  the chosen island whole and keeps it framed while it grows.
 - **Teleport to other systems**: the Teleport menu lists every connection
   saved in axross's connection manager (MCP `list_remote_profiles`) - name,
   protocol, host and its state: not open, connecting, walking, open,
@@ -142,24 +148,55 @@ The first release: the MVP of the spec.
   a guard of its process group: its own children end with it, also when
   this program is killed.
 - **A preview never waits on a dead file**: each on a thread of its own,
-  one that does not answer is left behind after five seconds.
-- **The Open guard is an allow-list**: only text, pictures, sound, video
-  and documents without macros open without a question, and only when
-  their first bytes are no program, script or desktop entry.
+  one that does not answer is left behind after five seconds; a request
+  that finds three threads busy for 300 ms gets a fresh one.
+- **The Open guard is an allow-list of everyday types**: text, source
+  code, configuration, documents (the old Office ones too), archives,
+  pictures, sound, video and PDFs open without a question (README,
+  LICENSE, Makefile and the like as well) - when their first bytes agree:
+  no program, script or desktop entry, no web page under a picture's name,
+  no zip under a picture's or a text's, no old Office file (macros) under
+  a docx's. A type nobody listed asks, says it is unknown, and offers "do
+  not ask again for this type" (Settings › Opening asks again). Programs,
+  scripts, shortcuts, links and special files (a pipe, a socket, a
+  device) always ask.
 - **Every script drawn**: fonts for Chinese, Japanese, Korean, Arabic,
   Hebrew, Indic scripts, Thai and symbols are found among the system's on
   a thread of its own (the window never waits for the scan) and added as
   fallbacks; a character no font has is a box, never a stop.
-- **The far view**: no blown-out specks (bright points far away are
-  pressed down, the bloom takes little of one pixel), lit roofs on far
-  blocks, fog that thins with the world's size; the first view frames the
-  biggest city; an empty or failed island is framed whole, its state
-  written large. A teleport clears the guard's veil to black.
+- **The far view**: the first view and Home look across the biggest city
+  15 degrees down, the island whole in the window (2 million files too),
+  the horizon and the rain in its upper third; the Overview button keeps
+  the map. A far district keeps a skyline: its block is as high as the
+  90th percentile of its buildings (never their mean) and its five
+  tallest still stand as towers; far roofs are raised gently with the
+  distance (1 near, growing with its log from 300 m, about a tenth of the
+  city's width in relief); far faces carry lit specks of windows, far
+  blocks stand back from their plates so the streets stay lit lines of at
+  least a pixel and a half, a green glow along the horizon, rain mirrored
+  in the far water, fog tinted green-black that lies low (towers rise out
+  of it) and never takes more than 72 % of a city's contrast; ground grids
+  and faces smaller than a pixel fade to their average (no shimmer). No
+  blown-out specks (bright points far away are pressed down). Search hits
+  are tinted beams a few pixels wide at least, with a ring on the ground;
+  the teleport's warp is strongest at the cut and fades. A connecting
+  island's outline breathes, a failed one is hatched amber with its reason
+  on a line of its own, a system's empty plot carries its protocol written
+  large, an empty folder says so. Near the machine's island the legend
+  names its parts, and their labels are brighter.
 - **Truly idle**: the machine's load wakes the window only for a light
   that moves visibly, and not at all while it rests (hidden, unfocused,
   no frames while idle).
-- **Settings**: a value of the wrong type resets that key alone; the file
-  only the user can read (0600 in a 0700 folder).
+- **Settings**: a value of the wrong type resets that value alone (inside
+  a nested object or a list too: `mcp.enabled`, `bookmarks[2]`), the file
+  as it was is kept as `settings.json.bak` and the window says so; the
+  file only the user can read (0600 in a 0700 folder).
+- **First start and empty states**: a one-line key hint until the first
+  key moves the camera (closable; the Help window keeps it); Help and
+  Settings open tall enough to read; with no folder at all the view says
+  how to add one. Sources adds and removes folders and stops a walk
+  without a restart; Teleport opens at the left above the legend, Sources
+  and Settings at the right. Counts say "1 island", "1 entry".
 - **axross's server, hardened**: answers longer than 32 MiB are read past
   in bounded memory and fail their call at once, as does an answer that is
   no JSON; three such and the server is ended; names with a slash, a

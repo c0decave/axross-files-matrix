@@ -34,6 +34,40 @@ pub struct Globals {
     pub params: [f32; 4],
     /// x: a test signal (a flashing picture the guard must veil; 0 in use).
     pub debug: [f32; 4],
+    /// The far view ([`far_look`]): x the most a far roof is raised (0:
+    /// never), y how fast, z the ground haze's height (m), w the most fog
+    /// a box gets.
+    pub look: [f32; 4],
+    /// x: 2 tan(fov / 2) (metres a pixel at a distance: d * x / height).
+    pub lens: [f32; 4],
+}
+
+/// How much higher the far city is drawn, at most.
+pub const STRETCH_MAX: f32 = 3.5;
+/// The most fog a box gets: a city keeps a quarter of its contrast at
+/// least, at any distance.
+pub const FOG_CAP: f32 = 0.72;
+
+/// The far view's knobs for a world `width` metres wide whose roofs reach
+/// `top` (see [`Globals::look`]): a roof the world's width away is raised
+/// so the city's relief is about a tenth of its width (1.6 to
+/// [`STRETCH_MAX`] times: a wide flat city more than a small tall one).
+pub fn far_look(width: f32, top: f32) -> [f32; 4] {
+    let width = width.max(600.0);
+    let want = (0.12 * width / top.max(1.0)).clamp(1.6, STRETCH_MAX);
+    let x = width / 300.0 - 1.0;
+    let k = (want - 1.0) / (0.5 * (1.0 + x * x).ln());
+    [STRETCH_MAX, k, (top * 0.6).clamp(25.0, 200.0), FOG_CAP]
+}
+
+/// What city.wgsl's `stretch_at` gives a box `d` metres away (1 near,
+/// growing with the log of the distance from 300 m on, eased in).
+pub fn stretch_at(look: [f32; 4], d: f32) -> f32 {
+    if look[0] <= 1.0 {
+        return 1.0;
+    }
+    let x = (d / 300.0 - 1.0).max(0.0);
+    (1.0 + look[1] * 0.5 * (1.0 + x * x).ln()).min(look[0])
 }
 
 /// What one frame draws (shared with the paint callback).
@@ -1180,4 +1214,46 @@ impl CallbackTrait for Paint {
 /// The callback for egui's painter.
 pub fn callback(rect: egui::Rect, frame: Arc<FrameData>) -> egui::PaintCallback {
     egui_wgpu::Callback::new_paint_callback(rect, Paint { frame, rect })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_far_city_is_raised_gently_never_near() {
+        for width in [800.0, 2500.0, 9000.0] {
+            let look = far_look(width, 60.0);
+            // near: as it is
+            assert_eq!(stretch_at(look, 0.0), 1.0);
+            assert_eq!(stretch_at(look, 300.0), 1.0);
+            // eased in: barely more just past 300 m
+            assert!(stretch_at(look, 330.0) < 1.01);
+            // growing, never shrinking, never past the most
+            let mut last = 1.0;
+            for k in 1..200 {
+                let s = stretch_at(look, k as f32 * 100.0);
+                assert!(s >= last && s <= STRETCH_MAX, "{width} {k}: {s}");
+                last = s;
+            }
+            // a world's width away: its relief about a tenth of its width
+            let at_width = stretch_at(look, width);
+            let want = (0.12 * width / 60.0).clamp(1.6, STRETCH_MAX);
+            assert!((at_width - want).abs() < 0.01, "{width}: {at_width} {want}");
+            assert!(stretch_at(look, 1e7) <= STRETCH_MAX);
+        }
+        // off: nothing raised
+        assert_eq!(stretch_at([0.0; 4], 5000.0), 1.0);
+    }
+
+    #[test]
+    fn fog_never_takes_more_than_three_quarters_of_a_city() {
+        const { assert!(FOG_CAP <= 0.75) };
+        let look = far_look(2500.0, 80.0);
+        assert_eq!(look[3], FOG_CAP);
+        // the haze's height follows the roofs, within reason
+        assert!((25.0..=200.0).contains(&look[2]));
+        assert_eq!(far_look(1000.0, 1.0)[2], 25.0);
+        assert_eq!(far_look(1000.0, 1e4)[2], 200.0);
+    }
 }

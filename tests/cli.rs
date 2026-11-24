@@ -19,7 +19,10 @@ fn version_self_test_and_help() {
         format!("axross-files-matrix {}", env!("CARGO_PKG_VERSION"))
     );
     let h = exe().arg("--help").output().unwrap();
-    assert!(String::from_utf8_lossy(&h.stdout).contains("--dump-city"));
+    let help = String::from_utf8_lossy(&h.stdout).into_owned();
+    assert!(help.contains("--dump-city"));
+    // --frame-stats says it makes no frames of its own
+    assert!(help.contains("it makes no frames itself"), "{help}");
     let bad = exe().arg("--frobnicate").output().unwrap();
     assert_eq!(bad.status.code(), Some(2));
     // (the self-test needs the window's libraries; where they are, it answers)
@@ -159,4 +162,27 @@ fn the_benchmark_runs_headless_on_a_small_city() {
         t.contains("adapter: ") && t.contains("draw calls") && t.contains("p99"),
         "{t}"
     );
+}
+
+#[test]
+fn the_release_container_is_pinned_or_says_how_to_pin_it() {
+    let wf = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/.github/workflows/release.yml"
+    ))
+    .unwrap();
+    for line in wf
+        .lines()
+        .filter(|l| l.trim_start().starts_with("container:"))
+    {
+        let image = line.trim_start().trim_start_matches("container:").trim();
+        if image.contains("@sha256:") {
+            continue;
+        }
+        // not pinned: a marked TODO right above it, with the command
+        assert!(
+            wf.contains("TODO(pin)") && wf.contains("imagetools inspect"),
+            "{image}: neither pinned by digest nor marked with how to pin it"
+        );
+    }
 }

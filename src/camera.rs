@@ -48,8 +48,14 @@ pub struct Camera {
     pub target: Vec3,
     pub distance: f32,
     pub fov_y: f32,
-    /// Metres a second in free flight.
+    /// The wheel's speed in free flight: 25 is 1x of [`Camera::flight_speed`].
     pub speed: f32,
+    /// The free flight's velocity (eased: it speeds up and slows down
+    /// over about 0.15 s, never stops dead).
+    pub vel: Vec3,
+    /// The world's width (m): how fast a flight may get, how far orbit
+    /// may zoom out.
+    pub world: f32,
     pub sensitivity: f32,
     pub invert_y: bool,
     pub flight: Option<Flight>,
@@ -58,6 +64,11 @@ pub struct Camera {
 }
 
 pub const WARP_SECONDS: f32 = 0.6;
+/// How fast free flight takes up a new velocity, and lets go of one (s).
+pub const EASE_IN: f32 = 0.12;
+pub const EASE_OUT: f32 = 0.2;
+/// The orbit's farthest zoom: this many world widths (at least 2 km).
+pub const ORBIT_FAR: f32 = 3.0;
 const PITCH_LIMIT: f32 = 1.55;
 
 impl Default for Camera {
@@ -71,6 +82,8 @@ impl Default for Camera {
             distance: 300.0,
             fov_y: 60f32.to_radians(),
             speed: 25.0,
+            vel: Vec3::ZERO,
+            world: 1000.0,
             sensitivity: 1.0,
             invert_y: false,
             flight: None,
@@ -116,13 +129,17 @@ impl Camera {
 
     pub fn proj(&self, aspect: f32) -> Mat4 {
         // (the warp widens the view a little)
-        let kick = if self.warp > 0.0 {
-            let t = 1.0 - self.warp / WARP_SECONDS;
-            (std::f32::consts::PI * t).sin() * 0.25
-        } else {
-            0.0
-        };
+        let kick = self.warp_amount() * 0.25;
         Mat4::perspective_reversed_infinite(self.fov_y + kick, aspect.max(0.01), 0.1)
+    }
+
+    /// How strong the warp is now (0..1): strongest at the cut, then
+    /// easing away (gone after [`WARP_SECONDS`]).
+    pub fn warp_amount(&self) -> f32 {
+        if self.warp <= 0.0 {
+            return 0.0;
+        }
+        smoothstep((self.warp / WARP_SECONDS).clamp(0.0, 1.0))
     }
 
     /// A ray through a point of the view (-1..1 each way, y up).
@@ -136,6 +153,15 @@ impl Camera {
             origin: self.pos,
             dir,
         }
+    }
+
+    /// Free flight's speed here (m/s): about 0.8 x the height over the
+    /// ground (slow in a street, fast high up), at most a third of the
+    /// world a second, times the wheel's factor.
+    pub fn flight_speed(&self) -> f32 {
+        let factor = (self.speed / 25.0).clamp(0.02, 200.0);
+        let top = (self.world * 0.33).max(60.0);
+        (self.pos.y.max(0.0) * 0.8).clamp(12.0, top) * factor
     }
 
     /// Switches between free flight and orbit, keeping the view.
@@ -154,6 +180,7 @@ impl Camera {
             self.distance = d.max(5.0);
             self.target = self.pos + f * self.distance;
         }
+        self.vel = Vec3::ZERO;
         self.mode = mode;
     }
 
@@ -213,17 +240,36 @@ impl Camera {
                 if v.length() > 1.0 {
                     v = v.normalized();
                 }
-                let speed = self.speed * if input.boost { 5.0 } else { 1.0 };
-                let step = v * (speed * dt);
-                self.pos = slide(self.pos, step, solid);
-                self.pos.y = self.pos.y.max(0.6);
+                let speed = self.flight_speed() * if input.boost { 5.0 } else { 1.0 };
+                // eased: towards the wanted velocity, quicker to start than
+                // to stop (no dead stop, no lurch)
+                let want = v * speed;
+                let tau = if v.length() > 0.0 { EASE_IN } else { EASE_OUT };
+                self.vel += (want - self.vel) * (1.0 - (-dt / tau).exp());
+                if v.length() == 0.0 && self.vel.length() < 0.02 {
+                    self.vel = Vec3::ZERO;
+                }
+                // in steps of at most 2 m: fast flight never jumps through
+                // a wall or the ground
+                let step = self.vel * dt;
+                let n = ((step.length() / 2.0).ceil() as usize).clamp(1, 256);
+                for _ in 0..n {
+                    let before = self.pos;
+                    self.pos = slide(self.pos, step * (1.0 / n as f32), solid);
+                    self.pos.y = self.pos.y.max(0.6);
+                    if self.pos == before {
+                        // (stopped by a wall: its speed is lost)
+                        self.vel = Vec3::ZERO;
+                        break;
+                    }
+                }
             }
             Mode::Orbit => {
                 self.yaw = wrap_angle(self.yaw + input.orbit[0] * sens);
                 self.pitch = (self.pitch - input.orbit[1] * sens * inv).clamp(-PITCH_LIMIT, 0.2);
                 if input.scroll != 0.0 {
-                    self.distance =
-                        (self.distance * 0.88f32.powf(input.scroll)).clamp(2.0, 50_000.0);
+                    let far = (self.world * ORBIT_FAR).max(2000.0);
+                    self.distance = (self.distance * 0.88f32.powf(input.scroll)).clamp(2.0, far);
                 }
                 if input.pan != [0.0, 0.0] {
                     let r = self.right();
@@ -271,6 +317,7 @@ impl Camera {
         target: Option<Vec3>,
     ) {
         let start = self.pos;
+        self.vel = Vec3::ZERO;
         let path = safe_path(start, end, ceiling);
         let length = (end - start).length();
         let mut seconds = (0.8 + length.max(1.0).log10() * 0.45).clamp(0.8, 3.0);
@@ -290,12 +337,20 @@ impl Camera {
     /// Jumps at once (the teleport), with the warp.
     pub fn teleport(&mut self, pos: Vec3, yaw: f32, pitch: f32, warp: bool) {
         self.flight = None;
+        self.vel = Vec3::ZERO;
         self.pos = pos;
         self.yaw = wrap_angle(yaw);
         self.pitch = pitch.clamp(-PITCH_LIMIT, PITCH_LIMIT);
         if self.mode == Mode::Orbit {
-            self.distance = self.distance.clamp(10.0, 400.0);
-            self.target = self.pos + self.forward() * self.distance;
+            // (round the point on the ground it looks at, when it looks
+            // down: an island framed is turned round its middle)
+            let f = self.forward();
+            self.distance = if f.y < -0.05 {
+                (self.pos.y / -f.y).clamp(2.0, 50_000.0)
+            } else {
+                self.distance.clamp(10.0, 400.0)
+            };
+            self.target = self.pos + f * self.distance;
         }
         if warp {
             self.warp = WARP_SECONDS;
@@ -305,6 +360,62 @@ impl Camera {
     pub fn flying(&self) -> bool {
         self.flight.is_some()
     }
+}
+
+/// The low view's angle: 15 degrees below the horizon (the horizon in the
+/// upper third, the sky and its rain over the city).
+pub const LOW_PITCH: f32 = 15.0 * std::f32::consts::PI / 180.0;
+
+/// Where a point lands in a view from `eye` along -z, `pitch` radians
+/// below the horizon (x right, y up; -1..1 is in the view), or None
+/// behind the eye.
+pub fn project_low(eye: Vec3, p: Vec3, pitch: f32, fov_y: f32, aspect: f32) -> Option<[f32; 2]> {
+    let (s, c) = pitch.sin_cos();
+    let f = vec3(0.0, -s, -c);
+    let up = vec3(0.0, c, -s);
+    let rel = p - eye;
+    let depth = rel.dot(f);
+    if depth < 0.1 {
+        return None;
+    }
+    let h = (fov_y * 0.5).tan();
+    Some([rel.x / depth / (h * aspect), rel.dot(up) / depth / h])
+}
+
+/// Where to stand to see the box `min..max` whole, looking along -z at
+/// `pitch` below the horizon straight at its middle (on the ground): as
+/// near as can be with every corner inside the view (a margin left). The
+/// eye; the point it looks at is the box's middle - orbit turns round it.
+pub fn frame_box(min: Vec3, max: Vec3, pitch: f32, fov_y: f32, aspect: f32) -> Vec3 {
+    let side = (max.x - min.x).max(max.z - min.z).max(1.0);
+    let centre = vec3((min.x + max.x) * 0.5, 0.0, (min.z + max.z) * 0.5);
+    let back = vec3(0.0, pitch.sin(), pitch.cos());
+    let mut corners = Vec::with_capacity(8);
+    for x in [min.x, max.x] {
+        for y in [min.y.min(0.0), max.y] {
+            for z in [min.z, max.z] {
+                corners.push(vec3(x, y, z));
+            }
+        }
+    }
+    let margin = 0.94;
+    let fits = |eye: Vec3| {
+        corners.iter().all(|p| {
+            project_low(eye, *p, pitch, fov_y, aspect)
+                .is_some_and(|q| q[0].abs() <= margin && q[1].abs() <= margin)
+        })
+    };
+    // (the nearest distance that fits: in steps of 1 %, from a third of
+    // the box's side out)
+    let mut d = side * 0.3;
+    for _ in 0..800 {
+        let eye = centre + back * d;
+        if fits(eye) && eye.y > max.y * 0.3 + 2.0 {
+            return eye;
+        }
+        d *= 1.01;
+    }
+    centre + back * d
 }
 
 /// Moves `from` by `step`, sliding along what is solid (axis by axis).
@@ -491,11 +602,189 @@ mod tests {
     }
 
     #[test]
+    fn flight_speed_grows_with_height_and_the_world() {
+        let mut cam = Camera {
+            mode: Mode::Fly,
+            world: 2500.0,
+            ..Default::default()
+        };
+        cam.pos.y = 5.0;
+        let street = cam.flight_speed();
+        cam.pos.y = 400.0;
+        let high = cam.flight_speed();
+        assert!((10.0..=20.0).contains(&street), "{street}");
+        assert!(high > street * 10.0, "{street} {high}");
+        // never more than a third of the world a second (wheel at 1x)
+        cam.pos.y = 1e6;
+        assert!(cam.flight_speed() <= 2500.0 * 0.34);
+        // a bigger world: faster at the same height
+        let mut big = cam.clone();
+        big.world = 25_000.0;
+        assert!(big.flight_speed() > cam.flight_speed());
+        // the wheel is a factor
+        cam.pos.y = 400.0;
+        let before = cam.flight_speed();
+        cam.update(
+            0.016,
+            &Input {
+                scroll: 5.0,
+                ..Default::default()
+            },
+            &|_| false,
+        );
+        assert!(cam.flight_speed() > before * 1.9);
+    }
+
+    #[test]
+    fn flight_eases_in_and_out_never_a_dead_stop() {
+        let mut cam = Camera {
+            mode: Mode::Fly,
+            pos: vec3(0.0, 50.0, 0.0),
+            world: 2500.0,
+            ..Default::default()
+        };
+        let go = Input {
+            move_dir: [0.0, 0.0, 1.0],
+            ..Default::default()
+        };
+        let dt = 1.0 / 60.0;
+        cam.update(dt, &go, &|_| false);
+        let first = cam.vel.length();
+        assert!(
+            first > 0.0 && first < cam.flight_speed() * 0.3,
+            "eased in: {first}"
+        );
+        for _ in 0..18 {
+            cam.update(dt, &go, &|_| false);
+        }
+        assert!(
+            cam.vel.length() > cam.flight_speed() * 0.85,
+            "up to speed in 0.3 s"
+        );
+        // let go: it glides on a little, then stops
+        let at = cam.pos;
+        cam.update(dt, &Input::default(), &|_| false);
+        assert!((cam.pos - at).length() > 0.1, "no dead stop");
+        for _ in 0..120 {
+            cam.update(dt, &Input::default(), &|_| false);
+        }
+        assert_eq!(cam.vel, Vec3::ZERO, "stopped after two seconds");
+        let rest = cam.pos;
+        cam.update(dt, &Input::default(), &|_| false);
+        assert_eq!(cam.pos, rest);
+    }
+
+    #[test]
+    fn fast_flight_never_passes_through_a_wall_or_the_ground() {
+        let mut cam = Camera {
+            mode: Mode::Fly,
+            pos: vec3(0.0, 30.0, 0.0),
+            world: 100_000.0,
+            speed: 5000.0,
+            ..Default::default()
+        };
+        // a 3 m thick wall 100 m ahead
+        let wall = |p: Vec3| p.z < -100.0 && p.z > -103.0;
+        let go = Input {
+            move_dir: [0.0, 0.0, 1.0],
+            boost: true,
+            ..Default::default()
+        };
+        for _ in 0..60 {
+            cam.update(0.1, &go, &wall);
+        }
+        assert!(cam.pos.z >= -100.0, "through the wall: {:?}", cam.pos);
+        // straight down at full speed: stays over the ground
+        cam.pitch = -1.5;
+        for _ in 0..60 {
+            cam.update(0.1, &go, &|_| false);
+        }
+        assert!(cam.pos.y >= 0.6, "{:?}", cam.pos);
+    }
+
+    #[test]
+    fn orbit_zooms_out_to_a_few_worlds_not_further() {
+        let mut cam = Camera {
+            world: 2500.0,
+            ..Default::default()
+        };
+        for _ in 0..200 {
+            cam.update(
+                0.016,
+                &Input {
+                    scroll: -5.0,
+                    ..Default::default()
+                },
+                &|_| false,
+            );
+        }
+        assert!(
+            (cam.distance - 2500.0 * ORBIT_FAR).abs() < 1.0,
+            "{}",
+            cam.distance
+        );
+    }
+
+    #[test]
+    fn the_low_view_frames_the_whole_island_with_the_sky_above() {
+        for (side, top, aspect) in [
+            (800.0, 40.0, 1.6),
+            (2500.0, 90.0, 1.6),
+            (9000.0, 200.0, 1.6),
+            (2500.0, 90.0, 0.6),
+            (2500.0, 90.0, 2.4),
+            (160.0, 0.5, 1.6),
+        ] {
+            let min = vec3(100.0, 0.0, -50.0);
+            let max = vec3(100.0 + side, top, -50.0 + side);
+            let fov = 60f32.to_radians();
+            let eye = frame_box(min, max, LOW_PITCH, fov, aspect);
+            // looking at the middle: it is in the view's middle
+            let mid = vec3(100.0 + side * 0.5, 0.0, -50.0 + side * 0.5);
+            let q = project_low(eye, mid, LOW_PITCH, fov, aspect).unwrap();
+            assert!(q[0].abs() < 1e-3 && q[1].abs() < 1e-3, "{q:?}");
+            let mut lo = [f32::MAX; 2];
+            let mut hi = [f32::MIN; 2];
+            for x in [min.x, max.x] {
+                for y in [0.0, top] {
+                    for z in [min.z, max.z] {
+                        let q = project_low(eye, vec3(x, y, z), LOW_PITCH, fov, aspect)
+                            .expect("in front");
+                        assert!(
+                            q[0].abs() <= 0.95 && q[1].abs() <= 0.95,
+                            "{side} {aspect}: {q:?}"
+                        );
+                        lo = [lo[0].min(q[0]), lo[1].min(q[1])];
+                        hi = [hi[0].max(q[0]), hi[1].max(q[1])];
+                    }
+                }
+            }
+            // and large: it fills the view's width or height
+            assert!(
+                hi[0] - lo[0] > 1.7 || hi[1] - lo[1] > 1.7,
+                "{side} {aspect}: small {lo:?} {hi:?}"
+            );
+            // the horizon in the upper third
+            let horizon = LOW_PITCH.tan() / (fov * 0.5).tan();
+            assert!((1.0 - horizon) / 2.0 < 0.34);
+        }
+    }
+
+    #[test]
     fn the_teleport_warps_and_ends() {
         let mut cam = Camera::default();
         cam.teleport(vec3(10.0, 20.0, 30.0), 1.0, -0.3, true);
         assert_eq!(cam.pos, vec3(10.0, 20.0, 30.0));
         assert!(cam.warp > 0.0);
+        // strongest at the cut, then only weaker
+        assert_eq!(cam.warp_amount(), 1.0);
+        let mut last = 1.0;
+        for _ in 0..12 {
+            cam.update(1.0 / 60.0, &Input::default(), &|_| false);
+            let w = cam.warp_amount();
+            assert!(w < last, "{w} after {last}");
+            last = w;
+        }
         for _ in 0..60 {
             cam.update(1.0 / 60.0, &Input::default(), &|_| false);
         }

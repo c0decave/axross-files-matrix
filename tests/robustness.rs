@@ -474,3 +474,247 @@ fn names_in_every_script_are_drawn() {
         }
     }
 }
+
+#[cfg(unix)]
+#[test]
+fn an_unknown_type_can_be_trusted_and_settings_ask_again() {
+    let mut o = opening("open-trust", "usage: axross [--profile NAME] [PATH ...]");
+    // (made after the start: the walk reads it when asked again)
+    std::fs::write(o.files.join("tune.xyz"), "plain data").unwrap();
+    let i =
+        o.h.state_mut()
+            .islands
+            .iter()
+            .position(|x| x.hw.is_none())
+            .unwrap();
+    o.h.state_mut().stop_walk(i);
+    o.h.state_mut().islands[i].dirty = true;
+    o.h.state_mut().sources_open = false;
+    // walk it again to see the new file
+    {
+        let app = o.h.state_mut();
+        let root = o.files.clone();
+        app.remove_island(i);
+        app.add_source(root).unwrap();
+        assert!(app.settle(Duration::from_secs(30)));
+    }
+    let (i, n) = find(o.h.state_mut(), "tune.xyz");
+    o.h.state_mut().select(i, n);
+    o.h.run_steps(2);
+    o.h.state_mut().open_selected(OpenHow::DefaultProgram);
+    pump_a_while(&mut o.h);
+    match &o.h.state_mut().open_ask {
+        Some(OpenAsk::Risky { why, unknown, .. }) => {
+            assert!(why.contains("does not know (.xyz)"), "{why}");
+            assert_eq!(unknown.as_deref(), Some("xyz"));
+        }
+        other => panic!("{other:?}"),
+    }
+    o.h.get_by_label("Do not ask again for .xyz files (Settings can undo it)")
+        .click();
+    o.h.run_steps(1);
+    o.h.get_by_label("Open it anyway").click();
+    o.h.run_steps(1);
+    pump_a_while(&mut o.h);
+    assert_eq!(o.log.lock().unwrap().len(), 1);
+    assert_eq!(o.h.state_mut().settings.open_types, vec!["xyz".to_string()]);
+    // the next time: opened at once
+    o.log.lock().unwrap().clear();
+    o.h.state_mut().open_selected(OpenHow::DefaultProgram);
+    pump_a_while(&mut o.h);
+    assert!(o.h.state_mut().open_ask.is_none());
+    assert_eq!(o.log.lock().unwrap().len(), 1);
+    // Settings undoes it
+    o.h.state_mut().settings_open = true;
+    o.h.run_steps(2);
+    o.h.get_by_label_contains("Opened without asking: .xyz");
+    o.h.get_by_label("Ask again for every type").click();
+    o.h.run_steps(2);
+    assert!(o.h.state_mut().settings.open_types.is_empty());
+    // what runs never offers the box
+    o.log.lock().unwrap().clear();
+    let (i, n) = find(o.h.state_mut(), "evil.desktop");
+    o.h.state_mut().select(i, n);
+    o.h.state_mut().open_selected(OpenHow::DefaultProgram);
+    pump_a_while(&mut o.h);
+    assert!(matches!(
+        &o.h.state_mut().open_ask,
+        Some(OpenAsk::Risky { unknown: None, .. })
+    ));
+    assert!(o.h.query_by_label_contains("Do not ask again").is_none());
+}
+
+#[test]
+fn walks_stop_and_sources_come_and_go_without_a_restart() {
+    let s = Scratch::new("sources");
+    let a = s.0.join("first");
+    let b = s.0.join("second");
+    for d in [&a, &b] {
+        std::fs::create_dir_all(d.join("sub")).unwrap();
+        for k in 0..20 {
+            std::fs::write(d.join(format!("sub/f{k}.txt")), "x").unwrap();
+        }
+    }
+    let mut opts = options(&s);
+    opts.paths = vec![a.clone()];
+    opts.hardware = false;
+    let mut h = window(opts, egui::vec2(1100.0, 700.0));
+    h.state_mut().sources_open = true;
+    h.run_steps(2);
+    // add the second folder by its path
+    h.state_mut().add_source = b.to_string_lossy().into_owned();
+    h.run_steps(1);
+    h.get_by_label("add").click();
+    h.run_steps(2);
+    assert!(h.state_mut().settle(Duration::from_secs(30)));
+    assert_eq!(h.state_mut().islands.len(), 2, "added");
+    assert!(h.state_mut().islands[1].tree.len() > 20, "walked");
+    // the same again, or a relative path: said why not
+    assert!(h.state_mut().add_source(b.clone()).is_err());
+    assert!(h.state_mut().add_source(PathBuf::from("rel/path")).is_err());
+    // a walk under way can be stopped: what it found stays
+    let before = h.state_mut().islands.len();
+    {
+        let app = h.state_mut();
+        let i = app.add_source(s.0.clone()).unwrap();
+        app.stop_walk(i);
+        let isl = &app.islands[i];
+        assert!(isl.walker.is_none());
+        assert!(isl.status.done);
+        assert_eq!(isl.status.note.as_deref(), Some("stopped by hand"));
+    }
+    h.run_steps(2);
+    h.get_by_label_contains("stopped by hand");
+    // and removed (the last one's button)
+    h.get_all_by_label("remove").last().unwrap().click();
+    h.run_steps(2);
+    assert_eq!(h.state_mut().islands.len(), before);
+    assert_eq!(h.state_mut().islands.len(), 2);
+}
+
+#[test]
+fn no_sources_say_what_to_do() {
+    let s = Scratch::new("zero");
+    let mut opts = options(&s);
+    opts.hardware = false;
+    let mut h = window(opts, egui::vec2(1000.0, 700.0));
+    h.run_steps(2);
+    h.get_by_label("No folders to show yet");
+    h.get_by_label("Sources…").click();
+    h.run_steps(2);
+    assert!(h.state_mut().sources_open);
+    // and the counts say 0 islands, never "1 islands"
+    h.get_by_label_contains("0 islands · 0 entries");
+}
+
+#[test]
+fn the_first_start_shows_the_keys_until_a_key_moves() {
+    let s = Scratch::new("hint");
+    let mut opts = options(&s);
+    opts.synthetic = Some(800);
+    let mut h = window(opts, egui::vec2(1100.0, 700.0));
+    h.get_by_label(axross_files_matrix::app::KEY_HINT);
+    h.key_down(Key::W);
+    h.run_steps(2);
+    h.key_up(Key::W);
+    h.run_steps(2);
+    assert!(
+        h.query_by_label(axross_files_matrix::app::KEY_HINT)
+            .is_none()
+    );
+    assert!(h.state_mut().settings.hint_seen);
+    // remembered: not shown at the next start
+    drop(h);
+    let mut opts = options(&s);
+    opts.synthetic = Some(800);
+    let mut h = window(opts, egui::vec2(1100.0, 700.0));
+    assert!(
+        h.query_by_label(axross_files_matrix::app::KEY_HINT)
+            .is_none()
+    );
+    // the Help window keeps it
+    h.key_press(Key::H);
+    h.run_steps(2);
+    h.get_by_label(axross_files_matrix::app::KEY_HINT);
+}
+
+#[test]
+fn frame_stats_make_no_frames_of_their_own() {
+    let s = Scratch::new("frame-stats");
+    std::fs::create_dir_all(s.0.join("config")).unwrap();
+    std::fs::write(
+        s.0.join("config/settings.json"),
+        br#"{"rain": false, "idle_fps": 0, "hint_seen": true}"#,
+    )
+    .unwrap();
+    let mut opts = options(&s);
+    opts.frame_stats = true;
+    opts.hardware = false;
+    opts.synthetic = Some(500);
+    let mut h = window(opts, egui::vec2(900.0, 600.0));
+    for _ in 0..10 {
+        h.step();
+    }
+    assert!(
+        !h.ctx.has_requested_repaint(),
+        "an idle window with --frame-stats asks for no frames"
+    );
+}
+
+#[test]
+fn the_hardware_legend_shows_near_the_machine() {
+    let s = Scratch::new("hw-legend");
+    let mut opts = options(&s);
+    opts.synthetic = Some(800);
+    let mut h = window(opts, egui::vec2(1200.0, 800.0));
+    let (c, side) = {
+        let app = h.state_mut();
+        let m = app.islands.iter().find(|i| i.hw.is_some()).unwrap();
+        let c = m.city.as_ref().unwrap();
+        (c.center(), c.side())
+    };
+    h.state_mut().look_from(
+        c + axross_files_matrix::math::vec3(0.0, side * 0.6, side * 0.9),
+        c,
+    );
+    h.run_steps(2);
+    assert!(h.state_mut().hardware_in_view(), "the machine's legend");
+    // over the city: the file types' legend again
+    h.state_mut().home();
+    for _ in 0..120 {
+        h.step();
+    }
+    assert!(!h.state_mut().hardware_in_view());
+}
+
+#[test]
+fn teleport_and_sources_open_side_by_side_and_help_is_tall() {
+    let s = Scratch::new("windows");
+    let mut opts = options(&s);
+    opts.synthetic = Some(500);
+    let size = egui::vec2(1280.0, 800.0);
+    let mut h = window(opts, size);
+    h.state_mut().teleport_open = true;
+    h.state_mut().sources_open = true;
+    h.run_steps(4);
+    let wins: Vec<egui::Rect> = h
+        .get_all_by_role(egui::accesskit::Role::Window)
+        .map(|n| n.rect())
+        .collect();
+    assert_eq!(wins.len(), 2, "{wins:?}");
+    assert!(
+        !wins[0].intersects(wins[1]),
+        "Teleport and Sources on top of each other: {wins:?}"
+    );
+    // Help: tall enough to read without scrolling much
+    h.state_mut().teleport_open = false;
+    h.state_mut().sources_open = false;
+    h.state_mut().help_open = true;
+    h.run_steps(4);
+    let help = h
+        .get_all_by_role(egui::accesskit::Role::Window)
+        .map(|n| n.rect())
+        .next()
+        .expect("the help window");
+    assert!(help.height() > 600.0, "{help:?}");
+}

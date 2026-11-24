@@ -22,6 +22,8 @@ struct Globals {
     viewport: vec4<f32>,
     params: vec4<f32>,       // x: write linear, y: exposure, z: veil on, w: history weight
     debug: vec4<f32>,       // x: the tests' flashing signal
+    look: vec4<f32>,
+    lens: vec4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> g: Globals;

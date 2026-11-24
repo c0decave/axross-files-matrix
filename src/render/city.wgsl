@@ -21,6 +21,8 @@ struct Globals {
     viewport: vec4<f32>,     // width, height, 1/width, 1/height (pixels)
     params: vec4<f32>,       // x: write linear, y: exposure, z: veil on, w: frame dt
     debug: vec4<f32>,       // x: the tests' flashing signal
+    look: vec4<f32>,        // x: most a far roof is raised (0: never), y: how fast, z: the haze's height (m), w: most fog a box gets
+    lens: vec4<f32>,        // x: 2 tan(fov / 2) (metres a pixel = distance * x / height)
 };
 
 @group(0) @binding(0) var<uniform> g: Globals;
@@ -118,6 +120,8 @@ fn horizon() -> vec3<f32> {
 fn sky(dir: vec3<f32>) -> vec3<f32> {
     let up = clamp(dir.y, 0.0, 1.0);
     var c = mix(horizon(), g.sky_top.rgb, pow(clamp(up * 3.0, 0.0, 1.0), 0.55));
+    // a faint green glow along the horizon (the city's light in the haze)
+    c += g.grid.rgb * (0.012 * exp(-up * 14.0) + 0.004 * exp(-up * 3.0));
     if (g.sky_top.w > 0.0 && dir.y > -0.02) {
         let around = atan2(dir.x, -dir.z) / 6.2831853 + 0.5;
         let elev = asin(clamp(dir.y, -1.0, 1.0));
@@ -161,12 +165,23 @@ fn fs_sea(in: FullOut) -> SeaOut {
     let gl2 = abs(fract(q2 - 0.5) - 0.5) / max(w2, vec2<f32>(1e-4));
     let line2 = 1.0 - min(min(gl2.x, gl2.y), 1.0);
     let fade = exp(-t * 0.0012);
-    // the lines fade where they are finer than a pixel (no moiré)
-    let fine = 1.0 - smoothstep(0.25, 0.6, max(w.x, w.y));
-    var c = g.fog.rgb * 0.5 + g.grid.rgb * (line * 0.08 * fine + line2 * 0.14) * fade;
+    // the lines fade where they are finer than a pixel (no moire, no
+    // scribbles at a grazing angle): by the larger of the two derivatives
+    let fine = 1.0 - smoothstep(0.2, 0.5, max(w.x, w.y));
+    let fine2 = 1.0 - smoothstep(0.15, 0.45, max(w2.x, w2.y));
+    var c = g.fog.rgb * 0.5 + g.grid.rgb * (line * 0.08 * fine + line2 * 0.14 * fine2) * fade;
     // far off the sea becomes the horizon (the sky goes on from there)
     let fog = 1.0 - exp(-t * g.fog.w * 1.6);
-    o.color = vec4<f32>(mix(c, horizon(), fog), 1.0);
+    // (with the sky's glow at the horizon: no seam where they meet)
+    c = mix(c, horizon() + g.grid.rgb * 0.016, fog);
+    // the rain mirrored in the far water: never a flat black half
+    if (g.sky_top.w > 0.0 && fog > 0.15) {
+        let around = atan2(dir.x, -dir.z) / 6.2831853 + 0.5;
+        let elev = asin(clamp(-dir.y, 0.0, 1.0));
+        let r = rain_at(around, elev, g.eye.w);
+        c += g.rain.rgb * r * 0.07 * smoothstep(0.15, 0.7, fog) * g.sky_top.w;
+    }
+    o.color = vec4<f32>(c, 1.0);
     let clip = g.view_proj * vec4<f32>(p, 1.0);
     o.depth = clip.z / clip.w;
     return o;
@@ -191,7 +206,26 @@ struct BoxOut {
     @location(5) @interpolate(flat) color: vec3<f32>,
     @location(6) @interpolate(flat) bmin: vec3<f32>,
     @location(7) @interpolate(flat) seed: f32,
+    // (the instance's own corner and size: the hover's and choice's match)
+    @location(8) @interpolate(flat) own_size: vec3<f32>,
+    @location(9) @interpolate(flat) own_min: vec3<f32>,
 };
+
+// How much higher a building or block `d` metres away is drawn: 1 near,
+// growing with the log of the distance from 300 m on (eased in: no
+// kink), at most look.x - the far city keeps its relief.
+fn stretch_at(d: f32) -> f32 {
+    if (g.look.x <= 1.0) {
+        return 1.0;
+    }
+    let x = max(d / 300.0 - 1.0, 0.0);
+    return min(1.0 + g.look.y * 0.5 * log(1.0 + x * x), g.look.x);
+}
+
+// Metres a pixel spans `d` metres away.
+fn pixel_at(d: f32) -> f32 {
+    return d * g.lens.x / max(g.viewport.y, 1.0);
+}
 
 // The faces: +x, -x, +y, +z, -z (the bottom is never seen); each with two
 // tangents whose cross product is its normal (counter-clockwise outside).
@@ -227,7 +261,33 @@ fn vs_box(@builtin(vertex_index) vi: u32, inst: Inst) -> BoxOut {
         default: {}
     }
     let local = face_corner(face, uv.x, uv.y);
-    var p = local * inst.size;
+    let shape = inst.info & 15u;
+    var size = inst.size;
+    var corner = inst.pos;
+    let d = length(inst.pos.xz + inst.size.xz * 0.5 - g.eye.xz);
+    if (shape <= 1u && (inst.info & 64u) == 0u) {
+        // far roofs raised a little (never the machine's parts) - seen
+        // from aside; looked down on from above, as they are (no towers
+        // leaning out of the map)
+        let rel = vec3<f32>(d, g.eye.y - inst.pos.y, 0.0);
+        let down = clamp(rel.y / max(length(rel), 1e-3), 0.0, 1.0);
+        let k = 1.0 - smoothstep(0.55, 0.92, down);
+        size.y *= 1.0 + (stretch_at(d) - 1.0) * k;
+        if (shape == 1u) {
+            // a far block stands back from its plate's edge by at least
+            // a pixel and a half: the streets stay lit lines
+            let inset = min(pixel_at(d) * 0.9, min(size.x, size.z) * 0.22);
+            corner = vec3<f32>(corner.x + inset, corner.y, corner.z + inset);
+            size = vec3<f32>(size.x - inset * 2.0, size.y, size.z - inset * 2.0);
+        }
+    } else if (shape == 5u || shape == 6u) {
+        // a pillar and its ring: never thinner than a few pixels
+        let want = pixel_at(d) * select(5.0, 14.0, shape == 6u);
+        let grow = max(want - inst.size.x, 0.0);
+        corner = vec3<f32>(corner.x - grow * 0.5, corner.y, corner.z - grow * 0.5);
+        size = vec3<f32>(size.x + grow, size.y, size.z + grow);
+    }
+    var p = local * size;
     var n = face_normal(face);
     let turn = f32(inst.info >> 16u) / 65536.0 * 6.2831853;
     if (turn != 0.0) {
@@ -236,16 +296,18 @@ fn vs_box(@builtin(vertex_index) vi: u32, inst: Inst) -> BoxOut {
         p = vec3<f32>(p.x * c - p.z * s, p.y, p.x * s + p.z * c);
         n = vec3<f32>(n.x * c - n.z * s, n.y, n.x * s + n.z * c);
     }
-    let world = inst.pos + p;
+    let world = corner + p;
     var o: BoxOut;
     o.clip = g.view_proj * vec4<f32>(world, 1.0);
     o.world = world;
     o.local = local;
     o.normal = n;
-    o.size = inst.size;
+    o.size = size;
     o.info = inst.info;
     o.color = unpack_color(inst.color);
-    o.bmin = inst.pos;
+    o.bmin = corner;
+    o.own_min = inst.pos;
+    o.own_size = inst.size;
     o.seed = fract(inst.pos.x * 0.1731 + inst.pos.z * 0.3117 + inst.size.y * 0.071);
     return o;
 }
@@ -288,10 +350,40 @@ fn face_px(local: vec3<f32>, size: vec3<f32>, n: vec3<f32>) -> f32 {
     return min(sa / max(fwidth(a), 1e-5), sb / max(fwidth(b), 1e-5));
 }
 
-fn fog_mix(c: vec3<f32>, world: vec3<f32>) -> vec3<f32> {
+// How much fog lies between the eye and `world`: thicker near the ground
+// (towers stand out of the haze), never more than look.w (a city is never
+// under a quarter of its contrast).
+fn fog_amount(world: vec3<f32>) -> f32 {
     let d = length(world - g.eye.xyz);
-    let f = 1.0 - exp(-d * g.fog.w);
-    return mix(c, mix(g.fog.rgb, horizon(), 0.6), f);
+    let h = max(g.look.z, 1.0);
+    let y0 = max(g.eye.y, 0.0);
+    let y1 = max(world.y, 0.0);
+    let dy = y1 - y0;
+    var low = exp(-y0 / h);
+    if (abs(dy) > 0.01 * h) {
+        low = h * (exp(-y0 / h) - exp(-y1 / h)) / dy;
+    }
+    let f = 1.0 - exp(-d * g.fog.w * (0.4 + 0.9 * low));
+    return min(f, select(1.0, g.look.w, g.look.w > 0.0));
+}
+
+fn fog_mix(c: vec3<f32>, world: vec3<f32>) -> vec3<f32> {
+    return mix(c, mix(g.fog.rgb, horizon(), 0.6), fog_amount(world));
+}
+
+// Lit specks on a far face: cells about three pixels wide (by powers of
+// two, each level blending into the next: nothing swims), a share
+// `density` of them on.
+fn speckle(a: f32, b: f32, seed: f32, density: f32) -> f32 {
+    let px = max(max(fwidth(a), fwidth(b)), 1e-4);
+    let lv = log2(px * 3.0);
+    let l0 = floor(lv);
+    let f = lv - l0;
+    let s0 = exp2(l0);
+    let q = vec2<f32>(a, b);
+    let h0 = step(hash21(floor(q / s0) + seed * 57.0), density);
+    let h1 = step(hash21(floor(q / (s0 * 2.0)) + seed * 57.0 + 7.0), density);
+    return mix(h0, h1, f);
 }
 
 @fragment
@@ -314,7 +406,12 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
     // how many pixels the face spans: a face of a few pixels is mostly
     // edge - its light is turned down, or the far city turns white
     let across_face = face_px(in.local, in.size, n);
-    let small = clamp((across_face - 2.0) / 10.0, 0.15, 1.0);
+    // (below two pixels a face is its flat average: no shimmer; a floor's
+    // edge - the street - stays a line)
+    var small = clamp((across_face - 2.0) / 10.0, 0.0, 1.0);
+    if (shape == 2u) {
+        small = max(small, 0.45);
+    }
     let lit = 0.35 + 0.65 * max(dot(n, normalize(vec3<f32>(0.35, 0.9, 0.25))), 0.0);
     var c = vec3<f32>(0.0);
     var edge_gain = 1.0;
@@ -335,9 +432,10 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
                 let p_on = 0.12 + 0.45 * glow;
                 let on = step(hash21(cell + in.seed * 113.0), p_on);
                 let win = on * step(0.3, f.x) * step(f.x, 0.7) * step(0.34, f.y) * step(f.y, 0.66);
-                // too small to see: their average
+                // too small to see: lit specks (the far city's windows)
                 let fine = smoothstep(0.35, 0.9, max(fwidth(across) / cw, fwidth(h) / ch));
-                let w = mix(win, p_on * 0.2, fine);
+                let far_lit = speckle(across, h, in.seed, p_on * 0.55) * 0.7;
+                let w = mix(win, far_lit, fine);
                 c += base * w * (0.22 + 0.55 * glow);
                 // darker towards the street, lighter up high: depth
                 c *= 0.55 + 0.6 * in.local.y;
@@ -350,9 +448,14 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
                     c += base * tr * 0.45 * (0.3 + glow);
                 }
             } else {
-                // the roof: a lit rim inside the edge; a far block's roof a
-                // little lit (the city from afar is never black)
-                c = base * select(0.025 + 0.05 * glow, 0.07 + 0.1 * glow, block);
+                // the roof: a lit rim inside the edge; a far block's roof
+                // in its type's colour with specks of light (the city from
+                // afar is never black, never grey)
+                c = base * select(0.025 + 0.05 * glow, 0.09 + 0.12 * glow, block);
+                if (block) {
+                    let q = in.local.xz * in.size.xz;
+                    c += base * speckle(q.x, q.y, in.seed + 0.5, 0.18 + 0.3 * glow) * (0.25 + 0.4 * glow);
+                }
             }
             edge_gain = select(1.0, 0.75, block) * (0.55 + 1.6 * glow);
             if (unread) {
@@ -364,8 +467,11 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
         }
         // a district's floor: almost black, its outline the street light
         case 2u: {
-            c = base * 0.02;
-            edge_gain = 0.55 * (1.0 - glow * 0.6);
+            // (from afar only its edges and the streets between far blocks
+            // show: a faint glow, so the districts read as a lit board)
+            let away = smoothstep(150.0, 900.0, length(in.world - g.eye.xyz));
+            c = base * 0.02 + g.grid.rgb * 0.035 * away;
+            edge_gain = 0.55 * (1.0 - glow * 0.6) * (1.0 + away);
         }
         // an island: its ground and its rim
         case 3u: {
@@ -388,10 +494,24 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
                 let w = fwidth(q);
                 let gl = abs(fract(q - 0.5) - 0.5) / max(w, vec2<f32>(1e-4));
                 let line = 1.0 - min(min(gl.x, gl.y), 1.0);
-                let fine = 1.0 - smoothstep(0.2, 0.5, max(w.x, w.y));
+                // (thinned with distance, gone below half a pixel)
+                let fine = 1.0 - smoothstep(0.15, 0.45, max(w.x, w.y));
                 c += g.grid.rgb * line * 0.05 * fine;
+                if (denied) {
+                    // failed: amber hatching across the plot
+                    let s = (in.local.x * in.size.x + in.local.z * in.size.z) / 9.0;
+                    let sw = max(fwidth(s), 1e-4);
+                    let stripe = smoothstep(0.5 - sw, 0.5 + sw, fract(s)) * (1.0 - smoothstep(0.8 - sw, 0.8 + sw, fract(s)));
+                    let hfine = 1.0 - smoothstep(0.2, 0.5, sw);
+                    c += vec3<f32>(0.5, 0.3, 0.04) * stripe * 0.09 * hfine + vec3<f32>(0.02, 0.012, 0.0);
+                }
             }
             edge_gain = 1.4;
+            if (unread) {
+                // connecting: the outline breathes (half a second's swell,
+                // well under three a second; still with reduced motion)
+                edge_gain *= 0.7 + 0.6 * (0.5 + 0.5 * sin(t * 3.0 * g.grid.w));
+            }
         }
         // the beam: light that runs from the disk to the island
         case 4u: {
@@ -404,11 +524,27 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
         // a search hit's pillar: fading as it rises, breathing slowly
         case 5u: {
             let k = pow(1.0 - in.local.y, 2.0);
-            let breathe = 0.85 + 0.15 * sin(t * 2.0);
-            let side = 1.0 - abs(in.local.x - 0.5) * 2.0;
+            let breathe = 0.85 + 0.15 * sin(t * 2.0 * g.grid.w);
+            let across = select(in.local.x, in.local.z, abs(n.x) > 0.5);
+            let side = 1.0 - abs(across - 0.5) * 2.0;
             // (close by it fades: a beam, never a white wall)
             let near = clamp(length(in.world - g.eye.xyz) / 80.0, 0.12, 1.0);
-            return vec4<f32>(g.highlight.rgb * k * breathe * 0.85 * near * (0.3 + 0.7 * side), 1.0);
+            // tinted by what was found, its core a little whiter
+            let tint = mix(g.highlight.rgb, base, 0.75 - 0.35 * side * side);
+            return vec4<f32>(tint * k * breathe * 0.6 * near * (0.25 + 0.75 * side), 1.0);
+        }
+        // its ring on the ground: bright near, fading with distance
+        case 6u: {
+            if (!is_top) {
+                return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+            }
+            let r = length(in.local.xz - vec2<f32>(0.5)) * 2.0;
+            let w = max(fwidth(r), 1e-4);
+            let ring = smoothstep(0.78 - w, 0.78 + w, r) * (1.0 - smoothstep(0.92 - w, 0.92 + w, r));
+            let inner = (1.0 - smoothstep(0.0, 0.8, r)) * 0.15;
+            let away = exp(-length(in.world - g.eye.xyz) / 2500.0);
+            let tint = mix(g.highlight.rgb, base, 0.5);
+            return vec4<f32>(tint * (ring + inner) * (0.25 + 0.75 * away) * 0.9, 1.0);
         }
         default: {}
     }
@@ -421,16 +557,18 @@ fn fs_box(in: BoxOut) -> @location(0) vec4<f32> {
         edge_color = vec3<f32>(0.9, 0.6, 0.12);
     }
     var gain = edge_gain;
-    if (same_box(in.bmin, in.size, g.hover_min, g.hover_max)) {
+    if (same_box(in.own_min, in.own_size, g.hover_min, g.hover_max)) {
         gain *= 2.0;
         c += base * 0.025;
     }
-    if (same_box(in.bmin, in.size, g.sel_min, g.sel_max)) {
+    if (same_box(in.own_min, in.own_size, g.sel_min, g.sel_max)) {
         edge_color = g.highlight.rgb;
         gain = 2.6 + 0.4 * sin(t * 2.6);
         c += g.highlight.rgb * 0.05;
     }
     c += edge_color * (edge * gain * 1.3 + halo * gain * 0.25) * small;
+    // (what the edges give a face too small to draw them: their average)
+    c += edge_color * gain * 0.08 * (1.0 - small);
     // far away, bright points are pressed down (no blown-out specks for the
     // bloom to spread); near, nothing changes
     // (and never more than a bright light: no infinity reaches the bloom)

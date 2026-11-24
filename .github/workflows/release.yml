@@ -57,6 +57,12 @@ jobs:
     # runs on AlmaLinux / RHEL 9, Ubuntu 22.04, Debian 12 and later; a check
     # after the build fails the release where it needs a newer one)
     runs-on: ubuntu-24.04
+    # TODO(pin): this image is not pinned by its digest yet (the machine
+    # this was written on cannot reach the registry). Before the release,
+    # get the digest of the multi-arch index with either of
+    #   docker buildx imagetools inspect almalinux:9 --format '{{json .Manifest.Digest}}'
+    #   skopeo inspect --raw docker://docker.io/library/almalinux:9 | sha256sum
+    # and write it here as   container: almalinux:9@sha256:<digest>
     container: almalinux:9
     timeout-minutes: 60
     env:

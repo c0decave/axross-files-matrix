@@ -563,3 +563,127 @@ fn one_dead_file_never_holds_the_previews_of_others() {
         "the preview came"
     );
 }
+
+#[test]
+fn a_spot_still_works_after_its_profile_left_axross_list() {
+    let s = Scratch::new("systems-spot-gone");
+    let (o, _) = opts(&s);
+    let mut h = window(o);
+    h.state_mut().teleport_system("sftp-box", Vec::new());
+    wait(&mut h, "sftp-box open", |a| {
+        a.system_state("sftp-box") == SysState::Open
+    });
+    let i = island_of(h.state_mut(), "sftp-box");
+    let deep = h.state_mut().islands[i]
+        .tree
+        .nodes
+        .iter()
+        .position(|x| &*x.name == std::ffi::OsStr::new("deep"))
+        .unwrap() as u32;
+    h.state_mut().select(i, deep);
+    h.state_mut().save_spot(5);
+    h.state_mut().selected = None;
+    // axross's list no longer names it (the island still stands)
+    if let axross_files_matrix::app::McpState::Connected {
+        systems: Ok(sys), ..
+    } = &mut h.state_mut().mcp
+    {
+        sys.profiles.retain(|p| p.name != "sftp-box");
+    } else {
+        panic!("connected");
+    }
+    assert!(h.state_mut().system_island("sftp-box").is_some());
+    h.key_press(egui::Key::Num5);
+    h.run_steps(2);
+    wait(&mut h, "the spot", |a| {
+        a.pending_fly.is_none() && a.selected.is_some()
+    });
+    let (j, n) = h.state_mut().selected.unwrap();
+    assert_eq!(j, i);
+    assert_eq!(
+        h.state_mut().islands[j].tree.nodes[n as usize]
+            .name
+            .to_string_lossy(),
+        "deep"
+    );
+}
+
+#[test]
+fn the_menu_rows_keep_their_order_when_states_change() {
+    let s = Scratch::new("systems-order");
+    let (o, _) = opts(&s);
+    let mut h = window(o);
+    h.state_mut().teleport_open = true;
+    h.run_steps(3);
+    let names: Vec<String> = h
+        .state_mut()
+        .system_profiles()
+        .iter()
+        .map(|p| p.name.clone())
+        .collect();
+    let mut sorted = names.clone();
+    sorted.sort();
+    assert_eq!(names, sorted, "by name");
+    let order = |h: &mut Harness<'static, App>| -> Vec<String> {
+        let mut seen: Vec<(f32, String)> = Vec::new();
+        for n in &names {
+            if let Some(node) = h.query_by_label(n) {
+                seen.push((node.rect().top(), n.clone()));
+            }
+        }
+        seen.sort_by(|a, b| a.0.total_cmp(&b.0));
+        seen.into_iter().map(|(_, n)| n).collect()
+    };
+    let before = order(&mut h);
+    assert!(before.len() >= 3, "{before:?}");
+    // one opens, one fails: no row moves
+    h.state_mut().teleport_system("sftp-box", Vec::new());
+    wait(&mut h, "sftp-box open", |a| {
+        a.system_state("sftp-box") == SysState::Open
+    });
+    h.run_steps(3);
+    std::thread::sleep(Duration::from_millis(300));
+    h.run_steps(2);
+    let after = order(&mut h);
+    assert_eq!(before, after);
+}
+
+#[test]
+fn a_system_that_grows_after_its_connect_is_framed_again() {
+    let s = Scratch::new("systems-reframe");
+    let (o, _) = opts(&s);
+    let mut h = window(o);
+    // teleported to while it connects: a small plot
+    h.state_mut().teleport_system("sftp-box", Vec::new());
+    wait(&mut h, "sftp-box open", |a| {
+        a.system_state("sftp-box") == SysState::Open
+    });
+    wait(&mut h, "its walk", |a| {
+        a.system_island("sftp-box")
+            .is_some_and(|i| a.islands[i].status.done && a.islands[i].city.is_some())
+    });
+    // the flights and re-framings play out
+    for _ in 0..240 {
+        h.step();
+        h.state_mut().pump(Duration::from_millis(2));
+    }
+    let app = h.state_mut();
+    let i = island_of(app, "sftp-box");
+    let b = app.islands[i].city.as_ref().unwrap().aabb();
+    for x in [b.min.x + 2.0, b.max.x - 2.0] {
+        for z in [b.min.z + 2.0, b.max.z - 2.0] {
+            let p = axross_files_matrix::math::vec3(x, 0.0, z);
+            assert!(app.in_view(p), "the grown island's corner {p:?} is in view");
+        }
+    }
+    assert!(
+        camera_over(app, i),
+        "target {:?} pos {:?} pitch {} island {:?} mode {:?} flying {}",
+        app.camera.target,
+        app.camera.pos,
+        app.camera.pitch,
+        b,
+        app.camera.mode,
+        app.camera.flying()
+    );
+}

@@ -124,3 +124,78 @@ fn the_read_only_question_before_the_flight() {
     h.run_steps(3);
     assert!(!h.state_mut().ask_mode_open);
 }
+
+#[test]
+fn home_z_and_the_frame_button_see_an_island_whole() {
+    let s = support::Scratch::new("frame-island");
+    let mut o = support::options(&s);
+    o.synthetic = Some(3000);
+    let mut h = egui_kittest::Harness::builder()
+        .allow_missing_glyphs()
+        .with_size(egui::vec2(1200.0, 800.0))
+        .with_max_steps(32)
+        .build_eframe(move |cc| axross_files_matrix::app::App::new(cc, o));
+    assert!(h.state_mut().settle(std::time::Duration::from_secs(60)));
+    h.run_steps(3);
+    let corners_in_view = |app: &axross_files_matrix::app::App, i: usize| {
+        let b = app.islands[i].city.as_ref().unwrap().aabb();
+        [b.min.x + 2.0, b.max.x - 2.0].iter().all(|&x| {
+            [b.min.z + 2.0, b.max.z - 2.0]
+                .iter()
+                .all(|&z| app.in_view(axross_files_matrix::math::vec3(x, 0.0, z)))
+        })
+    };
+    let city = h
+        .state_mut()
+        .islands
+        .iter()
+        .position(|i| i.hw.is_none())
+        .unwrap();
+    let machine = h
+        .state_mut()
+        .islands
+        .iter()
+        .position(|i| i.hw.is_some())
+        .unwrap();
+    // the first view: the city whole, 15 degrees down
+    assert!(corners_in_view(h.state_mut(), city));
+    let pitch = -h.state_mut().camera.pitch.to_degrees();
+    assert!((14.0..=16.0).contains(&pitch), "{pitch}");
+    // away, then Z on the machine's island (chosen): it whole
+    h.state_mut().look_from(
+        axross_files_matrix::math::vec3(5000.0, 300.0, 5000.0),
+        axross_files_matrix::math::vec3(5100.0, 0.0, 5100.0),
+    );
+    h.state_mut().select(machine, 0);
+    h.key_press(egui::Key::Z);
+    for _ in 0..150 {
+        h.step();
+    }
+    assert!(
+        corners_in_view(h.state_mut(), machine),
+        "Z framed the machine"
+    );
+    // the inspect panel's button: the city's island
+    h.state_mut().select(city, 0);
+    h.run_steps(2);
+    h.get_by_label("Frame island").click();
+    for _ in 0..150 {
+        h.step();
+    }
+    assert!(
+        corners_in_view(h.state_mut(), city),
+        "the button framed the city"
+    );
+    // Home: back to the first view (the biggest city), not the map
+    h.state_mut().look_from(
+        axross_files_matrix::math::vec3(5000.0, 3000.0, 5000.0),
+        axross_files_matrix::math::vec3(0.0, 0.0, 0.0),
+    );
+    h.key_press(egui::Key::Home);
+    for _ in 0..150 {
+        h.step();
+    }
+    assert!(corners_in_view(h.state_mut(), city), "Home");
+    let pitch = -h.state_mut().camera.pitch.to_degrees();
+    assert!((14.0..=16.0).contains(&pitch), "Home is low: {pitch}");
+}

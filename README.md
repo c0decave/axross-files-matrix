@@ -50,7 +50,7 @@ with real file access. Written in Rust (wgpu and egui), a companion of
 
 <table>
   <tr>
-    <td><img src="https://raw.githubusercontent.com/c0decave/axross-files-matrix/main/docs/city-200k.png" alt="A city of 200 000 files from above"></td>
+    <td><img src="https://raw.githubusercontent.com/c0decave/axross-files-matrix/main/docs/city-200k.png" alt="A city of 200 000 files as the window first shows it"></td>
     <td><img src="https://raw.githubusercontent.com/c0decave/axross-files-matrix/main/docs/street.png" alt="Among the towers"></td>
   </tr>
   <tr>
@@ -135,8 +135,8 @@ background (`--foreground` keeps it there).
 |---|---|
 | W A S D (arrows) | fly forward, left, back, right |
 | Q / E | down / up |
-| Shift | five times as fast |
-| wheel | flight speed; in orbit: zoom |
+| Shift | five times as fast (the speed grows with the height) |
+| wheel | flight speed factor; in orbit: zoom |
 | right drag | look around (fly) / turn (orbit) |
 | M | capture the mouse to look (Esc lets go) |
 | Esc | let the mouse go, give a connect up, clear the choice |
@@ -147,7 +147,8 @@ background (`--foreground` keeps it there).
 | N / Enter | fly to the next hit (Shift: teleport) |
 | T | teleport menu: other systems, islands, districts, spots, hits |
 | 1 - 9, Ctrl+1 - 9 | jump to a saved spot, save one |
-| Home | overview |
+| Home | back to the first view (the biggest city, low) |
+| Z | frame the chosen island whole (kept while it grows) |
 | O / Shift+O | open in axross / with the default program |
 | L | the colour legend |
 | H / F1 | help |
@@ -178,9 +179,14 @@ once whether it takes a path: `axross -- PATH`, and for a remote backend
 `axross --profile=NAME -- PATH`); an older axross is said to be too old and
 nothing else is started in its place. *Show in file manager* opens the
 file's folder and runs nothing. *Open* hands the file to the system's
-default program - for a program, a script, a desktop entry, a shortcut, an
-executable, a link, or anything on a removable medium or a network file
-system it asks first and offers the file manager instead.
+default program: everyday files (text, source code, documents, archives,
+pictures, sound, video, PDFs) open at once when their first bytes agree
+with their name. A program, a script, a desktop entry, a shortcut, an
+executable, a link, a pipe or a device, content under a false name (a web
+page called `.png`, a zip called `.jpg`), or anything on a removable
+medium or a network file system asks first and offers the file manager
+instead. A type the program does not know asks too, and can be told not
+to ask again (Settings › Opening undoes it).
 
 ### What you see
 
@@ -192,7 +198,9 @@ system it asks first and offers the file manager instead.
   data blue, configuration soft green. Recently changed files glow and
   have more lit windows.
 - **Blocks**: a far district drawn as one block in the colour of what fills
-  it most. Dashed outlines: a folder not read yet. Amber outlines: a folder
+  it most, as high as the 90th percentile of its buildings, its tallest
+  still standing as towers; far away the city is drawn a little higher
+  (its relief readable from across it). Dashed outlines: a folder not read yet. Amber outlines: a folder
   that could not be read. The legend in the view's corner says all of this
   (L hides it).
 - **Sizes**: by the space a file takes on the disk (a sparse 4 GB file is

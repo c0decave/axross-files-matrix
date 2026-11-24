@@ -275,13 +275,14 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
         view_formats: &[],
     });
     let view = target.create_view(&wgpu::TextureViewDescriptor::default());
-    let lod = if opts.all {
-        Lod {
-            collapse: 0.0,
-            ..Lod::default()
-        }
-    } else {
-        Lod::default()
+    let lod = Lod {
+        collapse: if opts.all {
+            0.0
+        } else {
+            Lod::default().collapse
+        },
+        look: crate::render::far_look(c.side(), c.layout.top),
+        ..Lod::default()
     };
     let v4 = |c: [f32; 3], w: f32| [c[0], c[1], c[2], w];
     let (center, side) = (c.center(), c.side());
@@ -321,6 +322,8 @@ pub fn run(opts: &BenchOptions) -> Result<BenchReport, String> {
                 grid: v4(theme.grid, 1.0),
                 highlight: v4(theme.highlight, 0.0),
                 params: [0.0, 1.35, 1.0, 0.1],
+                look: crate::render::far_look(side, c.layout.top),
+                lens: [2.0 * (cam.fov_y * 0.5).tan(), 0.0, 0.0, 0.0],
                 ..Default::default()
             },
             instances: instances.clone(),

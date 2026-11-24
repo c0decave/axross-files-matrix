@@ -27,7 +27,9 @@ a name that starts with a dash.
   --no-mcp          do not look for axross's MCP server
   --no-hardware     no island of the machine
   --no-cache        neither read nor write the walk cache
-  --frame-stats     frame times to stderr once a second
+  --frame-stats     times of the frames drawn to stderr, at most once a
+                    second (it makes no frames itself: an idle window
+                    reports nothing until something moves)
   --fixed-lod       no adaptive level of detail (measurements)
   --foreground, -F  stay in the terminal (else it goes to the background)
   --dump-city DIR   walk DIR, lay it out, print the city (text, or --json),
@@ -44,11 +46,12 @@ The GPU: a dedicated one by default (Settings > GPU); WGPU_ADAPTER_NAME
 picks one by a part of its name, WGPU_BACKEND the API (vulkan, metal,
 dx12, gl), WGPU_POWER_PREF (high, low) the preference.
 
-Keys: W A S D fly, Q / E down and up, Shift faster, the wheel sets the
-speed, right drag or M looks around, F switches free flight and orbit,
-/ searches, N the next hit, T teleports, 1-9 saved spots (Ctrl saves),
-Home the overview, O opens in axross, L the legend, H the help. Read-only: nothing on
-any disk is changed.";
+Keys: W A S D fly (faster the higher), Q / E down and up, Shift faster,
+the wheel a speed factor, right drag or M looks around, F switches free
+flight and orbit, / searches, N the next hit, T teleports, 1-9 saved spots
+(Ctrl saves), Home back to the first view, Z frames the chosen island, O
+opens in axross, L the legend, H the help. Read-only: nothing on any disk
+is changed.";
 
 fn value_after(args: &[String], name: &str) -> Option<String> {
     let i = args.iter().position(|a| a == name)?;

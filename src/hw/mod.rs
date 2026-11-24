@@ -500,6 +500,7 @@ impl Builder {
             glow: 0.3,
             listing: Listing::Listed,
             tiles: (0, 0),
+            tall: (0, 0),
         });
         self.current = Some((index, id));
         id
@@ -613,6 +614,7 @@ pub fn island(m: &Machine) -> HwIsland {
         glow: 0.2,
         listing: Listing::Listed,
         tiles: (0, 0),
+        tall: (0, 0),
     });
     b.layout.placed[0] = Placed::District(0);
 

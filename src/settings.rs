@@ -127,6 +127,12 @@ pub struct Settings {
     pub update_last_failed: bool,
     pub window: Option<[f32; 2]>,
     pub axross_probe: Option<AxrossProbe>,
+    /// Types this program does not know that the default program opens
+    /// without a question (the user said "do not ask again"; lower case,
+    /// no dot). What runs is asked about whatever this says.
+    pub open_types: Vec<String>,
+    /// The first start's key hint was seen (closed, or a key moved).
+    pub hint_seen: bool,
 }
 
 impl Default for Settings {
@@ -162,6 +168,8 @@ impl Default for Settings {
             update_last_failed: false,
             window: None,
             axross_probe: None,
+            open_types: Vec::new(),
+            hint_seen: false,
         }
     }
 }
@@ -218,6 +226,16 @@ impl Settings {
             self.window = None;
         }
         self.mcp.command.truncate(64);
+        // (types: short, plain, lower case, each once)
+        self.open_types.retain(|t| {
+            !t.is_empty()
+                && t.len() <= 16
+                && t.chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
+        });
+        self.open_types.sort();
+        self.open_types.dedup();
+        self.open_types.truncate(256);
         self
     }
 }
@@ -234,8 +252,13 @@ pub enum Loaded {
     Fresh,
     Read,
     /// Read, but these keys were not understood (a value of the wrong
-    /// type): they have their defaults; the rest is kept.
-    Salvaged(Vec<String>),
+    /// type; nested ones as `mcp.enabled`, `bookmarks[2]`): they have
+    /// their defaults, the rest is kept - and the file as it was is copied
+    /// to `backup` first.
+    Salvaged {
+        keys: Vec<String>,
+        backup: Option<PathBuf>,
+    },
     /// The file was not good: set aside (where), defaults used.
     SetAside(PathBuf),
 }
@@ -257,32 +280,129 @@ pub fn load(path: &Path) -> (Settings, Loaded) {
     {
         return (s.sanitized(), Loaded::Read);
     }
-    // a JSON object with some values of the wrong type: each key that is
-    // understood is kept, the others get their defaults
+    // a JSON object with some values of the wrong type: each value that is
+    // understood is kept - key by key, and inside a nested object or list
+    // item by item - the others get their defaults
     if let Some(serde_json::Value::Object(all)) = bytes
         .as_ref()
         .and_then(|b| serde_json::from_slice::<serde_json::Value>(b).ok())
+        && let Ok(mut good) = serde_json::to_value(Settings::default())
     {
-        let mut good = serde_json::Map::new();
         let mut dropped = Vec::new();
         for (k, v) in all {
-            let mut trial = good.clone();
-            trial.insert(k.clone(), v);
-            if serde_json::from_value::<Settings>(serde_json::Value::Object(trial.clone())).is_ok()
-            {
-                good = trial;
-            } else {
-                dropped.push(k.chars().take(40).collect());
-            }
+            salvage(&mut good, &[Seg::Key(k)], v, &mut dropped);
         }
-        if let Ok(s) = serde_json::from_value::<Settings>(serde_json::Value::Object(good)) {
-            return (s.sanitized(), Loaded::Salvaged(dropped));
+        if let Ok(s) = serde_json::from_value::<Settings>(good) {
+            // (the file as it was, kept beside: nothing the user wrote is lost)
+            let backup = path.with_extension("json.bak");
+            let backup = std::fs::copy(path, &backup).ok().map(|_| backup);
+            return (
+                s.sanitized(),
+                Loaded::Salvaged {
+                    keys: dropped,
+                    backup,
+                },
+            );
         }
     }
     // no JSON object at all: set aside, the defaults used
     let aside = path.with_extension("json.corrupt");
     let _ = std::fs::rename(path, &aside);
     (Settings::default(), Loaded::SetAside(aside))
+}
+
+#[derive(Clone, Debug)]
+enum Seg {
+    Key(String),
+    Item(usize),
+}
+
+fn slot<'a>(v: &'a mut serde_json::Value, path: &[Seg]) -> Option<&'a mut serde_json::Value> {
+    let mut at = v;
+    for seg in path {
+        at = match seg {
+            Seg::Key(k) => at
+                .as_object_mut()?
+                .entry(k.clone())
+                .or_insert(serde_json::Value::Null),
+            Seg::Item(i) => at.as_array_mut()?.get_mut(*i)?,
+        };
+    }
+    Some(at)
+}
+
+fn shown(path: &[Seg]) -> String {
+    let mut s = String::new();
+    for seg in path {
+        match seg {
+            Seg::Key(k) => {
+                if !s.is_empty() {
+                    s.push('.');
+                }
+                s.extend(k.chars().take(40));
+            }
+            Seg::Item(i) => s.push_str(&format!("[{i}]")),
+        }
+    }
+    s
+}
+
+/// Puts `v` at `path` in `good` when the settings still read so; else, an
+/// object or a list is tried part by part (two levels deep), and what
+/// still does not read keeps its default and is named in `dropped`.
+fn salvage(
+    good: &mut serde_json::Value,
+    path: &[Seg],
+    v: serde_json::Value,
+    dropped: &mut Vec<String>,
+) {
+    let reads = |t: &serde_json::Value| serde_json::from_value::<Settings>(t.clone()).is_ok();
+    let mut trial = good.clone();
+    let Some(at) = slot(&mut trial, path) else {
+        dropped.push(shown(path));
+        return;
+    };
+    let default = at.clone();
+    *at = v.clone();
+    if reads(&trial) {
+        *good = trial;
+        return;
+    }
+    if path.len() < 3 {
+        match (v, default) {
+            (serde_json::Value::Object(parts), serde_json::Value::Object(_)) => {
+                for (k, x) in parts {
+                    let mut p = path.to_vec();
+                    p.push(Seg::Key(k));
+                    salvage(good, &p, x, dropped);
+                }
+                return;
+            }
+            (serde_json::Value::Array(items), serde_json::Value::Array(defaults)) => {
+                // the list as long as the file's; each item the file's when
+                // it reads, else the default's (or nothing)
+                let mut trial = good.clone();
+                if let Some(at) = slot(&mut trial, path) {
+                    *at = serde_json::Value::Array(
+                        (0..items.len())
+                            .map(|i| defaults.get(i).cloned().unwrap_or(serde_json::Value::Null))
+                            .collect(),
+                    );
+                }
+                if reads(&trial) {
+                    *good = trial;
+                    for (i, x) in items.into_iter().enumerate() {
+                        let mut p = path.to_vec();
+                        p.push(Seg::Item(i));
+                        salvage(good, &p, x, dropped);
+                    }
+                    return;
+                }
+            }
+            _ => {}
+        }
+    }
+    dropped.push(shown(path));
 }
 
 pub fn save(path: &Path, s: &Settings) -> std::io::Result<()> {
@@ -402,7 +522,7 @@ mod tests {
         .unwrap();
         let (s, how) = load(&p);
         match how {
-            Loaded::Salvaged(keys) => {
+            Loaded::Salvaged { keys, .. } => {
                 assert!(
                     keys.contains(&"read_only".to_string()) && keys.contains(&"theme".to_string()),
                     "{keys:?}"
@@ -413,6 +533,37 @@ mod tests {
         assert!(!s.labels);
         assert_eq!(s.fly_speed, 40.0);
         assert!(p.exists(), "not set aside");
+    }
+
+    #[test]
+    fn a_wrong_nested_value_loses_only_itself_and_the_old_file_is_kept() {
+        let dir = Scratch::new("settings-nested");
+        let p = dir.path().join(FILE);
+        let text = br#"{"mcp": {"enabled": "x", "command": ["a", "--b"], "open_profiles": ["p"]},
+            "bookmarks": [null, {"pos": [1, 2, 3], "label": "home"}, {"pos": "bad"}],
+            "labels": false}"#;
+        std::fs::write(&p, text).unwrap();
+        let (s, how) = load(&p);
+        let Loaded::Salvaged { keys, backup } = how else {
+            panic!("{how:?}")
+        };
+        let mut keys = keys;
+        keys.sort();
+        assert_eq!(
+            keys,
+            vec!["bookmarks[2]".to_string(), "mcp.enabled".to_string()]
+        );
+        // the rest of mcp and the good spot are kept
+        assert_eq!(s.mcp.command, vec!["a".to_string(), "--b".to_string()]);
+        assert_eq!(s.mcp.open_profiles, vec!["p".to_string()]);
+        assert!(s.mcp.enabled, "the default");
+        assert_eq!(s.bookmarks[1].as_ref().unwrap().label, "home");
+        assert_eq!(s.bookmarks[1].as_ref().unwrap().pos, [1.0, 2.0, 3.0]);
+        assert!(!s.labels);
+        // the file as it was, beside it
+        let backup = backup.expect("a copy");
+        assert_eq!(std::fs::read(&backup).unwrap(), text.to_vec());
+        assert!(backup.to_string_lossy().ends_with("settings.json.bak"));
     }
 
     #[cfg(unix)]

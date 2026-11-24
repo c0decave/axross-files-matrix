@@ -87,6 +87,9 @@ fn synthetic(name: &str, files: usize) -> (Scratch, Harness<'static, App>) {
     opts.synthetic = Some(files);
     let mut h = harness(opts, SIZE);
     settle(&mut h);
+    // (the first start's key hint, seen: the pictures without it - the
+    // first view's shows it, as a first start does)
+    h.state_mut().settings.hint_seen = true;
     (s, h)
 }
 
@@ -97,6 +100,19 @@ fn the_city(app: &mut App) -> (Vec3, f32) {
         .find(|c| c.ring != Ring::Hardware)
         .map(|c| (c.center(), c.side()))
         .expect("a city")
+}
+
+/// The 3D view alone (no labels, no legend): what blooms and glows,
+/// measured without the labels' white letters.
+fn bare(h: &mut Harness<'static, App>) -> image::RgbaImage {
+    let (labels, legend) = (h.state_mut().settings.labels, h.state_mut().legend_open);
+    h.state_mut().settings.labels = false;
+    h.state_mut().legend_open = false;
+    frames(h, 2);
+    let img = h.render().expect("rendered");
+    h.state_mut().settings.labels = labels;
+    h.state_mut().legend_open = legend;
+    img
 }
 
 fn frames(h: &mut Harness<'static, App>, n: usize) {
@@ -128,18 +144,17 @@ fn a_city_of_200000_files() {
     }
     let (_s, mut h) = synthetic("200k", 200_000);
     let (c, side) = the_city(h.state_mut());
-    // from aside and above, the whole island
-    h.state_mut().look_from(
-        c + vec3(side * 0.55, side * 0.32, side * 0.62),
-        c + vec3(-side * 0.05, 0.0, 0.0),
-    );
+    // the first view, as the window shows it at the first start (the
+    // README's): the key hint low in it
+    h.state_mut().settings.hint_seen = false;
     frames(&mut h, 3);
     let img = shot(&mut h, "city-200k");
     let l = look(&img, (0.05, 0.1, 0.95, 0.9));
     eprintln!(
-        "200k overview: {l:?}, {} boxes",
+        "200k first view: {l:?}, {} boxes",
         h.state_mut().last_frame_instances
     );
+    h.state_mut().settings.hint_seen = true;
     assert_matrix(&l, "200k");
     // inside the city: towers receding under the rain (the Matrix look),
     // a street, the skyline
@@ -488,6 +503,21 @@ fn far_views(files: usize, name: &str) {
     let mut h = harness(opts, SIZE);
     settle(&mut h);
     frames(&mut h, 4);
+    {
+        let app = h.state_mut();
+        let c = app
+            .islands
+            .iter()
+            .filter(|i| i.hw.is_none())
+            .find_map(|i| i.city.as_ref())
+            .expect("a city");
+        eprintln!(
+            "{name}: island {:.0} m wide, roofs to {:.0} m, camera {:.0} m up",
+            c.side(),
+            c.layout.top,
+            app.camera.pos.y
+        );
+    }
     let first = shot(&mut h, &format!("{name}-first"));
     let l = look(&first, (0.05, 0.1, 0.95, 0.9));
     eprintln!(
@@ -495,16 +525,43 @@ fn far_views(files: usize, name: &str) {
         h.state_mut().last_frame_instances
     );
     assert_matrix(&l, name);
-    // the biggest city framed: the view's middle is city, not sky or the machine
-    let mid = look(&first, (0.3, 0.35, 0.7, 0.75));
+    // (the first start's key hint, seen: the rest without it)
+    h.state_mut().settings.hint_seen = true;
+    // the low first view: the city in the lower part, whole (no corner
+    // cut off at an edge), the sky and its rain above it - never black
+    let lower = look(&first, (0.05, 0.5, 0.95, 0.9));
     assert!(
-        mid.mean[1] > 12.0,
-        "{name}: the city fills the view's middle {mid:?}"
+        lower.mean[1] > 12.0,
+        "{name}: the city fills the view's lower part {lower:?}"
     );
+    let sky = look(&first, (0.05, 0.07, 0.95, 0.25));
+    eprintln!("{name} first view's sky: {sky:?}");
+    assert!(sky.mean[1] > 3.0, "{name}: a sky, not black {sky:?}");
+    assert!(sky.green > 0.002, "{name}: rain in the sky {sky:?}");
+    {
+        let app = h.state_mut();
+        let b = app
+            .islands
+            .iter()
+            .filter(|i| i.hw.is_none())
+            .filter_map(|i| i.city.as_ref())
+            .map(|c| c.aabb())
+            .next()
+            .expect("a city");
+        for x in [b.min.x + 8.0, b.max.x - 8.0] {
+            for z in [b.min.z + 8.0, b.max.z - 8.0] {
+                let p = vec3(x, 0.0, z);
+                assert!(app.in_view(p), "{name}: the corner {p:?} is in the window");
+            }
+        }
+        // 15 degrees down: the horizon in the upper third
+        let pitch = -app.camera.pitch.to_degrees();
+        assert!((12.0..=18.0).contains(&pitch), "{name}: pitch {pitch}");
+    }
     h.state_mut().overview(false);
     frames(&mut h, 4);
-    let over = shot(&mut h, &format!("{name}-overview"));
-    let l = look(&over, (0.05, 0.1, 0.95, 0.9));
+    let _ = shot(&mut h, &format!("{name}-overview"));
+    let l = look(&bare(&mut h), (0.05, 0.1, 0.95, 0.9));
     eprintln!(
         "{name} overview: {l:?}, {} boxes",
         h.state_mut().last_frame_instances
@@ -515,14 +572,33 @@ fn far_views(files: usize, name: &str) {
     h.state_mut()
         .look_from(c + vec3(0.0, side * 1.1, side * 0.02), c);
     frames(&mut h, 4);
-    let top = shot(&mut h, &format!("{name}-top"));
-    let l = look(&top, (0.05, 0.1, 0.95, 0.9));
+    let _ = shot(&mut h, &format!("{name}-top"));
+    let l = look(&bare(&mut h), (0.05, 0.1, 0.95, 0.9));
     eprintln!("{name} top: {l:?}");
     assert!(
         l.white < 0.01,
         "{name} from above: no blown-out blobs {l:?}"
     );
     assert!(l.mean[1] > 10.0, "{name} from above: not black {l:?}");
+    // from aside, low over the sea: a skyline, not a pancake
+    h.state_mut().look_from(
+        c + vec3(side * 0.1, side * 0.06 + 10.0, side * 1.15),
+        c + vec3(0.0, side * 0.03, 0.0),
+    );
+    frames(&mut h, 4);
+    let _ = shot(&mut h, &format!("{name}-skyline"));
+    let l = look(&bare(&mut h), (0.05, 0.1, 0.95, 0.9));
+    eprintln!("{name} skyline: {l:?}");
+    assert_matrix(&l, name);
+    assert!(l.white < 0.01, "{name} skyline: no blown-out blobs {l:?}");
+}
+
+#[test]
+fn far_views_of_20000_files() {
+    if !support::gpu_available() {
+        return;
+    }
+    far_views(20_000, "far-20k");
 }
 
 #[test]

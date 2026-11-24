@@ -40,6 +40,8 @@ pub enum Shape {
     Beam = 4,
     /// A search hit's pillar of light.
     Pillar = 5,
+    /// The ring on the ground round a search hit.
+    Ring = 6,
 }
 
 pub mod flags {
@@ -105,6 +107,9 @@ pub struct IslandInstances {
     pub blocks: Vec<Instance>,
     pub plates: Vec<Instance>,
     pub tiles: Vec<Instance>,
+    /// The far districts' and tiles' towers (`CityLayout::tall`'s
+    /// buildings, in its order: read in a row, not looked up one by one).
+    pub towers: Vec<Instance>,
     pub ground: Instance,
 }
 
@@ -130,7 +135,7 @@ pub fn make_instances(
         let denied = matches!(listing, Listing::Denied | Listing::Failed);
         ring_flags | if unread { flags::UNREAD } else { 0 } | if denied { flags::DENIED } else { 0 }
     };
-    let buildings = l
+    let buildings: Vec<Instance> = l
         .buildings
         .iter()
         .map(|b| {
@@ -197,12 +202,18 @@ pub fn make_instances(
         0.5,
         ring_flags,
     );
+    let towers = l
+        .tall
+        .iter()
+        .filter_map(|&b| buildings.get(b as usize).copied())
+        .collect();
     IslandInstances {
         offset,
         buildings,
         blocks,
         plates,
         tiles,
+        towers,
         ground,
     }
 }
@@ -227,6 +238,9 @@ pub struct IslandCity {
     pub target: Option<[f32; 2]>,
     /// Drawn: a new island only once it stands where it belongs.
     pub shown: bool,
+    /// Its ground's state ([`flags::UNREAD`]: connecting - its outline
+    /// pulses; [`flags::DENIED`]: failed - amber hatching).
+    pub state: u32,
 }
 
 /// The building boxes of a layout (island coordinates).
@@ -260,6 +274,7 @@ impl IslandCity {
             tile_hidden: vec![false; tiles],
             target: None,
             shown: true,
+            state: 0,
         }
     }
 
@@ -366,15 +381,21 @@ pub struct Lod {
     /// Labels: districts and buildings larger than these.
     pub label_district: f32,
     pub label_building: f32,
+    /// How the shader raises far roofs ([`crate::render::far_look`]; all
+    /// zero: not at all): what is culled is that high.
+    pub look: [f32; 4],
 }
 
 impl Default for Lod {
     fn default() -> Lod {
         Lod {
-            collapse: 0.045,
+            // (a little sooner than without the far towers: as many boxes
+            // as before them, the skyline kept)
+            collapse: 0.052,
             open: 0.12,
             label_district: 0.2,
             label_building: 0.08,
+            look: [0.0; 4],
         }
     }
 }
@@ -412,18 +433,25 @@ pub fn select(
         if island.tile_hidden.len() != island.layout.tiles.len() {
             island.tile_hidden = vec![false; island.layout.tiles.len()];
         }
+        // (culled as high as the shader may raise it; its distance and
+        // size on the screen as it is - the level of detail unchanged)
         let ab = island.aabb();
-        if !island.shown || !frustum.intersects(&ab) {
+        let mut raised = ab;
+        raised.max.y *= crate::render::stretch_at(lod.look, f32::MAX);
+        if !island.shown || !frustum.intersects(&raised) {
             continue;
         }
         let inst = island.inst.clone();
         // (instances of another layout: not drawn until theirs come)
         if inst.blocks.len() != island.layout.districts.len()
             || inst.buildings.len() != island.layout.buildings.len()
+            || inst.towers.len() != island.layout.tall.len()
         {
             continue;
         }
-        out.opaque.push(inst.ground);
+        let mut ground = inst.ground;
+        ground.info |= island.state & (flags::UNREAD | flags::DENIED);
+        out.opaque.push(ground);
         let size = island.side();
         let d = distance_to(&ab, eye).max(1.0);
         let [ox, oz] = island.offset;
@@ -451,7 +479,11 @@ pub fn select(
                 min: vec3(ox + r.x0, 0.0, oz + r.z0),
                 max: vec3(ox + r.x1, dist.top.max(dist.floor + 0.2), oz + r.z1),
             };
-            if !frustum.intersects(&b) {
+            let mut raised = b;
+            // (as high as the shader may draw its farthest corner)
+            let reach = distance_to(&b, eye) + r.w() + r.h();
+            raised.max.y *= crate::render::stretch_at(lod.look, reach);
+            if !frustum.intersects(&raised) {
                 i = dist.end as usize;
                 continue;
             }
@@ -466,6 +498,14 @@ pub fn select(
             // (the root too: a whole island far off is one block)
             if angle < lod.collapse || (i > 0 && !has_content) {
                 out.opaque.push(inst.blocks[i]);
+                // its tallest buildings still stand over the block
+                towers(
+                    &inst,
+                    dist.tall,
+                    near,
+                    angle < lod.collapse * 0.5,
+                    &mut out.opaque,
+                );
                 island.collapsed.push(i as u32);
                 out.collapsed += 1;
                 i = dist.end as usize;
@@ -495,12 +535,22 @@ pub fn select(
                         min: vec3(ox + tr.x0, tile.base, oz + tr.z0),
                         max: vec3(ox + tr.x1, tile.top.max(tile.base + 0.2), oz + tr.z1),
                     };
-                    if !frustum.intersects(&tb) {
+                    let mut raised = tb;
+                    let reach = distance_to(&tb, eye) + tr.w() + tr.h();
+                    raised.max.y *= crate::render::stretch_at(lod.look, reach);
+                    if !frustum.intersects(&raised) {
                         continue;
                     }
                     let ta = tr.w().max(tr.h()) / distance_to(&tb, eye).max(0.5);
                     if ta < lod.collapse {
                         out.opaque.push(inst.tiles[t as usize]);
+                        towers(
+                            &inst,
+                            tile.tall,
+                            distance_to(&tb, eye).max(0.5),
+                            ta < lod.collapse * 0.5,
+                            &mut out.opaque,
+                        );
                         island.collapsed_tiles.push(t);
                         island.tile_hidden[t as usize] = true;
                         out.collapsed += 1;
@@ -537,6 +587,34 @@ pub fn select(
             }
             i += 1;
         }
+    }
+}
+
+/// A tower this small on the screen (radians, its height) is not drawn
+/// over its block: about three pixels of a 800-pixel-high view.
+const TOWER_SEEN: f32 = 0.0045;
+
+/// The towers `tall` of a far district or tile `near` away (tallest
+/// first: the first too small to see ends them); a district less than half
+/// the size that collapses (`small`) keeps only its tallest - the skyline
+/// at the price of a few boxes.
+fn towers(
+    inst: &IslandInstances,
+    tall: (u32, u32),
+    near: f32,
+    small: bool,
+    out: &mut Vec<Instance>,
+) {
+    let seen = TOWER_SEEN * near;
+    let all = inst
+        .towers
+        .get(tall.0 as usize..tall.1 as usize)
+        .unwrap_or(&[]);
+    for i in all.iter().take(if small { 1 } else { all.len() }) {
+        if i.size[1] <= seen {
+            break;
+        }
+        out.push(*i);
     }
 }
 
@@ -930,6 +1008,53 @@ mod tests {
         let v = Mat4::look_to(eye, f, Vec3::Y);
         let p = Mat4::perspective_reversed_infinite(1.0, 1.6, 0.1);
         Frustum::from_view_proj(&p.mul(&v))
+    }
+
+    #[test]
+    fn far_towers_stand_and_raising_changes_no_level_of_detail() {
+        let (_, mut c) = island_of(20_000);
+        let center = c.center();
+        let eye = center + vec3(0.0, 900.0, 2200.0);
+        let lod = Lod::default();
+        let mut flat = FrameSet::default();
+        select(&mut [&mut c], eye, &view(eye, center), &lod, &mut flat);
+        let collapsed = flat.collapsed;
+        assert!(collapsed > 0, "some districts far enough to be blocks");
+        // the collapsed districts' towers are drawn over their blocks
+        let blocks = flat
+            .opaque
+            .iter()
+            .filter(|i| i.shape() == Shape::Block as u32)
+            .count();
+        let towers_possible: usize = c
+            .collapsed
+            .iter()
+            .map(|&d| {
+                let t = c.layout.districts[d as usize].tall;
+                (t.1 - t.0) as usize
+            })
+            .sum();
+        assert!(blocks > 0 && towers_possible > 0);
+        let buildings = flat
+            .opaque
+            .iter()
+            .filter(|i| i.shape() == Shape::Building as u32)
+            .count();
+        assert!(buildings > 0, "towers over the far blocks");
+        // raised roofs (the shader's stretch): the same choice of what is
+        // a block and what opens - only the culling is taller
+        let raised = Lod {
+            look: crate::render::far_look(c.side(), c.layout.top),
+            ..lod
+        };
+        let mut tall = FrameSet::default();
+        select(&mut [&mut c], eye, &view(eye, center), &raised, &mut tall);
+        // (a few more pass the culling: their raised roofs reach the view)
+        assert!(tall.collapsed >= collapsed && tall.collapsed <= collapsed + collapsed / 10 + 2);
+        assert!(tall.districts_drawn >= flat.districts_drawn);
+        assert!(tall.districts_drawn <= flat.districts_drawn + flat.districts_drawn / 10 + 2);
+        assert!(tall.opaque.len() >= flat.opaque.len());
+        assert!(tall.opaque.len() <= flat.opaque.len() + flat.opaque.len() / 10);
     }
 
     #[test]

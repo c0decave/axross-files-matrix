@@ -69,6 +69,9 @@ pub struct District {
     pub listing: Listing,
     /// Its own buildings' tiles (`tiles[a..b]`; empty: drawn one by one).
     pub tiles: (u32, u32),
+    /// Its subtree's tallest buildings (`tall[a..b]`), still drawn as
+    /// towers when the district is one block: a skyline survives.
+    pub tall: (u32, u32),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -101,6 +104,8 @@ pub struct CityLayout {
     pub tile_items: Vec<u32>,
     /// Per building: its tile (u32::MAX: none).
     pub tile_of: Vec<u32>,
+    /// The towers of the districts and tiles ([`District::tall`]).
+    pub tall: Vec<u32>,
 }
 
 impl CityLayout {
@@ -144,6 +149,8 @@ pub struct Tile {
     pub top: f32,
     pub ftype: FileType,
     pub glow: f32,
+    /// Its tallest buildings (`CityLayout::tall[a..b]`).
+    pub tall: (u32, u32),
 }
 
 /// A district with more own buildings than this is cut into tiles.
@@ -343,6 +350,7 @@ pub fn layout(nodes: &[LayoutNode], p: &Params) -> CityLayout {
             glow: glow(node.newest, p.now),
             listing: node.listing,
             tiles: (0, 0),
+            tall: (0, 0),
         });
         open.push(index);
         // the children, largest first
@@ -422,7 +430,7 @@ fn make_tiles(out: &mut CityLayout) {
         let a = out.tiles.len() as u32;
         for items in cells.into_iter().filter(|c| !c.is_empty()) {
             let mut rect = Rect::new(f32::MAX, f32::MAX, f32::MIN, f32::MIN);
-            let (mut hsum, mut top, mut glow) = (0f64, 0f32, 0f32);
+            let (mut top, mut glow) = (0f32, 0f32);
             let mut types = [0f32; 11];
             let base = out.buildings[items[0] as usize].base;
             for &b in &items {
@@ -433,18 +441,24 @@ fn make_tiles(out: &mut CityLayout) {
                     rect.x1.max(bl.rect.x1),
                     rect.z1.max(bl.rect.z1),
                 );
-                let area = bl.rect.area() as f64;
-                hsum += bl.height as f64 * area;
+                let area = bl.rect.area();
                 top = top.max(bl.base + bl.height);
                 glow = glow.max(bl.glow);
-                types[bl.ftype as usize] += area as f32;
+                types[bl.ftype as usize] += area;
             }
             let ftype = types
                 .iter()
                 .enumerate()
                 .max_by(|x, y| x.1.total_cmp(y.1))
                 .map_or(FileType::Other, |(k, _)| FileType::from_u8(k as u8));
-            let ground = rect.area().max(1e-6) as f64;
+            let height = p90(out, items.iter().copied()).max(0.15);
+            let mut cand = items.clone();
+            let towers = tallest(out, &mut cand, TILE_TOWERS, height);
+            let tall = (
+                out.tall.len() as u32,
+                (out.tall.len() + towers.len()) as u32,
+            );
+            out.tall.extend_from_slice(&towers);
             let first_item = out.tile_items.len() as u32;
             let index = out.tiles.len() as u32;
             for &b in &items {
@@ -457,10 +471,11 @@ fn make_tiles(out: &mut CityLayout) {
                 first: first_item,
                 end: out.tile_items.len() as u32,
                 base,
-                height: ((hsum / ground) as f32).max(0.15),
+                height,
                 top,
                 ftype,
                 glow,
+                tall,
             });
         }
         out.districts[d].tiles = (a, out.tiles.len() as u32);
@@ -488,57 +503,103 @@ fn close(out: &mut CityLayout, d: u32) {
     dist.sub_end = sub_end;
 }
 
-/// The heights and colours of the blocks a far district becomes, and the
-/// tops (bottom-up: the depth-first order backwards).
+/// How many towers a far district keeps.
+pub const TOWERS: usize = 4;
+/// How many a far tile keeps.
+pub const TILE_TOWERS: usize = 3;
+
+/// The 90th percentile of the heights of `items` (at most 512 of them
+/// looked at, evenly spread: a big district costs no more than a small
+/// one).
+fn p90(out: &CityLayout, items: impl ExactSizeIterator<Item = u32> + Clone) -> f32 {
+    let n = items.len();
+    if n == 0 {
+        return 0.0;
+    }
+    let step = n.div_ceil(512).max(1);
+    let mut h: Vec<f32> = items
+        .step_by(step)
+        .map(|b| out.buildings[b as usize].height)
+        .collect();
+    let k = ((h.len() - 1) as f32 * 0.9).round() as usize;
+    let (_, v, _) = h.select_nth_unstable_by(k, |a, b| a.total_cmp(b));
+    *v
+}
+
+/// The `k` tallest of `items` (tallest first), only those standing out
+/// over `block` by a third (a tower barely over its block is not seen).
+fn tallest(out: &CityLayout, items: &mut Vec<u32>, k: usize, block: f32) -> Vec<u32> {
+    let height = |b: &u32| out.buildings[*b as usize].height;
+    if items.len() > k {
+        items.select_nth_unstable_by(k - 1, |a, b| height(b).total_cmp(&height(a)));
+        items.truncate(k);
+    }
+    items.sort_by(|a, b| height(b).total_cmp(&height(a)).then(a.cmp(b)));
+    items.retain(|b| height(b) > block * 1.3);
+    std::mem::take(items)
+}
+
+/// The heights and colours of the blocks a far district becomes, its
+/// towers, and the tops (bottom-up: the depth-first order backwards).
 fn finish(out: &mut CityLayout) {
     let count = out.districts.len();
-    // per district: sum of height * area, area, per type area, top
-    let mut hsum = vec![0f64; count];
+    // per district: area, per type area, top, its subtree's tallest
     let mut asum = vec![0f64; count];
     let mut types = vec![[0f32; 11]; count];
     let mut top = vec![0f32; count];
+    let mut towers: Vec<Vec<u32>> = vec![Vec::new(); count];
+    let mut heights = vec![0f32; count];
     for i in (0..count).rev() {
         let d = &out.districts[i];
         let mut t = d.floor;
-        for b in &out.buildings[d.first as usize..d.own_end as usize] {
+        let mut cand: Vec<u32> = Vec::new();
+        for (k, b) in out.buildings[d.first as usize..d.own_end as usize]
+            .iter()
+            .enumerate()
+        {
             let a = b.rect.area() as f64;
-            hsum[i] += b.height as f64 * a;
             asum[i] += a;
             types[i][b.ftype as usize] += a as f32;
             t = t.max(b.base + b.height);
+            cand.push(d.first + k as u32);
+        }
+        if cand.len() > TOWERS {
+            let height = |b: &u32| out.buildings[*b as usize].height;
+            cand.select_nth_unstable_by(TOWERS - 1, |a, b| height(b).total_cmp(&height(a)));
+            cand.truncate(TOWERS);
         }
         // the child districts (direct ones: their sums already hold theirs)
         let mut c = i + 1;
         while c < d.end as usize {
-            hsum[i] += hsum[c];
             asum[i] += asum[c];
             for k in 0..11 {
                 types[i][k] += types[c][k];
             }
             t = t.max(top[c]);
+            cand.extend_from_slice(&towers[c]);
             c = out.districts[c].end as usize;
         }
         top[i] = t;
+        // (the block: its buildings' 90th percentile, never their mean -
+        // a mean flattens a skyline into a slab)
+        heights[i] = p90(out, d.first..d.sub_end);
+        towers[i] = tallest(out, &mut cand, TOWERS, 0.0);
     }
-    for (i, d) in out.districts.iter_mut().enumerate() {
-        d.top = top[i];
-        let area = d
-            .rect
-            .inset(street(&d.rect, d.depth as usize))
-            .area()
-            .max(1e-6) as f64;
-        // the block: as high as its buildings on average over its ground
-        let avg = if asum[i] > 0.0 { hsum[i] / area } else { 0.0 };
+    for i in 0..count {
+        let d = &out.districts[i];
         let unread = matches!(d.listing, Listing::Unlisted | Listing::Pending);
         let lot = d.rect.area().sqrt();
-        d.block_height = if asum[i] > 0.0 {
-            (avg as f32).max(0.15)
+        let block = if asum[i] > 0.0 {
+            heights[i].max(0.15)
         } else if unread {
             (lot * 0.25).clamp(0.2, 30.0)
         } else {
             0.1
         };
-        d.top = d.top.max(d.floor + d.block_height);
+        towers[i].retain(|b| out.buildings[*b as usize].height > block * 1.3);
+        let a = out.tall.len() as u32;
+        out.tall.extend_from_slice(&towers[i]);
+        let b = out.tall.len() as u32;
         let best = types[i]
             .iter()
             .enumerate()
@@ -546,6 +607,10 @@ fn finish(out: &mut CityLayout) {
             .max_by(|a, b| a.1.total_cmp(b.1))
             .filter(|(_, a)| **a > 0.0)
             .map(|(k, _)| k as u8);
+        let d = &mut out.districts[i];
+        d.top = top[i].max(d.floor + block);
+        d.block_height = block;
+        d.tall = (a, b);
         d.ftype = best.map_or(FileType::Folder, FileType::from_u8);
     }
     out.top = out.districts.first().map_or(0.0, |d| d.top);
@@ -659,6 +724,102 @@ mod tests {
         };
         assert!(l.districts[d as usize].block_height >= 0.2);
         assert_eq!(l.districts[d as usize].listing, Listing::Unlisted);
+    }
+
+    #[test]
+    fn a_far_district_keeps_its_skyline_never_a_mean_slab() {
+        // one folder: many small files and a few big ones
+        let mut t = Tree::new(OsStr::new("/"), 0);
+        let push = |t: &mut Tree, parent, name: &str, kind, size| {
+            t.push(Entry {
+                parent,
+                name: OsStr::new(name).into(),
+                kind,
+                size,
+                alloc: size,
+                mtime: 1_000,
+            })
+            .unwrap()
+        };
+        let a = push(&mut t, 0, "a", Kind::Dir, 0);
+        let c = push(&mut t, a, "c", Kind::Dir, 0);
+        for i in 0..300 {
+            push(&mut t, c, &format!("s{i}.txt"), Kind::File, 2_000 + i);
+        }
+        for i in 0..4 {
+            push(&mut t, a, &format!("big{i}.mkv"), Kind::File, 3_000_000);
+        }
+        for n in &mut t.nodes {
+            if n.kind == Kind::Dir {
+                n.listing = Listing::Listed;
+            }
+        }
+        let l = layout(&snapshot(&t), &Params::default());
+        for (i, d) in l.districts.iter().enumerate() {
+            let hs: Vec<f32> = l.buildings[d.first as usize..d.sub_end as usize]
+                .iter()
+                .map(|b| b.height)
+                .collect();
+            if hs.is_empty() {
+                continue;
+            }
+            let mut sorted = hs.clone();
+            sorted.sort_by(f32::total_cmp);
+            let p90 = sorted[((sorted.len() - 1) as f32 * 0.9).round() as usize];
+            let inner = d.rect.inset(street(&d.rect, d.depth as usize)).area();
+            let volume: f32 = l.buildings[d.first as usize..d.sub_end as usize]
+                .iter()
+                .map(|b| b.height * b.rect.area())
+                .sum();
+            let mean = volume / inner.max(1e-6);
+            assert!(
+                (d.block_height - p90.max(0.15)).abs() < 1e-4,
+                "district {i}: block {} is not the 90th percentile {p90} (mean {mean})",
+                d.block_height
+            );
+            // its towers: the tallest, tallest first, all over the block
+            let tall = &l.tall[d.tall.0 as usize..d.tall.1 as usize];
+            assert!(tall.len() <= TOWERS);
+            let max = *sorted.last().unwrap();
+            if max > d.block_height * 1.3 {
+                assert!(!tall.is_empty(), "district {i} lost its tallest tower");
+                assert_eq!(l.buildings[tall[0] as usize].height, max);
+            }
+            for w in tall.windows(2) {
+                assert!(l.buildings[w[0] as usize].height >= l.buildings[w[1] as usize].height);
+            }
+            for &b in tall {
+                assert!(b >= d.first && b < d.sub_end, "a tower of another district");
+                assert!(l.buildings[b as usize].height > d.block_height);
+            }
+        }
+        // the root: the four big files stand as towers over the small ones
+        let root = &l.districts[0];
+        let names: Vec<String> = l.tall[root.tall.0 as usize..root.tall.1 as usize]
+            .iter()
+            .map(|&b| {
+                t.nodes[l.buildings[b as usize].node as usize]
+                    .name
+                    .to_string_lossy()
+                    .into_owned()
+            })
+            .collect();
+        for i in 0..4 {
+            assert!(names.contains(&format!("big{i}.mkv")), "{names:?}");
+        }
+        // and the tiles of the folder of 300 files keep theirs too
+        for tile in &l.tiles {
+            let items = &l.tile_items[tile.first as usize..tile.end as usize];
+            let mut hs: Vec<f32> = items
+                .iter()
+                .map(|&b| l.buildings[b as usize].height)
+                .collect();
+            hs.sort_by(f32::total_cmp);
+            let p90 = hs[((hs.len() - 1) as f32 * 0.9).round() as usize].max(0.15);
+            assert!((tile.height - p90).abs() < 1e-4);
+            assert!(tile.tall.1 - tile.tall.0 <= TILE_TOWERS as u32);
+        }
+        assert!(!l.tiles.is_empty());
     }
 
     #[test]

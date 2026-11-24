@@ -82,6 +82,12 @@ const WANTED: &[(&str, &[&str])] = &[
         &[
             "notoemoji-regular",
             "notoemoji",
+            "notocoloremoji",
+            "twemoji",
+            "emojione",
+            "joypixels",
+            "openmoji",
+            "applecoloremoji",
             "notosanssymbols2",
             "symbola",
             "seguisym",
@@ -185,11 +191,26 @@ pub fn find(dirs: &[PathBuf], budget: Duration) -> Vec<Found> {
 }
 
 /// The found fonts' bytes (each at most 48 MB; a file that cannot be read
-/// is left out).
+/// is left out), read and checked within ten seconds.
 pub fn load(found: &[Found]) -> Vec<(String, Vec<u8>)> {
+    load_within(found, Duration::from_secs(10))
+}
+
+/// [`load`] within `budget`: past it, the rest is left out (and said so) -
+/// a slow disk or a font folder on a dead mount ends the checks, never the
+/// fonts' thread.
+pub fn load_within(found: &[Found], budget: Duration) -> Vec<(String, Vec<u8>)> {
+    let start = Instant::now();
     found
         .iter()
         .filter_map(|f| {
+            if start.elapsed() >= budget {
+                eprintln!(
+                    "axross-files-matrix: no time left to check the font {}; left out",
+                    f.path.display()
+                );
+                return None;
+            }
             let m = std::fs::metadata(&f.path).ok()?;
             if m.len() > 48 << 20 {
                 return None;
@@ -200,9 +221,42 @@ pub fn load(found: &[Found]) -> Vec<(String, Vec<u8>)> {
             if !matches!(magic, [0, 1, 0, 0] | b"OTTO" | b"ttcf" | b"true") {
                 return None;
             }
+            // read whole by egui's own parser here, on the fonts' thread: a
+            // file it cannot take is left out, never handed to the window
+            // (where it would stop the program at every start)
+            if !parses(&bytes) {
+                eprintln!(
+                    "axross-files-matrix: the font {} cannot be read; left out",
+                    f.path.display()
+                );
+                return None;
+            }
             Some((format!("afm-{}-{}", f.script, file_stem(&f.path)), bytes))
         })
         .collect()
+}
+
+/// Whether egui's font system takes `bytes` as a font and can look glyphs
+/// up in it (a panic inside it is caught: false).
+pub fn parses(bytes: &[u8]) -> bool {
+    let bytes = bytes.to_vec();
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
+        let mut defs = egui::FontDefinitions::empty();
+        defs.font_data.insert(
+            "probe".into(),
+            std::sync::Arc::new(egui::FontData::from_owned(bytes)),
+        );
+        defs.families
+            .insert(egui::FontFamily::Proportional, vec!["probe".into()]);
+        defs.families
+            .insert(egui::FontFamily::Monospace, vec!["probe".into()]);
+        let mut fonts =
+            egui::epaint::text::Fonts::new(egui::epaint::text::TextOptions::default(), defs);
+        let id = egui::FontId::proportional(14.0);
+        let _ = fonts.has_glyph(&id, 'a');
+        let _ = fonts.has_glyph(&id, '\u{65e5}');
+    }))
+    .is_ok()
 }
 
 fn file_stem(p: &Path) -> String {
@@ -258,7 +312,10 @@ mod tests {
         ] {
             let p = d.join(f);
             std::fs::create_dir_all(p.parent().unwrap()).unwrap();
-            std::fs::write(&p, b"OTTOfont").unwrap();
+            // (a real font's bytes where the system has one: load reads it)
+            let body = std::fs::read("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+                .unwrap_or_else(|_| b"OTTOfont".to_vec());
+            std::fs::write(&p, body).unwrap();
         }
         let found = find(&[d.to_path_buf()], Duration::from_secs(2));
         let by: Vec<(&str, String)> = found
@@ -281,11 +338,99 @@ mod tests {
         assert!(by.contains(&("hebrew", "DejaVuSans.ttf".into())), "{by:?}");
         // (no time at all: nothing, and no wait)
         assert!(find(&[d.to_path_buf()], Duration::ZERO).len() <= found.len());
-        let defs = definitions(load(&found));
-        assert!(
-            defs.families[&egui::FontFamily::Proportional]
-                .iter()
-                .any(|n| n.starts_with("afm-cjk"))
-        );
+        if std::path::Path::new("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf").exists() {
+            let defs = definitions(load(&found));
+            assert!(
+                defs.families[&egui::FontFamily::Proportional]
+                    .iter()
+                    .any(|n| n.starts_with("afm-cjk"))
+            );
+        }
+    }
+
+    #[test]
+    fn checking_fonts_keeps_to_its_time() {
+        let dir = crate::testdir::Scratch::new("fonts-time");
+        let p = dir.path().join("NotoSansCJK-Regular.ttc");
+        std::fs::write(&p, b"ttcf\0\x01\0\0").unwrap();
+        let found = vec![Found {
+            script: "cjk",
+            path: p,
+        }];
+        // no time at all: nothing is read, nothing handed on
+        assert!(load_within(&found, Duration::ZERO).is_empty());
+    }
+
+    #[test]
+    fn damaged_fonts_are_left_out_never_handed_on() {
+        let dir = crate::testdir::Scratch::new("bad-fonts");
+        let d = dir.path();
+        let cases: Vec<(&str, Vec<u8>)> = vec![
+            // a collection whose offsets point nowhere
+            ("NotoSansCJK-Regular.ttc", {
+                let mut b = b"ttcf\x00\x01\x00\x00\x00\x00\x00\x01\xff\xff\xff\xff".to_vec();
+                b.extend_from_slice(&[0; 4]);
+                b
+            }),
+            // cut off in its header
+            (
+                "NotoSansArabic-Regular.ttf",
+                vec![0, 1, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            ),
+            // zero-filled
+            ("NotoSansThai-Regular.ttf", vec![0; 4096]),
+            (
+                "NotoSansHebrew-Regular.ttf",
+                b"\x00\x01\x00\x00garbage after the magic".to_vec(),
+            ),
+            ("NotoSansDevanagari-Regular.otf", b"OTTO".to_vec()),
+            // the wrong magic
+            ("NotoColorEmoji.ttf", b"wrong magic entirely".to_vec()),
+        ];
+        for (n, b) in cases {
+            std::fs::write(d.join(n), b).unwrap();
+        }
+        // a huge one: past the limit, not even read
+        let huge = d.join("NotoSansKR-Regular.ttf");
+        std::fs::write(&huge, b"\x00\x01\x00\x00").unwrap();
+        std::fs::File::options()
+            .write(true)
+            .open(&huge)
+            .unwrap()
+            .set_len(60 << 20)
+            .unwrap();
+        let found = find(&[d.to_path_buf()], Duration::from_secs(2));
+        assert!(found.len() >= 6, "{found:?}");
+        let loaded = load(&found);
+        let names: Vec<&str> = loaded.iter().map(|l| l.0.as_str()).collect();
+        // what egui cannot read is left out (the collection with bad
+        // offsets: the window stopped at every start), and so is what is
+        // no font at all ...
+        for bad in ["cjk", "thai", "indic", "symbols", "korean"] {
+            assert!(
+                !names.iter().any(|n| n.contains(bad)),
+                "{bad} left out: {names:?}"
+            );
+        }
+        // ... and what egui does take is safe to use in the window
+        let defs = definitions(loaded);
+        let used = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let mut fonts =
+                egui::epaint::text::Fonts::new(egui::epaint::text::TextOptions::default(), defs);
+            let id = egui::FontId::proportional(14.0);
+            fonts.has_glyphs(&id, "abc \u{0645}\u{05d0}")
+        }));
+        assert!(used.is_ok(), "the fonts handed on never stop the window");
+        if let Ok(good) = std::fs::read("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf") {
+            assert!(parses(&good), "a good font passes");
+        }
+    }
+
+    #[test]
+    fn colour_emoji_fonts_are_found() {
+        let dir = crate::testdir::Scratch::new("emoji-fonts");
+        std::fs::write(dir.path().join("NotoColorEmoji.ttf"), b"OTTO").unwrap();
+        let found = find(&[dir.path().to_path_buf()], Duration::from_secs(2));
+        assert!(found.iter().any(|f| f.script == "symbols"), "{found:?}");
     }
 }

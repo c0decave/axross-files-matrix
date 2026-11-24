@@ -232,23 +232,369 @@ pub fn file_manager_via(opener: Option<&Path>, path: &Path) -> Option<Launch> {
     }
 }
 
-/// What opens with the default program without a question: documents,
-/// pictures, sound and video that run nothing - by their extension, and
-/// only when their first bytes are no program, script or desktop entry.
-/// Everything else asks first (an allow-list: a type nobody thought of is
-/// asked about, not opened).
-const SAFE: &[&str] = &[
-    // text
-    "txt", "text", "md", "markdown", "rst", "log", "csv", "tsv", "json", "yaml", "yml", "toml",
-    // pictures
-    "png", "jpg", "jpeg", "gif", "bmp", "webp", "tif", "tiff", "heic", "heif", "avif", "ico", "cr2",
-    "nef", "arw", "dng", "raf", "orf", // sound
-    "mp3", "flac", "ogg", "oga", "opus", "wav", "aac", "m4a", "aiff", "aif", "wma",
-    // video
-    "mp4", "m4v", "mkv", "webm", "mov", "avi", "mpg", "mpeg", "ogv", "wmv",
-    // documents without macros
-    "pdf", "epub", "odt", "ods", "odp", "docx", "xlsx", "pptx",
+/// What a type of file is, by its extension: what opens with the default
+/// program without a question (everyday files that run nothing when
+/// opened), by family - their first bytes must still agree.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Family {
+    Text,
+    Image,
+    Audio,
+    Video,
+    Pdf,
+    /// Office files that are zip archives (docx, odt, epub ...).
+    OfficeZip,
+    /// The old office formats (doc, xls, ppt: OLE2), rtf.
+    OfficeOld,
+    Archive,
+}
+
+/// The everyday types: text, source code, configuration, documents (the
+/// old office ones too), archives, pictures, sound, video. Everything else
+/// asks first (an allow-list: a type nobody thought of is asked about,
+/// not opened).
+const SAFE: &[(Family, &[&str])] = &[
+    (
+        Family::Text,
+        &[
+            // plain text and markup
+            "txt",
+            "text",
+            "md",
+            "markdown",
+            "rst",
+            "adoc",
+            "asciidoc",
+            "org",
+            "log",
+            "csv",
+            "tsv",
+            "json",
+            "jsonl",
+            "ndjson",
+            "yaml",
+            "yml",
+            "toml",
+            "ini",
+            "cfg",
+            "conf",
+            "properties",
+            "env",
+            "xml",
+            "xsd",
+            "xsl",
+            "dtd",
+            "plist",
+            "tex",
+            "bib",
+            "sty",
+            "cls",
+            "srt",
+            "vtt",
+            "sub",
+            "ass",
+            "diff",
+            "patch",
+            "nfo",
+            "lst",
+            "po",
+            "pot",
+            // source code (opened in an editor; nothing runs)
+            "rs",
+            "c",
+            "h",
+            "cc",
+            "cpp",
+            "cxx",
+            "hpp",
+            "hh",
+            "hxx",
+            "m",
+            "mm",
+            "go",
+            "java",
+            "kt",
+            "kts",
+            "scala",
+            "swift",
+            "cs",
+            "fs",
+            "fsi",
+            "vb",
+            "dart",
+            "zig",
+            "nim",
+            "d",
+            "hs",
+            "ml",
+            "mli",
+            "ex",
+            "exs",
+            "erl",
+            "hrl",
+            "clj",
+            "cljs",
+            "lisp",
+            "el",
+            "scm",
+            "rkt",
+            "lua",
+            "r",
+            "jl",
+            "sql",
+            "css",
+            "scss",
+            "sass",
+            "less",
+            "ts",
+            "tsx",
+            "jsx",
+            "mjs",
+            "cjs",
+            "vue",
+            "svelte",
+            "proto",
+            "graphql",
+            "gql",
+            "cmake",
+            "mk",
+            "mak",
+            "gradle",
+            "sbt",
+            "cabal",
+            "nix",
+            "tf",
+            "hcl",
+            "dockerfile",
+            "lock",
+            "gitignore",
+            "gitattributes",
+            "editorconfig",
+            "asm",
+            "s",
+            "v",
+            "sv",
+            "vhdl",
+            "f",
+            "f90",
+            "pas",
+            "ada",
+            "adb",
+            "ads",
+            "cob",
+            "tcl",
+            "awk",
+            "sed",
+            "ipynb",
+        ],
+    ),
+    (
+        Family::Image,
+        &[
+            "png", "jpg", "jpeg", "gif", "bmp", "webp", "tif", "tiff", "heic", "heif", "avif",
+            "ico", "cr2", "cr3", "nef", "arw", "dng", "raf", "orf", "rw2", "psd", "xcf", "kra",
+            "exr", "hdr", "tga", "pcx", "ppm", "pgm", "pbm", "pnm", "jxl", "jp2", "qoi",
+        ],
+    ),
+    (
+        Family::Audio,
+        &[
+            "mp3", "flac", "ogg", "oga", "opus", "wav", "aac", "m4a", "aiff", "aif", "wma", "mid",
+            "midi", "ape", "wv", "alac", "amr", "au", "mka",
+        ],
+    ),
+    (
+        Family::Video,
+        &[
+            "mp4", "m4v", "mkv", "webm", "mov", "avi", "mpg", "mpeg", "ogv", "wmv", "flv", "3gp",
+            "m2ts", "mts", "vob",
+        ],
+    ),
+    (Family::Pdf, &["pdf", "djvu", "xps"]),
+    (
+        Family::OfficeZip,
+        &[
+            "epub", "odt", "ods", "odp", "odg", "docx", "xlsx", "pptx", "pages", "numbers", "key",
+        ],
+    ),
+    (
+        Family::OfficeOld,
+        &["doc", "xls", "ppt", "rtf", "wpd", "wps"],
+    ),
+    (
+        Family::Archive,
+        &[
+            "zip", "tar", "gz", "tgz", "bz2", "tbz", "tbz2", "xz", "txz", "zst", "lz", "lz4",
+            "lzma", "7z", "rar", "cpio", "z",
+        ],
+    ),
 ];
+
+/// Names without a type that are everyday text (README, LICENSE ...).
+const TEXT_NAMES: &[&str] = &[
+    "readme",
+    "license",
+    "licence",
+    "copying",
+    "copyright",
+    "notice",
+    "authors",
+    "contributors",
+    "changelog",
+    "changes",
+    "news",
+    "history",
+    "install",
+    "todo",
+    "makefile",
+    "gnumakefile",
+    "dockerfile",
+    "containerfile",
+    "vagrantfile",
+    "gemfile",
+    "rakefile",
+    "procfile",
+    "jenkinsfile",
+    "justfile",
+    "cmakelists.txt",
+    "manifest",
+    "codeowners",
+    "version",
+];
+
+/// Types that run code or change the system when opened: said so, and
+/// always asked about (never "do not ask again").
+const RUNS: &[&str] = &[
+    "exe",
+    "com",
+    "bat",
+    "cmd",
+    "msi",
+    "msp",
+    "mst",
+    "msix",
+    "msixbundle",
+    "appx",
+    "appxbundle",
+    "appinstaller",
+    "ps1",
+    "psm1",
+    "psd1",
+    "ps1xml",
+    "vbs",
+    "vbe",
+    "js",
+    "jse",
+    "wsf",
+    "wsh",
+    "wsc",
+    "sct",
+    "hta",
+    "scr",
+    "pif",
+    "cpl",
+    "msc",
+    "chm",
+    "hlp",
+    "jar",
+    "jnlp",
+    "application",
+    "appref-ms",
+    "gadget",
+    "reg",
+    "inf",
+    "lnk",
+    "url",
+    "scf",
+    "settingcontent-ms",
+    "library-ms",
+    "search-ms",
+    "searchconnector-ms",
+    "website",
+    "diagcab",
+    "xll",
+    "xlam",
+    "ppam",
+    "docm",
+    "dotm",
+    "xlsm",
+    "xltm",
+    "pptm",
+    "potm",
+    "ppsm",
+    "sldm",
+    "iso",
+    "img",
+    "vhd",
+    "vhdx",
+    "desktop",
+    "sh",
+    "bash",
+    "zsh",
+    "csh",
+    "ksh",
+    "fish",
+    "command",
+    "tool",
+    "app",
+    "pkg",
+    "mpkg",
+    "dmg",
+    "deb",
+    "rpm",
+    "run",
+    "bin",
+    "appimage",
+    "flatpak",
+    "flatpakref",
+    "snap",
+    "py",
+    "pyw",
+    "pyz",
+    "pl",
+    "rb",
+    "php",
+    "scpt",
+    "applescript",
+    "action",
+    "workflow",
+    "mobileconfig",
+    "terminal",
+    "webloc",
+    "inetloc",
+    "kext",
+    "xpi",
+    "crx",
+    "vsix",
+    "apk",
+    "xapk",
+    "ipa",
+    "elf",
+    "out",
+    "so",
+    "dll",
+    "dylib",
+    "sys",
+    "drv",
+    "ocx",
+    "mde",
+    "accde",
+    "ade",
+    "adp",
+    "mda",
+    "ins",
+    "isp",
+    "shb",
+    "shs",
+    "ws",
+];
+
+/// The family of a lower-case extension (None: not an everyday type).
+pub fn family_of(ext: &str) -> Option<Family> {
+    SAFE.iter()
+        .find(|(_, exts)| exts.contains(&ext))
+        .map(|(f, _)| *f)
+}
 
 /// What a file's first bytes say it is, when that is something that runs.
 pub fn sniff_runs(head: &[u8]) -> Option<&'static str> {
@@ -269,24 +615,88 @@ pub fn sniff_runs(head: &[u8]) -> Option<&'static str> {
     }
 }
 
+/// Content that does not belong in an allowed type's family, where that is
+/// a risk: a web page under a picture's name (it may open in a browser and
+/// run its scripts), a zip under a picture's or a text's name (an archive
+/// that may hold anything), an old Office file (OLE2: macros) under any
+/// name but an old Office one. (A web page in a text file, a zip in a
+/// docx: as expected.)
+pub fn sniff_mismatch(family: Family, ext: &str, head: &[u8]) -> Option<String> {
+    let start: Vec<u8> = head
+        .iter()
+        .skip_while(|b| b.is_ascii_whitespace() || **b == 0xef || **b == 0xbb || **b == 0xbf)
+        .take(64)
+        .map(u8::to_ascii_lowercase)
+        .collect();
+    let html = start.starts_with(b"<!doctype html")
+        || start.starts_with(b"<html")
+        || start.starts_with(b"<script")
+        || start.starts_with(b"<svg") && family != Family::Text;
+    let zip = head.starts_with(b"PK\x03\x04") || head.starts_with(b"PK\x05\x06");
+    let ole2 = head.starts_with(&[0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+    let content = if html && family != Family::Text {
+        "a web page (it may open in a browser and run its scripts)"
+    } else if zip && !matches!(family, Family::OfficeZip | Family::Archive) {
+        "a zip archive (it may hold anything)"
+    } else if ole2 && family != Family::OfficeOld {
+        "an old Office file (it can hold macros)"
+    } else {
+        return None;
+    };
+    Some(format!(
+        "its content is {content}, not what a .{ext} file holds"
+    ))
+}
+
+/// Why opening a file with the default program needs a question first.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Risk {
+    pub why: String,
+    /// A type this program does not know (its extension, lower case): the
+    /// question may be switched off for it. None: always asked.
+    pub unknown: Option<String>,
+}
+
+impl Risk {
+    fn always(why: impl Into<String>) -> Risk {
+        Risk {
+            why: why.into(),
+            unknown: None,
+        }
+    }
+}
+
 /// Why opening `path` with the default program needs a question first
 /// (None: it does not). `untrusted` names a medium it lies on (a removable
-/// one, a network file system). Reads the file's mode and first bytes (off
-/// the window's thread).
-pub fn risk_of(path: &Path, untrusted: Option<&str>) -> Option<String> {
+/// one, a network file system); `trusted` are the types the user said not
+/// to be asked about again. Reads the file's mode and first bytes (off the
+/// window's thread).
+pub fn risk_of(path: &Path, untrusted: Option<&str>, trusted: &[String]) -> Option<Risk> {
     let meta = std::fs::symlink_metadata(path).ok();
     if meta.as_ref().is_some_and(|m| m.is_dir()) {
         // (a folder opens in the file manager)
-        return untrusted.map(|u| format!("it lies on {u}"));
+        return untrusted.map(|u| Risk::always(format!("it lies on {u}")));
+    }
+    if let Some(m) = &meta {
+        if m.file_type().is_symlink() {
+            return Some(Risk::always(
+                "it is a symbolic link: it may open something else",
+            ));
+        }
+        if !m.is_file() {
+            // a FIFO, a socket, a device: opening one can hang or read a
+            // device
+            return Some(Risk::always(
+                "it is no regular file (a pipe, a socket or a device): opening it can hang or \
+                 touch a device",
+            ));
+        }
     }
     #[cfg(unix)]
     if let Some(m) = &meta {
         use std::os::unix::fs::PermissionsExt;
-        if m.file_type().is_symlink() {
-            return Some("it is a symbolic link: it may open something else".into());
-        }
-        if m.is_file() && m.permissions().mode() & 0o7111 != 0 {
-            return Some("it is executable: opening it can run it".into());
+        if m.permissions().mode() & 0o7111 != 0 {
+            return Some(Risk::always("it is executable: opening it can run it"));
         }
     }
     let name = path
@@ -298,23 +708,56 @@ pub fn risk_of(path: &Path, untrusted: Option<&str>) -> Option<String> {
         .rsplit_once('.')
         .map(|(_, e)| e.to_string())
         .unwrap_or_default();
-    if !SAFE.contains(&ext.as_str()) {
-        return Some(match ext.as_str() {
-            "desktop" => "it is a desktop entry: opening it can run the command in it".into(),
-            "lnk" | "url" | "webloc" | "inetloc" | "appref-ms" | "application" | "scf" => {
-                "it is a shortcut: opening it can run what it points to".into()
-            }
-            "" => "it has no type the system can tell safely: opening it may run it".into(),
-            e => format!("files of type .{e} can run code or change the system when opened"),
-        });
+    let family = if TEXT_NAMES.contains(&name.as_str()) {
+        Some(Family::Text)
+    } else {
+        family_of(&ext)
+    };
+    if family.is_none() {
+        if RUNS.contains(&ext.as_str()) {
+            return Some(Risk::always(match ext.as_str() {
+                "desktop" => "it is a desktop entry: opening it can run the command in it".into(),
+                "lnk" | "url" | "webloc" | "inetloc" | "appref-ms" | "application" | "scf" => {
+                    "it is a shortcut: opening it can run what it points to".into()
+                }
+                e => format!("files of type .{e} can run code or change the system when opened"),
+            }));
+        }
+        let valid = !ext.is_empty()
+            && ext.len() <= 16
+            && ext
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
+        if !(valid && trusted.contains(&ext)) {
+            return Some(if valid {
+                Risk {
+                    why: format!(
+                        "it is of a type this program does not know (.{ext}): opening it may \
+                         run it"
+                    ),
+                    unknown: Some(ext),
+                }
+            } else {
+                Risk::always("it has no type the system can tell safely: opening it may run it")
+            });
+        }
     }
-    // an allowed type: its first bytes must agree
-    if let Ok(head) = crate::preview::read_regular(path, 4096)
-        && let Some(why) = sniff_runs(&head)
-    {
-        return Some(why.into());
+    // an allowed (or trusted) type: its first bytes must agree
+    if let Ok(head) = crate::preview::read_regular(path, 4096) {
+        if let Some(why) = sniff_runs(&head) {
+            return Some(Risk::always(why));
+        }
+        if let Some(f) = family
+            && let Some(why) = sniff_mismatch(f, &ext, &head)
+        {
+            return Some(Risk::always(why));
+        }
     }
-    untrusted.map(|u| format!("it lies on {u}, which this machine does not control"))
+    untrusted.map(|u| {
+        Risk::always(format!(
+            "it lies on {u}, which this machine does not control"
+        ))
+    })
 }
 
 /// Starts it; Err with what went wrong. A program that ends at once with a
@@ -402,30 +845,49 @@ mod tests {
             p
         };
         assert!(
-            risk_of(&file("evil.desktop", 0o644, b"x"), None)
+            risk_of(&file("evil.desktop", 0o644, b"x"), None, &[])
                 .unwrap()
+                .why
                 .contains("desktop entry")
         );
-        assert!(risk_of(&file("run.sh", 0o644, b"x"), None).is_some());
+        assert!(risk_of(&file("run.sh", 0o644, b"x"), None, &[]).is_some());
         assert!(
-            risk_of(&file("tool", 0o755, b"x"), None)
+            risk_of(&file("tool", 0o755, b"x"), None, &[])
                 .unwrap()
+                .why
                 .contains("executable")
         );
-        assert!(risk_of(&file("SETUP.EXE", 0o644, b"x"), None).is_some());
-        assert_eq!(risk_of(&file("notes.txt", 0o644, b"plain"), None), None);
+        assert!(risk_of(&file("SETUP.EXE", 0o644, b"x"), None, &[]).is_some());
         assert_eq!(
-            risk_of(&file("photo.JPG", 0o644, b"\xff\xd8\xff"), None),
+            risk_of(&file("notes.txt", 0o644, b"plain"), None, &[]),
+            None
+        );
+        assert_eq!(
+            risk_of(&file("photo.JPG", 0o644, b"\xff\xd8\xff"), None, &[]),
             None
         );
         assert!(
-            risk_of(&file("photo.jpg", 0o644, b"x"), Some("a removable medium"))
-                .unwrap()
-                .contains("removable")
+            risk_of(
+                &file("photo.jpg", 0o644, b"x"),
+                Some("a removable medium"),
+                &[]
+            )
+            .unwrap()
+            .why
+            .contains("removable")
         );
         std::os::unix::fs::symlink(d.join("notes.txt"), d.join("link.txt")).unwrap();
-        assert!(risk_of(&d.join("link.txt"), None).unwrap().contains("link"));
-        assert_eq!(risk_of(d, None), None, "a folder opens in the file manager");
+        assert!(
+            risk_of(&d.join("link.txt"), None, &[])
+                .unwrap()
+                .why
+                .contains("link")
+        );
+        assert_eq!(
+            risk_of(d, None, &[]),
+            None,
+            "a folder opens in the file manager"
+        );
         // what a deny-list missed: asked about now
         for name in [
             "a.msc",
@@ -455,28 +917,183 @@ mod tests {
             "noextension",
         ] {
             assert!(
-                risk_of(&file(name, 0o644, b"data"), None).is_some(),
+                risk_of(&file(name, 0o644, b"data"), None, &[]).is_some(),
                 "{name}"
             );
         }
         // by content: a desktop entry or a script under a harmless name
-        assert!(risk_of(&file("readme", 0o644, b"[Desktop Entry]\nExec=sh"), None).is_some());
         assert!(
-            risk_of(&file("hello.txt", 0o644, b"[Desktop Entry]\nExec=sh"), None)
-                .unwrap()
-                .contains("content")
+            risk_of(
+                &file("readme", 0o644, b"[Desktop Entry]\nExec=sh"),
+                None,
+                &[]
+            )
+            .is_some()
         );
         assert!(
-            risk_of(&file("go.txt", 0o644, b"#!/bin/sh\nrm -rf ~"), None)
+            risk_of(
+                &file("hello.txt", 0o644, b"[Desktop Entry]\nExec=sh"),
+                None,
+                &[]
+            )
+            .unwrap()
+            .why
+            .contains("content")
+        );
+        assert!(
+            risk_of(&file("go.txt", 0o644, b"#!/bin/sh\nrm -rf ~"), None, &[])
                 .unwrap()
+                .why
                 .contains("script")
         );
         assert!(
-            risk_of(&file("pic.png", 0o644, b"\x7fELF\x02"), None)
+            risk_of(&file("pic.png", 0o644, b"\x7fELF\x02"), None, &[])
                 .unwrap()
+                .why
                 .contains("program")
         );
-        assert!(risk_of(&file("setuid.txt", 0o4644, b"x"), None).is_some());
+        assert!(risk_of(&file("setuid.txt", 0o4644, b"x"), None, &[]).is_some());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn everyday_files_open_unknown_types_say_so_and_can_be_trusted() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = crate::testdir::Scratch::new("risk-everyday");
+        let d = dir.path();
+        let file = |name: &str, body: &[u8]| {
+            let p = d.join(name);
+            std::fs::write(&p, body).unwrap();
+            std::fs::set_permissions(&p, std::fs::Permissions::from_mode(0o644)).unwrap();
+            p
+        };
+        // everyday names that used to ask: all open now
+        for name in [
+            "README",
+            "LICENSE",
+            "Makefile",
+            "x.rs",
+            "x.c",
+            "x.h",
+            "x.go",
+            "x.java",
+            "x.css",
+            "x.xml",
+            "x.ini",
+            "x.conf",
+            "x.cfg",
+            "x.doc",
+            "x.xls",
+            "x.ppt",
+            "x.rtf",
+            "x.zip",
+            "x.tar.gz",
+            "x.srt",
+            "x.diff",
+            "x.tex",
+            "x.ts",
+            "x.toml",
+            ".gitignore",
+            "x.7z",
+            "x.heic",
+            "x.flac",
+            "x.mkv",
+            "x.pdf",
+            "x.odt",
+            "x.epub",
+        ] {
+            let body: &[u8] = match name {
+                "x.zip" | "x.odt" | "x.epub" => b"PK\x03\x04rest",
+                "x.doc" | "x.xls" | "x.ppt" => b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1rest",
+                _ => b"plain words",
+            };
+            assert_eq!(risk_of(&file(name, body), None, &[]), None, "{name}");
+        }
+        // a type nobody listed: asked, said to be unknown, and can be trusted
+        let odd = file("song.xyz", b"data");
+        let r = risk_of(&odd, None, &[]).expect("asked");
+        assert!(r.why.contains("does not know (.xyz)"), "{}", r.why);
+        assert_eq!(r.unknown.as_deref(), Some("xyz"));
+        assert_eq!(risk_of(&odd, None, &["xyz".to_string()]), None);
+        // what runs is never "do not ask again", trusted or not
+        let exe = file("setup.exe", b"data");
+        let r = risk_of(&exe, None, &["exe".to_string()]).expect("asked");
+        assert_eq!(r.unknown, None);
+        assert!(r.why.contains("can run code"));
+        // a trusted type whose content is a program still asks
+        assert!(
+            risk_of(&file("a.xyz", b"\x7fELF\x02"), None, &["xyz".to_string()])
+                .unwrap()
+                .why
+                .contains("program")
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn special_files_and_content_under_a_false_name_ask() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = crate::testdir::Scratch::new("risk-special");
+        let d = dir.path();
+        let file = |name: &str, body: &[u8]| {
+            let p = d.join(name);
+            std::fs::write(&p, body).unwrap();
+            std::fs::set_permissions(&p, std::fs::Permissions::from_mode(0o644)).unwrap();
+            p
+        };
+        // a FIFO named like text: asked, never trusted away
+        let fifo = d.join("fifo.txt");
+        let c = std::ffi::CString::new(fifo.as_os_str().as_encoded_bytes()).unwrap();
+        // SAFETY: a valid C string; mkfifo only creates the node
+        assert_eq!(unsafe { libc::mkfifo(c.as_ptr(), 0o644) }, 0);
+        let r = risk_of(&fifo, None, &["txt".to_string()]).expect("asked");
+        assert!(r.why.contains("no regular file"), "{}", r.why);
+        assert_eq!(r.unknown, None);
+        // a socket too
+        let sock = d.join("s.txt");
+        let _l = std::os::unix::net::UnixListener::bind(&sock).unwrap();
+        assert!(
+            risk_of(&sock, None, &[])
+                .unwrap()
+                .why
+                .contains("no regular file")
+        );
+        // content that does not belong under the name
+        for (name, body, says) in [
+            (
+                "g.png",
+                &b"<!DOCTYPE html><script>x()</script>"[..],
+                "web page",
+            ),
+            ("g2.jpg", &b"  <html><body>"[..], "web page"),
+            ("m.jpg", &b"PK\x03\x04data"[..], "zip archive"),
+            ("t.txt", &b"PK\x03\x04data"[..], "zip archive"),
+            (
+                "k.docx",
+                &b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1rest"[..],
+                "old Office",
+            ),
+            (
+                "p.pdf",
+                &b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1rest"[..],
+                "old Office",
+            ),
+        ] {
+            let r = risk_of(&file(name, body), None, &[]).unwrap_or_else(|| panic!("{name}"));
+            assert!(r.why.contains(says), "{name}: {}", r.why);
+            assert_eq!(r.unknown, None);
+        }
+        // and what does belong: a web page in a text file, a zip in a docx
+        assert_eq!(risk_of(&file("page.md", b"<html>"), None, &[]), None);
+        assert_eq!(risk_of(&file("ok.docx", b"PK\x03\x04x"), None, &[]), None);
+        assert_eq!(
+            risk_of(
+                &file("old.doc", b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"),
+                None,
+                &[]
+            ),
+            None
+        );
     }
 
     #[cfg(unix)]

@@ -230,6 +230,47 @@ pub struct PendingFly {
     pub what: String,
 }
 
+/// Where the hover's tip (`size`) stands by the pointer `p`: below right,
+/// else another corner - never over an island's title (its state and
+/// reason stay readable), always inside the view.
+pub fn hover_tip_at(p: Pos2, size: egui::Vec2, view: Rect, titles: &[Rect]) -> Pos2 {
+    let tries = [
+        vec2(14.0, 10.0),
+        vec2(14.0, -10.0 - size.y),
+        vec2(-14.0 - size.x, 10.0),
+        vec2(-14.0 - size.x, -10.0 - size.y),
+        vec2(14.0, 28.0),
+        vec2(14.0, -28.0 - size.y),
+    ];
+    let inside = |at: Pos2| {
+        let r = Rect::from_min_size(at - vec2(4.0, 2.0), size);
+        let dx = (view.left() - r.left()).max(0.0) + (view.right() - r.right()).min(0.0);
+        let dy = (view.top() - r.top()).max(0.0) + (view.bottom() - r.bottom()).min(0.0);
+        at + vec2(dx, dy)
+    };
+    for d in tries {
+        let at = inside(p + d);
+        let r = Rect::from_min_size(at - vec2(4.0, 2.0), size);
+        if !titles.iter().any(|t| t.intersects(r)) {
+            return at;
+        }
+    }
+    inside(p + tries[0])
+}
+
+/// An island's title as drawn: its state's reason on a line of its own
+/// (wrapped inside the window, never cut off at its edge).
+pub fn title_text(caption: &str) -> String {
+    caption
+        .replacen("  · failed: ", "\nfailed: ", 1)
+        .replacen("  · cached (", "\ncached (", 1)
+}
+
+/// "1 island", "2 islands", "0 islands".
+pub fn count(n: u64, one: &str, many: &str) -> String {
+    format!("{n} {}", if n == 1 { one } else { many })
+}
+
 /// How the chosen thing is to be opened.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OpenHow {
@@ -243,14 +284,20 @@ pub enum OpenHow {
 #[derive(Clone, Debug)]
 pub struct OpenCheck {
     pub path: PathBuf,
-    pub risk: Option<String>,
+    pub risk: Option<open::Risk>,
 }
 
 /// The question before opening (shown as a dialog).
 #[derive(Clone, Debug, PartialEq)]
 pub enum OpenAsk {
     /// The default program would run or trust something.
-    Risky { path: PathBuf, why: String },
+    Risky {
+        path: PathBuf,
+        why: String,
+        /// A type this program does not know: "do not ask again" may be
+        /// ticked for it.
+        unknown: Option<String>,
+    },
     /// axross cannot open it: why, and the local path the default
     /// program could open instead (if there is one).
     NoAxross { why: String, path: Option<PathBuf> },
@@ -281,6 +328,20 @@ struct PreviewJob {
 const PREVIEW_THREADS: usize = 3;
 const PREVIEW_ABANDON: Duration = Duration::from_secs(5);
 const PREVIEW_ALIVE: usize = 24;
+/// A request that waited this long for a free thread gets a fresh one
+/// (three previews stuck on a dead mount never hold up a healthy one for
+/// [`PREVIEW_ABANDON`]).
+const PREVIEW_PATIENCE: Duration = Duration::from_millis(300);
+
+/// Whether the dispatcher may start a preview now: threads under way
+/// `ages` ago, the request waiting `waited`.
+pub fn preview_may_start(ages: &[Duration], waited: Duration) -> bool {
+    if ages.len() >= PREVIEW_ALIVE {
+        return false;
+    }
+    let busy = ages.iter().filter(|a| **a < PREVIEW_ABANDON).count();
+    busy < PREVIEW_THREADS || waited >= PREVIEW_PATIENCE
+}
 
 /// The preview dispatcher: of the requests waiting only the newest is
 /// read, on a thread of its own.
@@ -288,16 +349,20 @@ fn preview_worker(rx: Receiver<PreviewJob>, tx: Sender<Bg>, wake: walk::Wake) {
     // (the threads under way: when each started)
     let running: Arc<Mutex<Vec<(u64, Instant)>>> = Arc::new(Mutex::new(Vec::new()));
     let mut waiting: Option<PreviewJob> = None;
+    let mut since = Instant::now();
     let mut next_id = 0u64;
     loop {
         let next = if waiting.is_some() {
-            rx.recv_timeout(Duration::from_millis(100)).ok()
+            rx.recv_timeout(Duration::from_millis(50)).ok()
         } else {
             match rx.recv() {
                 Ok(j) => Some(j),
                 Err(_) => return,
             }
         };
+        if waiting.is_none() {
+            since = Instant::now();
+        }
         if let Some(j) = next {
             waiting = Some(j);
         }
@@ -309,11 +374,8 @@ fn preview_worker(rx: Receiver<PreviewJob>, tx: Sender<Bg>, wake: walk::Wake) {
         }
         {
             let r = running.lock().unwrap_or_else(|p| p.into_inner());
-            let busy = r
-                .iter()
-                .filter(|(_, at)| at.elapsed() < PREVIEW_ABANDON)
-                .count();
-            if busy >= PREVIEW_THREADS || r.len() >= PREVIEW_ALIVE {
+            let ages: Vec<Duration> = r.iter().map(|(_, at)| at.elapsed()).collect();
+            if !preview_may_start(&ages, since.elapsed()) {
                 continue;
             }
         }
@@ -461,9 +523,20 @@ pub struct App {
     /// Until the camera is moved by hand, it frames the biggest city (the
     /// first view): which island and at which size it framed.
     pub auto_frame: bool,
-    framed: Option<(u64, f32)>,
+    framed: Option<(u64, f32, [f32; 2])>,
+    /// The island kept framed (None: the biggest city).
+    frame_on: Option<u64>,
+    /// The 3D view's width / height (last frame).
+    view_aspect: f32,
+    /// Where the islands' titles stand on the screen (the hover's tip
+    /// keeps off them).
+    title_rects: Vec<Rect>,
     /// The open question, if one is shown.
     pub open_ask: Option<OpenAsk>,
+    /// Its "do not ask again for this type" box.
+    pub trust_type: bool,
+    /// The Sources window's "add a folder" field.
+    pub add_source: String,
     /// The window has the keyboard (None: not known).
     focused: bool,
     /// Minimised or hidden.
@@ -614,7 +687,12 @@ impl App {
             cut: false,
             auto_frame: true,
             framed: None,
+            frame_on: None,
+            view_aspect: 1.6,
+            title_rects: Vec::new(),
             open_ask: None,
+            trust_type: false,
+            add_source: String::new(),
             focused: true,
             hidden: false,
             legend_open: true,
@@ -634,9 +712,12 @@ impl App {
             cache_clearing: false,
             opts,
         };
-        if let settings::Loaded::Salvaged(keys) = &loaded {
+        if let settings::Loaded::Salvaged { keys, backup } = &loaded {
+            let kept = backup.as_ref().map_or(String::new(), |b| {
+                format!("; the file as it was is kept as {}", b.display())
+            });
             app.toast(format!(
-                "Some settings were not understood and have their defaults: {}",
+                "Some settings were not understood and have their defaults: {}{kept}",
                 keys.join(", ")
             ));
         }
@@ -1295,8 +1376,60 @@ impl App {
         self.toast(format!("{name} closed"));
     }
 
+    /// Stops island `i`'s walk: what it found stays, said to be all there
+    /// is for now ("walk again" reads it whole).
+    pub fn stop_walk(&mut self, i: usize) {
+        let Some(isl) = self.islands.get_mut(i) else {
+            return;
+        };
+        if isl.walker.take().is_none() {
+            return;
+        }
+        // (its last messages are let go; the city stands as it is)
+        isl.generation += 1;
+        if let Some(fresh) = isl.fresh.take()
+            && fresh.len() > isl.tree.len()
+        {
+            isl.replace_tree(fresh);
+        }
+        isl.status.done = true;
+        isl.status.note = Some("stopped by hand".into());
+        isl.dirty = true;
+        isl.epoch += 1;
+        let title = isl.title.clone();
+        self.world_version += 1;
+        self.toast(format!("{title}: walk stopped"));
+    }
+
+    /// Adds a folder as an island and walks it (Sources). Err: why not.
+    pub fn add_source(&mut self, root: PathBuf) -> Result<usize, String> {
+        if !root.is_absolute() {
+            return Err(format!("{}: give the whole path (from /)", root.display()));
+        }
+        let taken = self
+            .islands
+            .iter()
+            .any(|i| matches!(&i.source, IslandSource::Local { root: r, .. } if *r == root));
+        if taken {
+            return Err(format!("{} is an island already", root.display()));
+        }
+        // (whether it can be read is the walk's to find out - off the
+        // window's thread: a dead mount never holds the window)
+        let title = root.to_string_lossy().into_owned();
+        let i = self.add_island(
+            IslandSource::Local { root, mount: None },
+            title,
+            Ring::Local,
+        );
+        self.start_walk(i, &[]);
+        self.placed_sides.clear();
+        self.beams_dirty = true;
+        self.world_version += 1;
+        Ok(i)
+    }
+
     /// Takes island `i` out of the world (what pointed into it is let go).
-    fn remove_island(&mut self, i: usize) {
+    pub fn remove_island(&mut self, i: usize) {
         let isl = self.islands.remove(i);
         if self
             .pending_fly
@@ -1763,6 +1896,10 @@ impl App {
         }
         lap.push(("place", start.elapsed()));
         self.place_islands();
+        if let Some(b) = self.world_box() {
+            self.camera.world = (b.max.x - b.min.x).max(b.max.z - b.min.z);
+        }
+        self.mark_island_states();
         self.frame_first_view();
         self.connect_deadlines();
         self.pending_flight();
@@ -2051,54 +2188,183 @@ impl App {
     }
 
     /// The first view: until the camera is moved by hand, the biggest city
-    /// is framed (again when it has grown by a sixth).
+    /// is framed (again when it has grown or shrunk by a sixth) - or the
+    /// island a teleport or Z framed, while it grows (a system's island
+    /// filling in after its connect).
     fn frame_first_view(&mut self) {
         if !self.auto_frame {
             return;
         }
-        let best = self
-            .islands
-            .iter()
-            .enumerate()
-            .filter(|(_, i)| i.hw.is_none())
-            .filter_map(|(k, i)| {
-                i.city
-                    .as_ref()
-                    .filter(|c| c.shown && c.target.is_none_or(|t| t == c.offset))
-                    .map(|c| (k, i.id, c.side()))
-            })
-            .max_by(|a, b| a.2.total_cmp(&b.2));
-        let Some((k, id, side)) = best else { return };
+        let shown = |i: &crate::world::Island| {
+            i.city
+                .as_ref()
+                .filter(|c| c.shown && c.target.is_none_or(|t| t == c.offset))
+                .map(|c| (c.side(), c.offset))
+        };
+        let best = match self.frame_on {
+            Some(id) => self
+                .islands
+                .iter()
+                .enumerate()
+                .find(|(_, i)| i.id == id)
+                .and_then(|(k, i)| shown(i).map(|s| (k, i.id, s))),
+            None => self
+                .islands
+                .iter()
+                .enumerate()
+                .filter(|(_, i)| i.hw.is_none())
+                .filter_map(|(k, i)| shown(i).map(|s| (k, i.id, s)))
+                .max_by(|a, b| a.2.0.total_cmp(&b.2.0)),
+        };
+        let Some((k, id, (side, at))) = best else {
+            return;
+        };
+        // (again when it grew or shrank by a sixth, or moved - a growing
+        // system's island makes room in its ring)
         let again = match self.framed {
-            Some((fid, fside)) => fid != id || side > fside * 1.17 || side < fside * 0.83,
+            Some((fid, fside, fat)) => {
+                let moved = (at[0] - fat[0]).abs().max((at[1] - fat[1]).abs());
+                fid != id
+                    || side > fside * 1.17
+                    || side < fside * 0.83
+                    || moved > side.max(160.0) * 0.1
+            }
             None => true,
         };
-        if again {
-            self.framed = Some((id, side));
-            let (pos, target) = self.island_view(k);
-            let (yaw, pitch) = look_angles(pos, target);
+        if !again {
+            return;
+        }
+        let first = self.framed.is_none() || self.frame_on.is_none();
+        self.framed = Some((id, side, at));
+        let (pos, target) = self.island_view(k);
+        let (yaw, pitch) = look_angles(pos, target);
+        if first {
             self.camera.flight = None;
             self.camera.pos = pos;
             self.camera.yaw = yaw;
             self.camera.pitch = pitch;
             self.camera.target = target;
             self.camera.distance = (pos - target).length();
-            self.world_version += 1;
+        } else {
+            // (an island that grew: the camera glides back to see it whole)
+            let cities = self.cities();
+            let ceiling = |a: Vec3, b: Vec3| city::ceiling(&cities, a, b);
+            let mut cam = self.camera.clone();
+            cam.fly_path(pos, (yaw, pitch), &ceiling, true, Some(target));
+            self.camera = cam;
         }
+        self.world_version += 1;
     }
 
-    /// Where the camera stands to see island `i` whole, from aside and
-    /// above (an empty or failed island from far enough to read it).
+    /// The low view of island `i`: 15 degrees down, the island whole in
+    /// the window, the horizon and the sky's rain in its upper third (an
+    /// empty or failed island seen from far enough to read its state).
+    /// The eye and the point it looks at.
     fn island_view(&self, i: usize) -> (Vec3, Vec3) {
         let Some(c) = self.islands.get(i).and_then(|x| x.city.as_ref()) else {
             return (self.camera.pos, self.camera.target);
         };
-        let side = c.side().max(160.0);
-        let target = c.center() + vec3(0.0, c.layout.top.min(side * 0.1) * 0.3, 0.0);
-        (
-            target + vec3(side * 0.08, side * 0.55 + 20.0, side * 0.78 + 40.0),
-            target,
-        )
+        let b = c.aabb();
+        let grow = ((160.0 - c.side()) * 0.5).max(0.0);
+        let min = vec3(b.min.x - grow, 0.0, b.min.z - grow);
+        let max = vec3(b.max.x + grow, b.max.y.max(1.0), b.max.z + grow);
+        let eye = crate::camera::frame_box(
+            min,
+            max,
+            crate::camera::LOW_PITCH,
+            self.camera.fov_y,
+            self.view_aspect,
+        );
+        // (looked at: the island's middle - orbit turns round it)
+        let target = vec3((min.x + max.x) * 0.5, 0.0, (min.z + max.z) * 0.5);
+        (eye, target)
+    }
+
+    /// Frames an island whole (Z, the inspect panel's button): the low
+    /// view, kept while the island grows until the camera is moved.
+    pub fn frame_island(&mut self, island: usize) {
+        let Some(id) = self
+            .islands
+            .get(island)
+            .filter(|i| i.city.is_some())
+            .map(|i| i.id)
+        else {
+            return;
+        };
+        let (pos, target) = self.island_view(island);
+        let (yaw, pitch) = look_angles(pos, target);
+        let cities = self.cities();
+        let ceiling = |a: Vec3, b: Vec3| city::ceiling(&cities, a, b);
+        let mut cam = self.camera.clone();
+        cam.fly_path(
+            pos,
+            (yaw, pitch),
+            &ceiling,
+            self.settings.reduce_motion,
+            Some(target),
+        );
+        self.camera = cam;
+        self.keep_framed(island, id);
+    }
+
+    /// Keeps island `island` framed while it grows (until moved by hand).
+    fn keep_framed(&mut self, island: usize, id: u64) {
+        self.auto_frame = true;
+        self.frame_on = Some(id);
+        self.framed = self
+            .islands
+            .get(island)
+            .and_then(|i| i.city.as_ref())
+            .map(|c| (id, c.side(), c.offset));
+    }
+
+    /// Home: back to the low view of the biggest city (the first view).
+    pub fn home(&mut self) {
+        let best = self
+            .islands
+            .iter()
+            .enumerate()
+            .filter(|(_, i)| i.hw.is_none())
+            .filter_map(|(k, i)| i.city.as_ref().map(|c| (k, c.side())))
+            .max_by(|a, b| a.1.total_cmp(&b.1))
+            .map(|(k, _)| k);
+        match best {
+            Some(k) => {
+                self.frame_island(k);
+                // (the biggest, whichever that is: not this island for good)
+                self.frame_on = None;
+            }
+            None => self.overview(true),
+        }
+    }
+
+    /// The islands' grounds show their state: connecting (a breathing
+    /// outline), failed (amber hatching).
+    fn mark_island_states(&mut self) {
+        for isl in &mut self.islands {
+            let system = match &isl.source {
+                IslandSource::Mcp { backend, .. } => backend.profile.clone(),
+                _ => None,
+            };
+            let connecting = system
+                .as_ref()
+                .and_then(|n| self.live.get(n))
+                .is_some_and(|l| l.state == SysState::Connecting);
+            let failed = isl.status.error.is_some() && isl.from_cache.is_none();
+            let state = if connecting {
+                city::flags::UNREAD
+            } else if failed {
+                city::flags::DENIED
+            } else {
+                0
+            };
+            if let Some(c) = isl.city.as_mut()
+                && c.state != state
+            {
+                c.state = state;
+                self.world_version += 1;
+            }
+        }
     }
 
     /// The fog's density for the world as it is: about 0.00055 for a city
@@ -2108,6 +2374,14 @@ impl App {
             .world_box()
             .map_or(1000.0, |b| (b.max.x - b.min.x).max(b.max.z - b.min.z));
         (1.4 / (extent * 1.6).max(2500.0)).min(0.00056)
+    }
+
+    /// The far view's knobs for the world as it is ([`render::far_look`]).
+    fn far_look(&self) -> [f32; 4] {
+        let (width, top) = self.world_box().map_or((1000.0, 30.0), |b| {
+            ((b.max.x - b.min.x).max(b.max.z - b.min.z), b.max.y)
+        });
+        render::far_look(width, top)
     }
 
     /// Looks at the whole world from above and aside.
@@ -2138,6 +2412,14 @@ impl App {
             self.camera.target = target;
             self.camera.distance = (pos - target).length();
         }
+    }
+
+    /// Whether a world point is inside the 3D view as the camera stands
+    /// (tests: the first view frames the whole city).
+    pub fn in_view(&self, p: Vec3) -> bool {
+        let vp = self.camera.proj(self.view_aspect).mul(&self.camera.view());
+        let c = vp.transform([p.x, p.y, p.z, 1.0]);
+        c[3] > 0.0 && (c[0] / c[3]).abs() <= 1.0 && (c[1] / c[3]).abs() <= 1.0
     }
 
     /// Places the camera (tests, screenshots).
@@ -2196,6 +2478,10 @@ impl App {
                 self.camera.target = target;
                 self.camera.distance = (pos - target).length();
             }
+            // (kept whole while it grows: a system filling in)
+            if let Some(id) = self.islands.get(island).map(|i| i.id) {
+                self.keep_framed(island, id);
+            }
             return;
         }
         let Some(b) = self.node_box(island, node) else {
@@ -2228,11 +2514,7 @@ impl App {
         self.last_teleport = self.time();
         self.cut = true;
         let warp = !self.settings.reduce_motion && alone;
-        let mode = self.camera.mode;
         self.camera.teleport(pos, yaw, pitch, warp);
-        if mode == Mode::Orbit {
-            self.camera.target = pos + crate::camera::forward_of(yaw, pitch) * self.camera.distance;
-        }
     }
 
     pub fn select(&mut self, island: usize, node: NodeId) {
@@ -2345,12 +2627,39 @@ impl App {
                 continue;
             };
             let c = b.center();
-            let w = ((b.max.x - b.min.x).min(b.max.z - b.min.z) * 0.4).clamp(0.8, 8.0);
+            // tinted by the type of what was found
+            let color = self
+                .islands
+                .get(i)
+                .and_then(|isl| isl.city.as_ref())
+                .and_then(|c| match c.layout.placed.get(n as usize)? {
+                    crate::layout::Placed::Building(k) => {
+                        c.layout.buildings.get(*k as usize).map(|b| b.ftype)
+                    }
+                    crate::layout::Placed::District(k) => {
+                        c.layout.districts.get(*k as usize).map(|d| d.ftype)
+                    }
+                    crate::layout::Placed::Nowhere => None,
+                })
+                .map_or(0, |t| city::pack_color(self.theme.type_color(t)));
+            // (a beam: wider than the thing, never thinner than a few
+            // pixels - the shader widens it from afar)
+            let w = ((b.max.x - b.min.x).min(b.max.z - b.min.z) * 0.6).clamp(1.5, 14.0);
             out.push(Instance::new(
                 city::Shape::Pillar,
                 vec3(c.x - w * 0.5, b.max.y, c.z - w * 0.5),
-                vec3(w, 120.0 + (b.max.y - b.min.y), w),
+                vec3(w, 160.0 + (b.max.y - b.min.y) * 2.0, w),
+                color,
+                1.0,
                 0,
+            ));
+            // and a ring on the ground round it
+            let r = ((b.max.x - b.min.x).max(b.max.z - b.min.z) * 1.6).clamp(6.0, 60.0);
+            out.push(Instance::new(
+                city::Shape::Ring,
+                vec3(c.x - r * 0.5, b.min.y + 0.03, c.z - r * 0.5),
+                vec3(r, 0.02, r),
+                color,
                 1.0,
                 0,
             ));
@@ -2379,7 +2688,10 @@ impl App {
             }
             self.seen = (self.world_version, key);
             let eye = self.camera.pos;
-            let lod = self.lod;
+            let lod = city::Lod {
+                look: self.far_look(),
+                ..self.lod
+            };
             // (last frame's buffer, once the renderer let go of it: no new
             // allocation of megabytes each frame)
             if let Ok(v) = Arc::try_unwrap(std::mem::take(&mut self.instances)) {
@@ -2430,12 +2742,7 @@ impl App {
         }
         let inv = invert(&vp);
         let t = self.theme;
-        let warp = if self.camera.warp > 0.0 {
-            let k = 1.0 - self.camera.warp / crate::camera::WARP_SECONDS;
-            (std::f32::consts::PI * k).sin()
-        } else {
-            0.0
-        };
+        let warp = self.camera.warp_amount();
         let bx = |b: Option<Aabb>| match b {
             Some(b) => (
                 [b.min.x, b.min.y, b.min.z, 1.0],
@@ -2487,6 +2794,8 @@ impl App {
             viewport: [0.0; 4],
             params: [0.0, 1.35, 0.0, 0.0],
             debug: [self.test_signal, 0.0, 0.0, 0.0],
+            look: self.far_look(),
+            lens: [2.0 * (self.camera.fov_y * 0.5).tan(), 0.0, 0.0, 0.0],
         };
         (frustum, g)
     }
@@ -2577,6 +2886,7 @@ impl App {
                 Key::F,
                 Key::T,
                 Key::Home,
+                Key::Z,
                 Key::H,
                 Key::F1,
                 Key::Slash,
@@ -2612,7 +2922,15 @@ impl App {
                 }
                 Key::Slash => self.focus_search = true,
                 Key::T => self.teleport_open = !self.teleport_open,
-                Key::Home => self.overview(true),
+                Key::Home => self.home(),
+                Key::Z => {
+                    // the chosen thing's island (or the one under the pointer)
+                    if let Some(i) = self.selected.map(|s| s.0).or(self.hover.map(|h| h.island)) {
+                        self.frame_island(i);
+                    } else {
+                        self.home();
+                    }
+                }
                 Key::H | Key::F1 => self.help_open = !self.help_open,
                 Key::Enter if widget_focus.is_some() => {}
                 Key::N | Key::Enter => self.next_hit(mods.shift),
@@ -2880,12 +3198,13 @@ impl App {
                 let Some(path) = local else { return };
                 // (the file's mode is read on a thread: never on the window's)
                 let untrusted = self.untrusted_medium(i);
+                let trusted = self.settings.open_types.clone();
                 let tx = self.bg_tx.clone();
                 let wake = self.wake.clone();
                 let _ = std::thread::Builder::new()
                     .name("afm-open-check".into())
                     .spawn(move || {
-                        let risk = open::risk_of(&path, untrusted);
+                        let risk = open::risk_of(&path, untrusted, &trusted);
                         let _ = tx.send(Bg::OpenChecked(Box::new(OpenCheck { path, risk })));
                         wake();
                     });
@@ -2897,10 +3216,11 @@ impl App {
     fn open_checked(&mut self, check: OpenCheck) {
         match check.risk {
             None => self.open_default(&check.path),
-            Some(why) => {
+            Some(risk) => {
                 self.open_ask = Some(OpenAsk::Risky {
                     path: check.path,
-                    why,
+                    why: risk.why,
+                    unknown: risk.unknown,
                 })
             }
         }
@@ -2939,6 +3259,7 @@ impl App {
         let t = self.theme;
         let mut answer: Option<Option<OpenHow>> = None;
         let mut risky_path: Option<PathBuf> = None;
+        let mut trust: Option<String> = None;
         let mut unlock: Option<(String, bool)> = None;
         let mut swap: Option<(String, String)> = None;
         let manager = match &self.axross {
@@ -2948,7 +3269,7 @@ impl App {
         let modal = egui::Modal::new(egui::Id::unique("afm-open-ask")).show(ctx, |ui| {
             ui.set_max_width(460.0);
             match &ask {
-                OpenAsk::Risky { path, why } => {
+                OpenAsk::Risky { path, why, unknown } => {
                     ui.label(
                         RichText::new("Open this with the default program?")
                             .strong()
@@ -2966,6 +3287,13 @@ impl App {
                         RichText::new("Showing it in the file manager runs nothing.")
                             .color(t.muted),
                     );
+                    if let Some(ext) = unknown {
+                        // (only for a type nobody listed - never for one that runs)
+                        ui.checkbox(
+                            &mut self.trust_type,
+                            format!("Do not ask again for .{ext} files (Settings can undo it)"),
+                        );
+                    }
                     ui.add_space(6.0);
                     ui.horizontal_wrapped(|ui| {
                         let safe = ui.button(RichText::new("Show it in the file manager").strong());
@@ -2978,6 +3306,11 @@ impl App {
                         if ui.button("Open it anyway").clicked() {
                             answer = Some(Some(OpenHow::DefaultProgram));
                             risky_path = Some(path.clone());
+                            if self.trust_type
+                                && let Some(ext) = unknown
+                            {
+                                trust = Some(ext.clone());
+                            }
                         }
                         if ui.button("Cancel").clicked() {
                             answer = Some(None);
@@ -3101,6 +3434,14 @@ impl App {
         }
         let Some(answer) = answer else { return };
         self.open_ask = None;
+        self.trust_type = false;
+        if let Some(ext) = trust
+            && !self.settings.open_types.contains(&ext)
+        {
+            self.settings.open_types.push(ext);
+            self.settings = std::mem::take(&mut self.settings).sanitized();
+            let _ = settings::save(&self.settings_path, &self.settings);
+        }
         match (answer, risky_path) {
             // (asked and answered: no second question)
             (Some(OpenHow::DefaultProgram), Some(p)) => self.open_default(&p),
@@ -3152,6 +3493,11 @@ impl App {
             self.teleport_to(i, n);
         }
         let aspect = rect.width() / rect.height().max(1.0);
+        if (aspect - self.view_aspect).abs() > 0.02 && self.auto_frame {
+            // (a window of another shape: framed again for it)
+            self.framed = None;
+        }
+        self.view_aspect = aspect;
         // hover and click
         let pointer = response.hover_pos().filter(|_| !self.captured);
         self.hover = pointer.and_then(|p| {
@@ -3215,6 +3561,8 @@ impl App {
             ui.painter()
                 .line_segment([c - vec2(0.0, 6.0), c + vec2(0.0, 6.0)], (1.0, col));
         }
+        self.key_hint(ui, rect, &input);
+        self.empty_state(ui, rect);
         if let Some(h) = self.hover
             && !response.dragged()
             && let Some(p) = pointer
@@ -3222,8 +3570,9 @@ impl App {
             let text = self.node_title(h.island, h.node);
             let font = egui::FontId::monospace(12.0);
             let galley = ui.painter().layout_no_wrap(text, font, self.theme.strong);
-            let at = p + vec2(14.0, 10.0);
-            let bg = Rect::from_min_size(at - vec2(4.0, 2.0), galley.size() + vec2(8.0, 4.0));
+            let size = galley.size() + vec2(8.0, 4.0);
+            let at = hover_tip_at(p, size, rect, &self.title_rects);
+            let bg = Rect::from_min_size(at - vec2(4.0, 2.0), size);
             ui.painter()
                 .rect_filled(bg, 3.0, self.theme.surface.gamma_multiply(0.92));
             ui.painter().galley(at, galley, self.theme.strong);
@@ -3268,16 +3617,34 @@ impl App {
         let t = self.theme;
         let painter = ui.painter_at(rect);
         let font = egui::FontId::proportional(11.5);
-        let rows: Vec<(Color32, &str)> = crate::tree::FILE_TYPES
-            .iter()
-            .skip(1)
-            .map(|f| (t.type_color(*f), f.label()))
-            .collect();
-        let extra = [
-            (t.accent, "bright: changed lately"),
-            (t.muted, "dashed, dim: not read yet"),
-            (Color32::from_rgb(230, 153, 31), "amber edge: no access"),
-        ];
+        // (the machine's island close by: its own legend - the file types'
+        // colours mean nothing there)
+        let hardware = self.hardware_in_view();
+        let rows: Vec<(Color32, &str)> = if hardware {
+            HARDWARE_LEGEND
+                .iter()
+                .map(|(f, name)| (t.type_color(*f), *name))
+                .collect()
+        } else {
+            crate::tree::FILE_TYPES
+                .iter()
+                .skip(1)
+                .map(|f| (t.type_color(*f), f.label()))
+                .collect()
+        };
+        let extra = if hardware {
+            [
+                (t.accent, "bright: busy (load, use)"),
+                (t.muted, "dim: idle or empty"),
+                (t.strong, "beam: a disk's mountpoint"),
+            ]
+        } else {
+            [
+                (t.accent, "bright: changed lately"),
+                (t.muted, "dashed, dim: not read yet"),
+                (Color32::from_rgb(230, 153, 31), "amber edge: no access"),
+            ]
+        };
         let Some((bg, cols)) = legend_geometry(rect) else {
             return; // (no room)
         };
@@ -3289,7 +3656,11 @@ impl App {
         painter.text(
             at + vec2(8.0, 5.0),
             egui::Align2::LEFT_TOP,
-            "height: size · L hides",
+            if hardware {
+                "this machine · L hides"
+            } else {
+                "height: size · L hides"
+            },
             font.clone(),
             t.muted,
         );
@@ -3327,6 +3698,24 @@ impl App {
         }
     }
 
+    /// Whether the machine's island is what the camera looks at: near
+    /// (within two and a half of its widths) and in the view's middle.
+    pub fn hardware_in_view(&self) -> bool {
+        let Some(c) = self
+            .islands
+            .iter()
+            .find(|i| i.hw.is_some())
+            .and_then(|i| i.city.as_ref())
+        else {
+            return false;
+        };
+        let centre = c.center();
+        let to = centre - self.camera.pos;
+        let near = to.length() < c.side() * 2.5 + 40.0;
+        let ahead = to.normalized().dot(self.camera.forward()) > 0.8;
+        near && ahead
+    }
+
     fn legend_rect(&self, rect: Rect) -> Option<Rect> {
         self.legend_open
             .then(|| legend_geometry(rect).map(|g| g.0))
@@ -3358,6 +3747,8 @@ impl App {
         } else if let Some(e) = &isl.status.error {
             let short: String = e.chars().take(70).collect();
             s.push_str(&format!("  · failed: {short}"));
+        } else if isl.status.done && isl.tree.len() <= 1 && isl.hw.is_none() {
+            s.push_str("  · empty: nothing in it");
         } else if isl.from_cache.is_some() {
             s.push_str("  · cached, walking");
         } else if !isl.status.done && isl.hw.is_none() && (system.is_none() || isl.walker.is_some())
@@ -3391,12 +3782,17 @@ impl App {
             return name;
         }
         match n.kind {
-            Kind::Dir => format!("{name}/  {} in {} files", hw::human_bytes(n.total), n.count),
+            Kind::Dir => format!(
+                "{name}/  {} in {}",
+                hw::human_bytes(n.total),
+                count(u64::from(n.count), "file", "files")
+            ),
             _ => format!("{name}  {}", hw::human_bytes(n.size)),
         }
     }
 
     fn labels(&mut self, ui: &Ui, rect: Rect, aspect: f32) {
+        self.title_rects.clear();
         if !self.settings.labels {
             return;
         }
@@ -3408,6 +3804,7 @@ impl App {
             kb.cmp(&ka).then(b.weight.total_cmp(&a.weight))
         });
         let mut taken: Vec<Rect> = Vec::new();
+        let mut titles: Vec<Rect> = Vec::new();
         // (one label per text and island: a name the layout offers twice -
         // a district and its title - is drawn once)
         let mut drawn: std::collections::HashSet<(usize, String)> =
@@ -3416,6 +3813,7 @@ impl App {
             taken.push(l);
         }
         let painter = ui.painter_at(rect);
+        self.plot_tags(&painter, rect, &vp);
         let t = self.theme;
         let cities = self.cities();
         let eye = self.camera.pos;
@@ -3423,6 +3821,8 @@ impl App {
         if let (Some((i, n)), Some(b)) = (self.selected, self.sel_box)
             && let Some(isl) = self.islands.get(i)
             && let Some(node) = isl.tree.get(n)
+            // (an island chosen: its title is its label, drawn once)
+            && n != 0
         {
             let top = vec3(
                 (b.min.x + b.max.x) * 0.5,
@@ -3501,7 +3901,9 @@ impl App {
             }
             let (text, size, color) = match c.kind {
                 LabelKind::Island => {
-                    let s = self.island_caption(island);
+                    // (its state on a second line: a long failure's reason
+                    // wraps inside the window, never off its edge)
+                    let s = title_text(&self.island_caption(island));
                     let color = match &isl.source {
                         IslandSource::Mcp { backend, .. } => backend
                             .protocol
@@ -3525,14 +3927,19 @@ impl App {
                     (
                         format!("{}{slash}", display_name(&n.name, 32)),
                         12.5,
-                        t.label,
+                        if isl.hw.is_some() { t.strong } else { t.label },
                     )
                 }
                 LabelKind::Building => {
                     let Some(n) = isl.tree.get(c.node) else {
                         continue;
                     };
-                    (display_name(&n.name, 28), 11.0, t.label_dim)
+                    // (the machine's parts: brighter, they are few)
+                    if isl.hw.is_some() {
+                        (display_name(&n.name, 28), 12.0, t.label)
+                    } else {
+                        (display_name(&n.name, 28), 11.0, t.label_dim)
+                    }
                 }
             };
             let font = if c.kind == LabelKind::Island {
@@ -3540,15 +3947,34 @@ impl App {
             } else {
                 egui::FontId::monospace(size)
             };
-            if drawn.contains(&(island, text.clone())) {
+            // (one label per text and island; the machine's and the
+            // islands' titles once in the world - an island laid out again
+            // stands twice for a moment while it settles)
+            let scope = if c.kind == LabelKind::Island || isl.hw.is_some() {
+                usize::MAX
+            } else {
+                island
+            };
+            let key = (scope, text.clone());
+            if drawn.contains(&key) {
                 continue;
             }
-            let key = (island, text.clone());
-            let galley = painter.layout_no_wrap(text, font, color);
-            let r = Rect::from_center_size(
+            let galley = if c.kind == LabelKind::Island {
+                painter.layout(text, font, color, (rect.width() - 40.0).clamp(120.0, 620.0))
+            } else {
+                painter.layout_no_wrap(text, font, color)
+            };
+            let mut r = Rect::from_center_size(
                 at - vec2(0.0, galley.size().y * 0.5 + 2.0),
                 galley.size() + vec2(6.0, 2.0),
             );
+            if c.kind == LabelKind::Island {
+                // (a title near the window's edge is moved in, not cut off)
+                let inner = rect.shrink(10.0);
+                let dx = (inner.left() - r.left()).max(0.0) + (inner.right() - r.right()).min(0.0);
+                let dy = (inner.top() - r.top()).max(0.0) + (inner.bottom() - r.bottom()).min(0.0);
+                r = r.translate(vec2(dx, dy));
+            }
             // (what a label covers: an island title's box, a little air
             // round every label; none over the legend)
             let cover = if c.kind == LabelKind::Island {
@@ -3562,6 +3988,8 @@ impl App {
             taken.push(cover);
             drawn.insert(key);
             if c.kind == LabelKind::Island {
+                titles.push(cover);
+                let chosen = self.selected == Some((island, 0));
                 painter.rect_filled(
                     r.expand(3.0),
                     2.0,
@@ -3570,7 +3998,11 @@ impl App {
                 painter.rect_stroke(
                     r.expand(3.0),
                     2.0,
-                    (1.0, t.border),
+                    if chosen {
+                        (1.5, t.accent)
+                    } else {
+                        (1.0, t.border)
+                    },
                     egui::StrokeKind::Outside,
                 );
             } else {
@@ -3578,6 +4010,131 @@ impl App {
                 painter.galley(r.min + vec2(4.0, 2.0), galley.clone(), Color32::BLACK);
             }
             painter.galley(r.min + vec2(3.0, 1.0), galley, color);
+        }
+        drop(cities);
+        self.title_rects = titles;
+    }
+
+    /// No folder at all (no mounts found, none given, all removed): what to
+    /// do, in the middle of the view - never an empty grid alone.
+    fn empty_state(&mut self, ui: &Ui, rect: Rect) {
+        let sources = self.islands.iter().filter(|i| i.hw.is_none()).count();
+        let connecting = matches!(self.mcp, McpState::Looking);
+        if sources > 0 || self.starting || connecting {
+            return;
+        }
+        let t = self.theme;
+        let mut open_sources = false;
+        egui::Area::new(egui::Id::unique("afm-empty"))
+            .order(egui::Order::Middle)
+            .pivot(egui::Align2::CENTER_CENTER)
+            .fixed_pos(rect.center() - vec2(0.0, rect.height() * 0.12))
+            .show(ui.ctx(), |ui| {
+                egui::Frame::new()
+                    .fill(t.surface.gamma_multiply(0.94))
+                    .stroke((1.0, t.border))
+                    .corner_radius(4.0)
+                    .inner_margin(egui::Margin::symmetric(16, 12))
+                    .show(ui, |ui| {
+                        ui.set_max_width(420.0);
+                        ui.label(RichText::new("No folders to show yet").strong().size(17.0).color(t.strong));
+                        ui.add_space(4.0);
+                        ui.label(
+                            "Add a folder in Sources, or start the program with one:                              axross-files-matrix /path/to/folder. Saved connections of                              axross open from Teleport (T).",
+                        );
+                        ui.add_space(6.0);
+                        if ui.button("Sources…").clicked() {
+                            open_sources = true;
+                        }
+                    });
+            });
+        if open_sources {
+            self.sources_open = true;
+        }
+    }
+
+    /// The first start's key hint, low in the view, until the first key
+    /// that moves the camera or its close button (the Help window - H or
+    /// "?" - keeps it).
+    fn key_hint(&mut self, ui: &Ui, rect: Rect, input: &Input) {
+        if self.settings.hint_seen {
+            return;
+        }
+        if input.move_dir != [0.0; 3] || input.look != [0.0; 2] || self.help_open {
+            self.settings.hint_seen = true;
+            let _ = settings::save(&self.settings_path, &self.settings);
+            return;
+        }
+        let t = self.theme;
+        let at = Pos2::new(rect.center().x, rect.bottom() - 44.0);
+        let mut close = false;
+        egui::Area::new(egui::Id::unique("afm-key-hint"))
+            .order(egui::Order::Foreground)
+            .pivot(egui::Align2::CENTER_BOTTOM)
+            .fixed_pos(at)
+            .show(ui.ctx(), |ui| {
+                egui::Frame::new()
+                    .fill(t.surface.gamma_multiply(0.92))
+                    .stroke((1.0, t.accent))
+                    .corner_radius(4.0)
+                    .inner_margin(egui::Margin::symmetric(10, 6))
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label(RichText::new(KEY_HINT).color(t.strong));
+                            if ui
+                                .small_button("×")
+                                .on_hover_text("Hide this hint (H shows the keys)")
+                                .clicked()
+                            {
+                                close = true;
+                            }
+                        });
+                    });
+            });
+        if close {
+            self.settings.hint_seen = true;
+            let _ = settings::save(&self.settings_path, &self.settings);
+        }
+    }
+
+    /// A system's island with nothing on it yet (connecting, failed,
+    /// empty): its protocol written large on its plot, in its family's
+    /// colour.
+    fn plot_tags(&self, painter: &egui::Painter, rect: Rect, vp: &crate::math::Mat4) {
+        for isl in &self.islands {
+            let (IslandSource::Mcp { backend, .. }, Some(c)) = (&isl.source, isl.city.as_ref())
+            else {
+                continue;
+            };
+            if isl.tree.len() > 1 || !c.shown {
+                continue;
+            }
+            let proto = backend.protocol.as_deref().unwrap_or("?");
+            let fam = crate::systems::Family::of(proto);
+            let [r, g, b] = fam.color();
+            let at = c.center();
+            let p = vp.transform([at.x, 0.5, at.z, 1.0]);
+            if p[3] <= 0.1 {
+                continue;
+            }
+            let (x, y) = (p[0] / p[3], p[1] / p[3]);
+            if !(-0.9..=0.9).contains(&x) || !(-0.9..=0.9).contains(&y) {
+                continue;
+            }
+            let pos = Pos2::new(
+                rect.left() + (x * 0.5 + 0.5) * rect.width(),
+                rect.top() + (0.5 - y * 0.5) * rect.height(),
+            );
+            // (as large as the plot looks, within reason)
+            let size = (c.side() / p[3] * rect.height() * 0.25).clamp(18.0, 64.0);
+            let text: String = proto.to_uppercase().chars().take(10).collect();
+            painter.text(
+                pos,
+                egui::Align2::CENTER_CENTER,
+                format!("{text}\n{}", fam.label()),
+                egui::FontId::monospace(size * 0.55),
+                Color32::from_rgba_unmultiplied(r, g, b, 150),
+            );
         }
     }
 
@@ -3668,7 +4225,7 @@ impl App {
                         } else {
                             "N flies to the next one".to_string()
                         };
-                        ui.label(RichText::new(format!("{n} hits{state}")).color(t.muted)).on_hover_text(tip);
+                        ui.label(RichText::new(format!("{}{state}", count(n as u64, "hit", "hits"))).color(t.muted)).on_hover_text(tip);
                         if ui.button("next").on_hover_text("Fly to the next hit (N; Shift+N teleports)").clicked() {
                             self.next_hit(false);
                         }
@@ -3712,7 +4269,11 @@ impl App {
             .filter(|i| !i.status.done && i.hw.is_none())
             .collect();
         let nodes: usize = self.islands.iter().map(|i| i.tree.len()).sum();
-        let mut left = format!("{} islands · {} entries", self.islands.len(), nodes);
+        let mut left = format!(
+            "{} · {}",
+            count(self.islands.len() as u64, "island", "islands"),
+            count(nodes as u64, "entry", "entries")
+        );
         if self.starting {
             left.push_str(" · looking at the mounts…");
         }
@@ -3775,7 +4336,7 @@ impl App {
                 }
                 if wide {
                     ui.label(RichText::new(match self.camera.mode {
-                        Mode::Fly => format!("fly {:.0} m/s", self.camera.speed),
+                        Mode::Fly => format!("fly {:.0} m/s", self.camera.flight_speed()),
                         Mode::Orbit => "orbit".into(),
                     }).color(t.muted));
                 }
@@ -3825,7 +4386,11 @@ impl App {
                     rows.push(("kind".into(), "folder".into()));
                     rows.push((
                         "holds".into(),
-                        format!("{} in {} files", hw::human_bytes(n.total), n.count),
+                        format!(
+                            "{} in {}",
+                            hw::human_bytes(n.total),
+                            count(u64::from(n.count), "file", "files")
+                        ),
                     ));
                     rows.push(("entries".into(), n.children.len().to_string()));
                     rows.push(("read".into(), n.listing.label().into()));
@@ -3891,9 +4456,14 @@ impl App {
         };
         let ax_ready = matches!(self.axross, Axross::Ready(_));
         let mut fly = false;
+        let mut frame = false;
         let mut open_how: Option<OpenHow> = None;
         ui.horizontal_wrapped(|ui| {
             fly = ui.button("Fly here").clicked();
+            frame = ui
+                .button("Frame island")
+                .on_hover_text("See its whole island (Z); kept framed while it grows")
+                .clicked();
             if can_ax {
                 let label = if ax_ready { "Open in axross" } else { "Open in axross…" };
                 if ui.button(label).on_hover_text(ax_hint).clicked() {
@@ -3927,6 +4497,9 @@ impl App {
         });
         if fly {
             self.fly_to(i, node);
+        }
+        if frame {
+            self.frame_island(i);
         }
         if let Some(how) = open_how {
             self.open_selected(how);
@@ -4000,8 +4573,19 @@ impl App {
     }
 
     /// A place for a window: below the bar, `dx` from the view's left.
-    fn below_bar(&self, dx: f32) -> Pos2 {
-        Pos2::new(self.view_rect.left() + dx, self.view_rect.top() + 8.0)
+    /// A window `width` wide at the right, below the bar (Sources,
+    /// Settings: the Teleport menu has the left - they never cover it).
+    fn right_of_bar(&self, width: f32, dy: f32) -> Pos2 {
+        Pos2::new(
+            (self.view_rect.right() - width - 24.0).max(self.view_rect.left() + 8.0),
+            self.view_rect.top() + 8.0 + dy,
+        )
+    }
+
+    /// A tall window's default height: most of the view (Help, Settings
+    /// open at a usable size, not 420 points with a scroll bar).
+    fn tall(&self, ctx: &egui::Context) -> f32 {
+        (ctx.content_rect().bottom() - self.view_rect.top() - 60.0).clamp(240.0, 820.0)
     }
 
     /// Where windows may stand: the screen below the bar.
@@ -4144,11 +4728,17 @@ impl App {
         let width = 560.0_f32.min(screen.width() - 24.0);
         let wide = width >= 520.0;
         let below_bar = self.view_rect.top() + 8.0;
+        // (above the legend when there is room: it stays readable)
+        let room = self
+            .legend_rect(self.view_rect)
+            .map(|l| l.top() - below_bar - 50.0)
+            .filter(|h| *h >= 260.0)
+            .unwrap_or(f32::MAX);
         egui::Window::new("Teleport")
             .open(&mut open)
             .default_width(width)
             .max_width(screen.width() - 16.0)
-            .default_height((screen.height() - 120.0).clamp(200.0, 640.0))
+            .default_height((screen.height() - 120.0).clamp(200.0, 640.0).min(room))
             .max_height(screen.height() - below_bar - 40.0)
             .default_pos(egui::pos2(self.view_rect.left() + 8.0, below_bar))
             .constrain_to(egui::Rect::from_min_max(egui::pos2(0.0, below_bar), screen.max))
@@ -4393,12 +4983,16 @@ impl App {
         let t = self.theme;
         let mut open_profile: Option<(Arc<Client>, String)> = None;
         let mut rescan: Option<usize> = None;
+        let mut stop: Option<usize> = None;
+        let mut remove: Option<usize> = None;
+        let mut add: Option<PathBuf> = None;
         let mut reconnect = false;
+        let width = 420.0_f32.min(ctx.content_rect().width() - 24.0);
         egui::Window::new("Sources")
             .open(&mut open)
-            .default_pos(self.below_bar(160.0))
+            .default_pos(self.right_of_bar(width, 0.0))
             .constrain_to(self.below_bar_rect(ctx))
-            .default_width(420.0_f32.min(ctx.content_rect().width() - 24.0))
+            .default_width(width)
             .max_height(ctx.content_rect().height() - 80.0)
             .vscroll(true)
             .show(ctx, |ui| {
@@ -4414,17 +5008,47 @@ impl App {
                     } else if isl.from_cache.is_some() {
                         format!("cached; walking ({} found)", isl.status.entries)
                     } else if isl.status.done {
-                        format!("{} entries in {:.1} s", isl.tree.len(), isl.status.seconds)
+                        let mut s = format!(
+                            "{} in {:.1} s",
+                            count(isl.tree.len() as u64, "entry", "entries"),
+                            isl.status.seconds
+                        );
+                        if let Some(n) = &isl.status.note {
+                            s.push_str(&format!(" ({n})"));
+                        }
+                        s
                     } else {
                         format!("walking: {} found", isl.status.entries)
                     };
                     ui.label(RichText::new(&isl.title).monospace());
                     ui.label(RichText::new(state).color(t.muted));
-                    if isl.hw.is_none() && ui.small_button("walk again").clicked() {
-                        rescan = Some(i);
+                    let local = matches!(isl.source, IslandSource::Local { .. } | IslandSource::Synthetic { .. });
+                    if isl.hw.is_none() {
+                        if isl.walker.is_some() && !isl.status.done {
+                            if ui.small_button("stop").on_hover_text("Stop this walk: what it found stays").clicked() {
+                                stop = Some(i);
+                            }
+                        } else if ui.small_button("walk again").clicked() {
+                            rescan = Some(i);
+                        }
+                    }
+                    if local && ui.small_button("remove").on_hover_text("Take this island out of the city (nothing on the disk changes)").clicked() {
+                        remove = Some(i);
                     }
                 });
             }
+            ui.horizontal(|ui| {
+                ui.label("Add a folder:");
+                let field = ui.add(
+                    egui::TextEdit::singleline(&mut self.add_source)
+                        .hint_text("/path/to/folder")
+                        .desired_width(220.0),
+                );
+                let enter = field.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter));
+                if (ui.button("add").clicked() || enter) && !self.add_source.trim().is_empty() {
+                    add = Some(PathBuf::from(self.add_source.trim()));
+                }
+            });
             ui.separator();
             ui.label(RichText::new("axross").strong());
             match &self.mcp {
@@ -4478,6 +5102,20 @@ impl App {
         if reconnect {
             self.connect_mcp();
         }
+        if let Some(i) = stop {
+            self.stop_walk(i);
+        }
+        if let Some(i) = remove {
+            let title = self.islands[i].title.clone();
+            self.remove_island(i);
+            self.toast(format!("{title}: taken out of the city"));
+        }
+        if let Some(p) = add {
+            match self.add_source(p) {
+                Ok(_) => self.add_source.clear(),
+                Err(e) => self.toast(e),
+            }
+        }
         if let Some(i) = rescan {
             let all = mounts::system_mounts();
             let skip = match &self.islands[i].source {
@@ -4503,11 +5141,13 @@ impl App {
         let mut mode =
             UpdateMode::from_key(&self.settings.update_mode).unwrap_or(UpdateMode::Notify);
         let mut clear_cache = false;
+        let width = 400.0_f32.min(ctx.content_rect().width() - 24.0);
         egui::Window::new("Settings")
             .open(&mut open)
-            .default_pos(self.below_bar(160.0))
+            .default_pos(self.right_of_bar(width, 24.0))
             .constrain_to(self.below_bar_rect(ctx))
-            .default_width(380.0_f32.min(ctx.content_rect().width() - 24.0))
+            .default_width(width)
+            .default_height(self.tall(ctx))
             .max_height(ctx.content_rect().height() - 80.0)
             .vscroll(true)
             .show(ctx, |ui| {
@@ -4529,6 +5169,24 @@ impl App {
                 ui.checkbox(
                     &mut s.ask_mode_before_flight,
                     "Ask \"read-only or write?\" before the flight",
+                );
+                ui.separator();
+                ui.label(RichText::new("Opening").strong());
+                if s.open_types.is_empty() {
+                    ui.label(
+                        RichText::new("Every type this program does not know is asked about first.")
+                            .color(t.muted),
+                    );
+                } else {
+                    let list: Vec<String> = s.open_types.iter().map(|e| format!(".{e}")).collect();
+                    ui.label(format!("Opened without asking: {}", list.join(" ")));
+                    if ui.button("Ask again for every type").clicked() {
+                        s.open_types.clear();
+                    }
+                }
+                ui.label(
+                    RichText::new("Programs, scripts, shortcuts and special files are always asked about.")
+                        .color(t.muted),
                 );
                 ui.separator();
                 ui.label(RichText::new("Islands").strong());
@@ -4582,7 +5240,7 @@ impl App {
                 ui.add(egui::Slider::new(&mut s.cache_max_days, 1..=365).text("days at most"));
                 ui.horizontal_wrapped(|ui| {
                     if let Some((bytes, files)) = self.cache_usage {
-                        ui.label(RichText::new(format!("now {} in {files} files", hw::human_bytes(bytes))).color(t.muted));
+                        ui.label(RichText::new(format!("now {} in {}", hw::human_bytes(bytes), count(files as u64, "file", "files"))).color(t.muted));
                     }
                     if ui.button("Clear the cache").clicked() {
                         clear_cache = true;
@@ -4695,14 +5353,21 @@ impl App {
             .render_stats
             .as_ref()
             .and_then(|s| s.lock().ok().map(|s| (s.adapter.clone(), s.software)));
+        let width = 440.0_f32.min(ctx.content_rect().width() - 24.0);
         egui::Window::new("Keys and mouse")
             .open(&mut open)
-            .default_pos(self.below_bar(160.0))
+            .default_pos(Pos2::new(
+                (self.view_rect.center().x - width * 0.5).max(self.view_rect.left() + 8.0),
+                self.view_rect.top() + 8.0,
+            ))
             .constrain_to(self.below_bar_rect(ctx))
-            .default_width(420.0_f32.min(ctx.content_rect().width() - 24.0))
+            .default_width(width)
+            .default_height(self.tall(ctx))
             .max_height(ctx.content_rect().height() - 80.0)
             .vscroll(true)
             .show(ctx, |ui| {
+                ui.label(RichText::new(KEY_HINT).color(self.theme.strong));
+                ui.separator();
                 egui::Grid::new("help").num_columns(2).show(ui, |ui| {
                     if let Some((a, soft)) = &adapter {
                         ui.label(RichText::new("drawn by").color(self.theme.muted));
@@ -4812,6 +5477,18 @@ const LEGEND_COL: f32 = 92.0;
 
 /// Where the legend goes in the view `rect` and in how many columns (two
 /// where the view is low); None where there is no room for it.
+/// The machine's legend: what its parts' colours are.
+const HARDWARE_LEGEND: [(crate::tree::FileType, &str); 8] = [
+    (crate::tree::FileType::Code, "processor cores"),
+    (crate::tree::FileType::Data, "memory modules"),
+    (crate::tree::FileType::Document, "memory in use"),
+    (crate::tree::FileType::Archive, "disks, storage"),
+    (crate::tree::FileType::Video, "graphics card"),
+    (crate::tree::FileType::Config, "network ports"),
+    (crate::tree::FileType::Audio, "USB devices"),
+    (crate::tree::FileType::Binary, "board, chips"),
+];
+
 fn legend_geometry(rect: Rect) -> Option<(Rect, usize)> {
     let types = crate::tree::FILE_TYPES.len() - 1;
     let cols = if rect.height() < 520.0 { 2 } else { 1 };
@@ -4948,11 +5625,18 @@ pub fn probe_axross(
     (state, Some(probe))
 }
 
+/// The first start's hint (and the Help window's first line).
+pub const KEY_HINT: &str =
+    "WASD fly · F orbit · / search · T teleport · Home back · Z frame island · H help";
+
 pub const HELP: &[(&str, &str)] = &[
     ("W A S D", "fly forward, left, back, right (arrows too)"),
     ("Q / E", "down / up"),
-    ("Shift", "five times as fast"),
-    ("wheel", "flight speed; in orbit: zoom"),
+    (
+        "Shift",
+        "five times as fast (flight is faster the higher it flies)",
+    ),
+    ("wheel", "flight speed factor; in orbit: zoom"),
     ("right drag", "look around (fly) / turn (orbit)"),
     ("M", "capture the mouse to look (Esc lets go)"),
     ("F", "free flight / orbit and map"),
@@ -4969,7 +5653,12 @@ pub const HELP: &[(&str, &str)] = &[
     ),
     ("1 - 9", "jump to a saved spot"),
     ("Ctrl+1 - 9", "save this spot"),
-    ("Home", "overview"),
+    ("Home", "back to the first view (the biggest city, low)"),
+    ("Z", "frame the chosen island whole (kept while it grows)"),
+    (
+        "Overview",
+        "the map: the whole world from above (the bar's button)",
+    ),
     (
         "O / Shift+O",
         "open in axross / with the default program (asks first for programs)",
@@ -5149,7 +5838,8 @@ impl eframe::App for App {
                     self.lod.collapse
                 );
             }
-            ctx.request_repaint();
+            // (no repaint asked for here: the frames measured are the ones
+            // the window draws anyway - an idle window stays idle)
         }
     }
 
@@ -5244,6 +5934,59 @@ mod tests {
         );
         assert_eq!(repaint_policy(false, false, true, false, 8), Repaint::Idle);
         assert_eq!(repaint_policy(false, false, true, true, 0), Repaint::Idle);
+    }
+
+    #[test]
+    fn previews_get_a_fresh_thread_when_the_three_hang() {
+        let ms = Duration::from_millis;
+        // three under way, fresh: the request waits a moment...
+        let three = [ms(100), ms(200), ms(250)];
+        assert!(!preview_may_start(&three, ms(0)));
+        assert!(!preview_may_start(&three, ms(299)));
+        // ...then gets a fourth thread, not five seconds later
+        assert!(preview_may_start(&three, PREVIEW_PATIENCE));
+        // two under way: at once
+        assert!(preview_may_start(&three[..2], ms(0)));
+        // hung past the limit: they count no more
+        assert!(preview_may_start(&[ms(6000); 3], ms(0)));
+        // never more than PREVIEW_ALIVE threads in all
+        assert!(!preview_may_start(
+            &vec![ms(9000); PREVIEW_ALIVE],
+            Duration::from_secs(60)
+        ));
+    }
+
+    #[test]
+    fn the_hover_tip_keeps_off_the_islands_titles() {
+        let view = Rect::from_min_size(Pos2::ZERO, vec2(800.0, 600.0));
+        let size = vec2(160.0, 18.0);
+        let p = Pos2::new(400.0, 300.0);
+        // nothing in the way: below right of the pointer
+        assert_eq!(hover_tip_at(p, size, view, &[]), p + vec2(14.0, 10.0));
+        // a title (with its failure's reason) below right: elsewhere
+        let title = Rect::from_min_size(Pos2::new(395.0, 305.0), vec2(300.0, 40.0));
+        let at = hover_tip_at(p, size, view, &[title]);
+        let tip = Rect::from_min_size(at - vec2(4.0, 2.0), size);
+        assert!(!tip.intersects(title), "{tip:?}");
+        // at the window's edge: inside
+        let at = hover_tip_at(Pos2::new(790.0, 590.0), size, view, &[]);
+        assert!(view.contains_rect(Rect::from_min_size(at - vec2(4.0, 2.0), size)));
+    }
+
+    #[test]
+    fn a_failed_island_says_why_on_its_own_line() {
+        assert_eq!(
+            title_text("sftp-box  · failed: no route to host"),
+            "sftp-box\nfailed: no route to host"
+        );
+        assert_eq!(title_text("home  · 1200 …"), "home  · 1200 …");
+    }
+
+    #[test]
+    fn counts_say_one_and_many() {
+        assert_eq!(count(1, "island", "islands"), "1 island");
+        assert_eq!(count(0, "island", "islands"), "0 islands");
+        assert_eq!(count(2, "entry", "entries"), "2 entries");
     }
 
     #[test]
