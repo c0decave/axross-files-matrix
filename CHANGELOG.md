@@ -3,6 +3,31 @@
 axross-files-matrix turns the data on your mountpoints into a 3D city you
 fly through, Matrix style, with real file access.
 
+## 0.0.9 - 2026-11-24
+
+A preview for a first look, before 0.1.0: the state of "Unreleased - 0.1.0"
+below as it stands today. It is published as a pre-release; the program's
+own update check takes no pre-release, and 0.1.0 will be offered to it.
+
+### Known in this preview
+- **In flight the city is dimmer and hazier than standing still** (about
+  half the contrast): the toning that keeps the flash guard out of ordinary
+  flight is too strong. Being reworked for 0.1.0.
+- **The flash guard does not see alternating flashes** (a pattern reversing
+  in place, such as a checkerboard): flashes of the whole picture or of a
+  part of it are held to the limit, and what the city itself draws measured
+  0 to 2 transitions a second in flight. Being reworked for 0.1.0.
+- **After axross's server has been started again**, a system that was open
+  has to be closed and opened again.
+- "Open in axross", the systems of axross's connection manager and its
+  remote backends need axross 0.15.186 or newer, which is not released
+  yet; local folders and every mountpoint work without axross.
+- The Teleport menu's rows are not reached by the arrow keys.
+- Frame rates were only measured on a software renderer so far:
+  `axross-files-matrix --benchmark` prints them for a real GPU.
+- macOS and Windows builds are built and tested by CI but were not tried
+  by hand.
+
 ## Unreleased - 0.1.0
 
 The first release: the MVP of the spec.

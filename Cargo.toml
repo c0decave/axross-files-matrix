@@ -1,6 +1,6 @@
 [package]
 name = "axross-files-matrix"
-version = "0.1.0"
+version = "0.0.9"
 description = "The data on your mountpoints as a 3D city you fly through, Matrix style: local disks, every mount and axross's remote backends, with real file access"
 license = "Apache-2.0"
 repository = "https://github.com/c0decave/axross-files-matrix"
